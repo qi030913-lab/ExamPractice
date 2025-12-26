@@ -27,6 +27,8 @@ public class StudentMainFrame extends JFrame {
     private JPanel mainContentPanel;
     private String currentView = "home";
     private java.util.List<JButton> menuButtons = new java.util.ArrayList<>();
+    private String currentSubject = "全部"; // 当前选中的科目
+    private static final String[] SUBJECTS = {"全部", "Java", "Vue", "数据结构", "马克思主义", "计算机网络", "操作系统", "数据库"};
 
     public StudentMainFrame(User student) {
         this.student = student;
@@ -485,9 +487,54 @@ public class StudentMainFrame extends JFrame {
     }
 
     private JPanel createExamPanel() {
-        JPanel panel = new JPanel(new BorderLayout(0, 20));
+        JPanel panel = new JPanel(new BorderLayout(0, 0));
         panel.setBackground(Color.WHITE);
-        panel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+
+        // 左侧科目分类栏
+        JPanel categoryPanel = new JPanel();
+        categoryPanel.setLayout(new BoxLayout(categoryPanel, BoxLayout.Y_AXIS));
+        categoryPanel.setBackground(new Color(250, 250, 250));
+        categoryPanel.setPreferredSize(new Dimension(180, 0));
+        categoryPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(230, 230, 230)));
+
+        // 分类标题
+        JPanel categoryTitlePanel = new JPanel(new BorderLayout());
+        categoryTitlePanel.setBackground(new Color(250, 250, 250));
+        categoryTitlePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 15, 20));
+        categoryTitlePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
+        
+        JLabel categoryTitleLabel = new JLabel("科目分类");
+        categoryTitleLabel.setFont(new Font("微软雅黑", Font.BOLD, 16));
+        categoryTitleLabel.setForeground(UIUtil.TEXT_COLOR);
+        categoryTitlePanel.add(categoryTitleLabel, BorderLayout.WEST);
+        
+        categoryPanel.add(categoryTitlePanel);
+        
+        // 分隔线
+        JSeparator separator = new JSeparator();
+        separator.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+        separator.setForeground(new Color(230, 230, 230));
+        categoryPanel.add(separator);
+        
+        // 科目列表
+        for (String subject : SUBJECTS) {
+            JButton subjectButton = createSubjectButton(subject, subject.equals(currentSubject));
+            subjectButton.addActionListener(e -> {
+                currentSubject = subject;
+                refreshSubjectButtons(categoryPanel);
+                loadPapersBySubject(subject);
+            });
+            categoryPanel.add(subjectButton);
+        }
+        
+        categoryPanel.add(Box.createVerticalGlue());
+        
+        panel.add(categoryPanel, BorderLayout.WEST);
+
+        // 右侧主内容区
+        JPanel contentPanel = new JPanel(new BorderLayout(0, 20));
+        contentPanel.setBackground(Color.WHITE);
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 
         // 标题区域
         JPanel titlePanel = new JPanel(new BorderLayout());
@@ -499,6 +546,12 @@ public class StudentMainFrame extends JFrame {
         titleLabel.setForeground(UIUtil.TEXT_COLOR);
         titlePanel.add(titleLabel, BorderLayout.WEST);
         
+        // 当前科目显示
+        JLabel currentSubjectLabel = new JLabel("当前科目：" + currentSubject);
+        currentSubjectLabel.setFont(new Font("微软雅黑", Font.PLAIN, 14));
+        currentSubjectLabel.setForeground(new Color(100, 100, 100));
+        titlePanel.add(currentSubjectLabel, BorderLayout.CENTER);
+        
         // 刷新按钮放在标题区域右侧
         JButton refreshButton = new JButton("刷新列表");
         refreshButton.setFont(new Font("微软雅黑", Font.PLAIN, 12));
@@ -509,10 +562,10 @@ public class StudentMainFrame extends JFrame {
             BorderFactory.createEmptyBorder(8, 20, 8, 20)
         ));
         refreshButton.setFocusPainted(false);
-        refreshButton.addActionListener(e -> loadPapers());
+        refreshButton.addActionListener(e -> loadPapersBySubject(currentSubject));
         titlePanel.add(refreshButton, BorderLayout.EAST);
 
-        panel.add(titlePanel, BorderLayout.NORTH);
+        contentPanel.add(titlePanel, BorderLayout.NORTH);
 
         // 考试记录表格区域
         JPanel tablePanel = new JPanel(new BorderLayout(0, 15));
@@ -552,10 +605,12 @@ public class StudentMainFrame extends JFrame {
         scrollPane.getViewport().setBackground(Color.WHITE);
         
         tablePanel.add(scrollPane, BorderLayout.CENTER);
-        panel.add(tablePanel, BorderLayout.CENTER);
+        contentPanel.add(tablePanel, BorderLayout.CENTER);
+        
+        panel.add(contentPanel, BorderLayout.CENTER);
         
         // 初始化表格数据
-        loadPapers();
+        loadPapersBySubject(currentSubject);
         
         return panel;
     }
@@ -668,15 +723,110 @@ public class StudentMainFrame extends JFrame {
         }
     }
 
-    private void loadPapers() {
+    /**
+     * 创建科目按钮
+     */
+    private JButton createSubjectButton(String subject, boolean isActive) {
+        JButton button = new JButton(subject);
+        button.setFont(new Font("微软雅黑", Font.PLAIN, 14));
+        button.setHorizontalAlignment(SwingConstants.LEFT);
+        button.setFocusPainted(false);
+        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setContentAreaFilled(false);
+        button.setOpaque(true);
+        
+        // 设置图标
+        Icon icon = IconUtil.createCircleIcon(
+            isActive ? UIUtil.PRIMARY_COLOR : new Color(150, 150, 150), 8);
+        button.setIcon(icon);
+        button.setIconTextGap(12);
+        button.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 10));
+        
+        // 设置样式
+        updateSubjectButtonStyle(button, isActive);
+        
+        // 悬停效果
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                if (!button.getBackground().equals(new Color(232, 240, 254))) {
+                    button.setBackground(new Color(245, 245, 245));
+                }
+            }
+            
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                if (!button.getBackground().equals(new Color(232, 240, 254))) {
+                    button.setBackground(new Color(250, 250, 250));
+                }
+            }
+        });
+        
+        return button;
+    }
+    
+    /**
+     * 更新科目按钮样式
+     */
+    private void updateSubjectButtonStyle(JButton button, boolean isActive) {
+        if (isActive) {
+            button.setBackground(new Color(232, 240, 254));
+            button.setForeground(UIUtil.PRIMARY_COLOR);
+            button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 3, 0, 0, UIUtil.PRIMARY_COLOR),
+                BorderFactory.createEmptyBorder(12, 17, 12, 10)
+            ));
+            Icon icon = IconUtil.createCircleIcon(UIUtil.PRIMARY_COLOR, 8);
+            button.setIcon(icon);
+        } else {
+            button.setBackground(new Color(250, 250, 250));
+            button.setForeground(new Color(80, 80, 80));
+            button.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 10));
+            Icon icon = IconUtil.createCircleIcon(new Color(150, 150, 150), 8);
+            button.setIcon(icon);
+        }
+    }
+    
+    /**
+     * 刷新科目按钮状态
+     */
+    private void refreshSubjectButtons(JPanel categoryPanel) {
+        Component[] components = categoryPanel.getComponents();
+        for (Component comp : components) {
+            if (comp instanceof JButton) {
+                JButton button = (JButton) comp;
+                String buttonText = button.getText();
+                boolean isActive = buttonText.equals(currentSubject);
+                updateSubjectButtonStyle(button, isActive);
+            }
+        }
+    }
+    
+    /**
+     * 根据科目加载试卷
+     */
+    private void loadPapersBySubject(String subject) {
         if (tableModel == null) {
-            return; // 表格还未初始化，直接返回
+            return;
         }
         tableModel.setRowCount(0);
         try {
-            List<Paper> papers = paperService.getAllPapers();
+            List<Paper> allPapers = paperService.getAllPapers();
+            List<Paper> filteredPapers;
             
-            for (Paper p : papers) {
+            if ("全部".equals(subject)) {
+                filteredPapers = allPapers;
+            } else {
+                filteredPapers = new java.util.ArrayList<>();
+                for (Paper p : allPapers) {
+                    if (subject.equals(p.getSubject())) {
+                        filteredPapers.add(p);
+                    }
+                }
+            }
+            
+            for (Paper p : filteredPapers) {
                 // 统计各类型题目数量
                 long singleCount = 0;
                 long multipleCount = 0;
@@ -698,7 +848,6 @@ public class StudentMainFrame extends JFrame {
                         .count();
                 }
                 
-                // 格式：名称、单选、多选、判断、填空、操作
                 Object[] row = {
                     p.getPaperName(),
                     singleCount > 0 ? String.valueOf(singleCount) : "无",
@@ -710,23 +859,16 @@ public class StudentMainFrame extends JFrame {
                 tableModel.addRow(row);
             }
             
-            // 如果没有数据，添加默认试卷
-            if (papers.isEmpty()) {
-                for (int i = 1; i <= 5; i++) {
-                    Object[] row = {
-                        "真考题库试卷" + i,
-                        "无",
-                        "无",
-                        "无",
-                        "无",
-                        "开始考试"
-                    };
-                    tableModel.addRow(row);
-                }
+            if (filteredPapers.isEmpty()) {
+                UIUtil.showInfo(this, "该科目暂无试卷");
             }
         } catch (Exception e) {
             UIUtil.showError(this, "加载试卷失败：" + e.getMessage());
         }
+    }
+
+    private void loadPapers() {
+        loadPapersBySubject(currentSubject);
     }
 
     private void startExam() {
@@ -745,15 +887,13 @@ public class StudentMainFrame extends JFrame {
             return;
         }
         
-        // 通过试卷名称获取试卷
-        Integer paperId = selectedRow + 1;
-        
         if (!UIUtil.showConfirm(this, "确定要开始考试《" + paperName + "》吗？\n考试开始后将开始计时。")) {
             return;
         }
         
         try {
-            Paper paper = paperService.getPaperById(paperId);
+            // 通过试卷名称获取试卷
+            Paper paper = paperService.getPaperByName(paperName);
             if (paper == null || paper.getQuestions().isEmpty()) {
                 UIUtil.showError(this, "该试卷没有题目，无法考试");
                 return;

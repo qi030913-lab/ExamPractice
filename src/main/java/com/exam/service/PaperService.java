@@ -93,6 +93,26 @@ public class PaperService {
     }
 
     /**
+     * 根据试卷名称查询试卷（包含题目）
+     */
+    public Paper getPaperByName(String paperName) {
+        if (paperName == null || paperName.trim().isEmpty()) {
+            throw new BusinessException("试卷名称不能为空");
+        }
+
+        Paper paper = paperDao.findByName(paperName);
+        if (paper == null) {
+            throw new BusinessException("试卷不存在");
+        }
+
+        // 加载试卷题目
+        List<Question> questions = questionDao.findByPaperId(paper.getPaperId());
+        paper.setQuestions(questions);
+
+        return paper;
+    }
+
+    /**
      * 查询所有试卷
      */
     public List<Paper> getAllPapers() {

@@ -4,6 +4,7 @@ import com.exam.dao.QuestionDao;
 import com.exam.exception.BusinessException;
 import com.exam.model.Question;
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * 题目服务类
@@ -79,6 +80,23 @@ public class QuestionService {
             throw new BusinessException("试卷ID不能为空");
         }
         return questionDao.findByPaperId(paperId);
+    }
+
+    /**
+     * 批量添加题目
+     */
+    public List<Integer> batchAddQuestions(List<Question> questions) {
+        if (questions == null || questions.isEmpty()) {
+            throw new BusinessException("题目列表不能为空");
+        }
+        
+        List<Integer> questionIds = new ArrayList<>();
+        for (Question question : questions) {
+            validateQuestion(question);
+            int questionId = questionDao.insert(question);
+            questionIds.add(questionId);
+        }
+        return questionIds;
     }
 
     /**

@@ -34,6 +34,27 @@ public class PaperDao {
     }
 
     /**
+     * 根据试卷名称查询试卷
+     */
+    public Paper findByName(String paperName) {
+        String sql = "SELECT * FROM paper WHERE paper_name = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, paperName);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return extractPaper(rs);
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("查询试卷失败", e);
+        }
+        return null;
+    }
+
+    /**
      * 查询所有试卷
      */
     public List<Paper> findAll() {
