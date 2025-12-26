@@ -223,6 +223,47 @@ public class IconUtil {
     }
     
     /**
+     * 创建上传/导入图标
+     */
+    public static Icon createUploadIcon(Color color, int size) {
+        return new Icon() {
+            @Override
+            public void paintIcon(Component c, Graphics g, int x, int y) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setColor(color);
+                g2d.setStroke(new BasicStroke(2f));
+                
+                // 绘制上箭头
+                int arrowWidth = size / 2;
+                int arrowHeight = size * 2 / 3;
+                int centerX = x + size / 2;
+                int arrowY = y + 2;
+                
+                // 箭头竖线
+                g2d.drawLine(centerX, arrowY, centerX, arrowY + arrowHeight);
+                
+                // 箭头左侧
+                g2d.drawLine(centerX, arrowY, centerX - arrowWidth/2, arrowY + arrowWidth/2);
+                
+                // 箭头右侧
+                g2d.drawLine(centerX, arrowY, centerX + arrowWidth/2, arrowY + arrowWidth/2);
+                
+                // 绘制底部横线
+                g2d.drawLine(x + 2, y + size - 2, x + size - 2, y + size - 2);
+                
+                g2d.dispose();
+            }
+            
+            @Override
+            public int getIconWidth() { return size; }
+            
+            @Override
+            public int getIconHeight() { return size; }
+        };
+    }
+    
+    /**
      * 创建上升趋势图标
      */
     public static Icon createTrendUpIcon(Color color, int size) {

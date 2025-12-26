@@ -33,7 +33,7 @@ public class UIUtil {
         JButton button = new JButton(text);
         button.setFont(NORMAL_FONT);
         button.setBackground(PRIMARY_COLOR);
-        button.setForeground(Color.WHITE);
+        button.setForeground(Color.BLACK);
         button.setFocusPainted(false);
         button.setBorderPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -47,7 +47,7 @@ public class UIUtil {
         JButton button = new JButton(text);
         button.setFont(NORMAL_FONT);
         button.setBackground(SUCCESS_COLOR);
-        button.setForeground(Color.WHITE);
+        button.setForeground(Color.BLACK);
         button.setFocusPainted(false);
         button.setBorderPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -61,7 +61,7 @@ public class UIUtil {
         JButton button = new JButton(text);
         button.setFont(NORMAL_FONT);
         button.setBackground(DANGER_COLOR);
-        button.setForeground(Color.WHITE);
+        button.setForeground(Color.BLACK);
         button.setFocusPainted(false);
         button.setBorderPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));

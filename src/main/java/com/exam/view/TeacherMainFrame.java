@@ -12,6 +12,7 @@ import com.exam.util.IconUtil;
 import com.exam.util.QuestionImportUtil;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.util.List;
@@ -208,7 +209,8 @@ public class TeacherMainFrame extends JFrame {
         String[][] menuConfig = {
             {"home", "我的主页"},
             {"question", "题库管理"},
-            {"paper", "试卷管理"}
+            {"paper", "试卷管理"},
+            {"import", "导入题目"}
         };
 
         for (int i = 0; i < menuConfig.length; i++) {
@@ -272,6 +274,8 @@ public class TeacherMainFrame extends JFrame {
                 return IconUtil.createDocumentIcon(color, size);
             case "paper":
                 return IconUtil.createChartIcon(color, size);
+            case "import":
+                return IconUtil.createUploadIcon(color, size);
             default:
                 return IconUtil.createCircleIcon(color, size);
         }
@@ -303,6 +307,12 @@ public class TeacherMainFrame extends JFrame {
     }
 
     private void switchView(String view) {
+        // 如果是导入题目，直接打开对话框
+        if ("import".equals(view)) {
+            showImportDialog();
+            return;
+        }
+        
         if (currentView.equals(view)) {
             return;
         }
@@ -310,7 +320,7 @@ public class TeacherMainFrame extends JFrame {
         currentView = view;
 
         // 更新所有按钮的状态
-        String[] views = {"home", "question", "paper"};
+        String[] views = {"home", "question", "paper", "import"};
         for (int i = 0; i < menuButtons.size(); i++) {
             JButton button = menuButtons.get(i);
             boolean isActive = i == getViewIndex(view);
@@ -344,6 +354,7 @@ public class TeacherMainFrame extends JFrame {
             case "home": return 0;
             case "question": return 1;
             case "paper": return 2;
+            case "import": return 3;
             default: return -1;
         }
     }
@@ -514,67 +525,48 @@ public class TeacherMainFrame extends JFrame {
         titleLabel.setForeground(UIUtil.TEXT_COLOR);
         titlePanel.add(titleLabel, BorderLayout.WEST);
         
-        // 当前科目显示
-        JLabel currentSubjectLabel = new JLabel("当前科目：" + currentSubject);
-        currentSubjectLabel.setFont(new Font("微软雅黑", Font.PLAIN, 14));
-        currentSubjectLabel.setForeground(new Color(100, 100, 100));
-        titlePanel.add(currentSubjectLabel, BorderLayout.CENTER);
-
-        contentPanel.add(titlePanel, BorderLayout.NORTH);
-        
-        // 按钮面板
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        buttonPanel.setBackground(Color.WHITE);
-        buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 30, 15, 30));
-        
+        // 添加题目按钮放在右侧
         JButton addButton = createStyledButton("添加题目", UIUtil.SUCCESS_COLOR);
         addButton.addActionListener(e -> showAddQuestionDialog());
-        
-        JButton editButton = createStyledButton("编辑题目", UIUtil.PRIMARY_COLOR);
-        editButton.addActionListener(e -> showEditQuestionDialog());
-        
-        JButton deleteButton = createStyledButton("删除题目", UIUtil.DANGER_COLOR);
-        deleteButton.addActionListener(e -> deleteQuestion());
-        
-        JButton refreshButton = createStyledButton("刷新", new Color(120, 144, 156));
-        refreshButton.addActionListener(e -> loadQuestions());
-        
-        JButton importButton = createStyledButton("导入题目", new Color(52, 152, 219));
-        importButton.addActionListener(e -> showImportDialog());
-        
-        JButton generateTemplateButton = createStyledButton("下载模板", new Color(155, 89, 182));
-        generateTemplateButton.addActionListener(e -> downloadTemplate());
-        
-        buttonPanel.add(addButton);
-        buttonPanel.add(editButton);
-        buttonPanel.add(deleteButton);
-        buttonPanel.add(refreshButton);
-        buttonPanel.add(importButton);
-        buttonPanel.add(generateTemplateButton);
+        titlePanel.add(addButton, BorderLayout.EAST);
+
+        contentPanel.add(titlePanel, BorderLayout.NORTH);
         
         // 表格面板
         JPanel tablePanel = new JPanel(new BorderLayout(0, 15));
         tablePanel.setBackground(Color.WHITE);
         tablePanel.setBorder(BorderFactory.createEmptyBorder(0, 30, 20, 30));
         
-        tablePanel.add(buttonPanel, BorderLayout.NORTH);
-        
         // 表格
-        String[] columns = {"ID", "类型", "科目", "题目内容", "正确答案", "分值", "难度"};
+        String[] columns = {"科目", "类型", "题目内容", "正确答案", "操作"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false;
+                // 操作列可编辑
+                return column == 4;
             }
         };
-        questionTable = new JTable(tableModel);
+        questionTable = new JTable(tableModel) {
+            @Override
+            public Class<?> getColumnClass(int column) {
+                // 操作列使用JPanel类型
+                if (column == 4) {
+                    return JPanel.class;
+                }
+                return String.class;
+            }
+        };
         questionTable.setFont(new Font("微软雅黑", Font.PLAIN, 14));
-        questionTable.setRowHeight(45);
+        questionTable.setRowHeight(50);
         questionTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         questionTable.setGridColor(new Color(230, 230, 230));
         questionTable.setShowGrid(true);
         questionTable.setSelectionBackground(new Color(232, 240, 254));
         questionTable.setSelectionForeground(UIUtil.TEXT_COLOR);
+        
+        // 设置操作列渲染器
+        questionTable.getColumnModel().getColumn(4).setCellRenderer(new ButtonPanelRenderer());
+        questionTable.getColumnModel().getColumn(4).setCellEditor(new ButtonPanelEditor(questionTable));
         
         // 表头样式
         questionTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 13));
@@ -653,7 +645,7 @@ public class TeacherMainFrame extends JFrame {
         JButton button = new JButton(text);
         button.setFont(new Font("微软雅黑", Font.PLAIN, 13));
         button.setBackground(bgColor);
-        button.setForeground(Color.WHITE);
+        button.setForeground(Color.BLACK);
         button.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -771,58 +763,17 @@ public class TeacherMainFrame extends JFrame {
             
             for (Question q : filteredQuestions) {
                 Object[] row = {
-                    q.getQuestionId(),
-                    q.getQuestionType().getDescription(),
                     q.getSubject(),
-                    truncate(q.getContent(), 30),
+                    q.getQuestionType().getDescription(),
+                    truncate(q.getContent(), 50),
                     q.getCorrectAnswer(),
-                    q.getScore(),
-                    q.getDifficulty() != null ? q.getDifficulty().getDescription() : ""
+                    "" // 操作列，由渲染器处理
                 };
                 tableModel.addRow(row);
             }
             
-            // 更新标题中的科目显示
-            updateCurrentSubjectLabel();
-            
         } catch (Exception e) {
             UIUtil.showError(this, "加载题目失败：" + e.getMessage());
-        }
-    }
-    
-    /**
-     * 更新当前科目标签
-     */
-    private void updateCurrentSubjectLabel() {
-        // 在题库管理面板中查找并更新当前科目标签
-        if (mainContentPanel.getComponentCount() > 0) {
-            Component comp = mainContentPanel.getComponent(0);
-            if (comp instanceof JPanel) {
-                JPanel panel = (JPanel) comp;
-                updateSubjectLabelInPanel(panel);
-            }
-        }
-    }
-    
-    private void updateSubjectLabelInPanel(JPanel panel) {
-        for (Component comp : panel.getComponents()) {
-            if (comp instanceof JPanel) {
-                JPanel subPanel = (JPanel) comp;
-                for (Component subComp : subPanel.getComponents()) {
-                    if (subComp instanceof JPanel) {
-                        JPanel titlePanel = (JPanel) subComp;
-                        for (Component titleComp : titlePanel.getComponents()) {
-                            if (titleComp instanceof JLabel) {
-                                JLabel label = (JLabel) titleComp;
-                                if (label.getText().startsWith("当前科目：")) {
-                                    label.setText("当前科目：" + currentSubject);
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -966,16 +917,19 @@ public class TeacherMainFrame extends JFrame {
             return;
         }
         
-        Integer questionId = (Integer) tableModel.getValueAt(selectedRow, 0);
-        Question question = questionService.getQuestionById(questionId);
+        // 根据科目、类型和题目内容查找题目
+        String subject = (String) tableModel.getValueAt(selectedRow, 0);
+        String type = (String) tableModel.getValueAt(selectedRow, 1);
+        String content = (String) tableModel.getValueAt(selectedRow, 2);
         
+        Question question = findQuestionByDetails(subject, type, content);
         if (question == null) {
-            UIUtil.showError(this, "题目不存在");
+            UIUtil.showError(this, "无法找到对应的题目");
             return;
         }
         
         // 编辑对话框（简化版，与添加类似）
-        UIUtil.showInfo(this, "编辑功能待完善，题目ID: " + questionId);
+        UIUtil.showInfo(this, "编辑功能待完善，题目ID: " + question.getQuestionId());
     }
 
     private void deleteQuestion() {
@@ -990,13 +944,42 @@ public class TeacherMainFrame extends JFrame {
         }
         
         try {
-            Integer questionId = (Integer) tableModel.getValueAt(selectedRow, 0);
-            questionService.deleteQuestion(questionId);
+            // 根据科目、类型和题目内容查找题目
+            String subject = (String) tableModel.getValueAt(selectedRow, 0);
+            String type = (String) tableModel.getValueAt(selectedRow, 1);
+            String content = (String) tableModel.getValueAt(selectedRow, 2);
+            
+            Question question = findQuestionByDetails(subject, type, content);
+            if (question == null) {
+                UIUtil.showError(this, "无法找到对应的题目");
+                return;
+            }
+            
+            questionService.deleteQuestion(question.getQuestionId());
             UIUtil.showInfo(this, "删除成功");
             loadQuestions();
         } catch (Exception e) {
             UIUtil.showError(this, "删除失败：" + e.getMessage());
         }
+    }
+    
+    /**
+     * 根据科目、类型和题目内容查找题目
+     */
+    private Question findQuestionByDetails(String subject, String type, String contentPrefix) {
+        try {
+            List<Question> allQuestions = questionService.getAllQuestions();
+            for (Question q : allQuestions) {
+                if (q.getSubject().equals(subject) 
+                    && q.getQuestionType().getDescription().equals(type)
+                    && (q.getContent().equals(contentPrefix) || q.getContent().startsWith(contentPrefix.replace("...", "")))) {
+                    return q;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private void logout() {
@@ -1268,5 +1251,156 @@ public class TeacherMainFrame extends JFrame {
     private String truncate(String text, int maxLength) {
         if (text == null) return "";
         return text.length() > maxLength ? text.substring(0, maxLength) + "..." : text;
+    }
+    
+    /**
+     * 表格操作列按钮面板渲染器
+     */
+    private class ButtonPanelRenderer extends JPanel implements javax.swing.table.TableCellRenderer {
+        private JButton editButton;
+        private JButton deleteButton;
+        
+        public ButtonPanelRenderer() {
+            setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
+            setBackground(Color.WHITE);
+            
+            editButton = new JButton("编辑");
+            editButton.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+            editButton.setBackground(UIUtil.PRIMARY_COLOR);
+            editButton.setForeground(Color.BLACK);
+            editButton.setBorder(BorderFactory.createEmptyBorder(5, 12, 5, 12));
+            editButton.setFocusPainted(false);
+            editButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            
+            deleteButton = new JButton("删除");
+            deleteButton.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+            deleteButton.setBackground(UIUtil.DANGER_COLOR);
+            deleteButton.setForeground(Color.BLACK);
+            deleteButton.setBorder(BorderFactory.createEmptyBorder(5, 12, 5, 12));
+            deleteButton.setFocusPainted(false);
+            deleteButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            
+            add(editButton);
+            add(deleteButton);
+        }
+        
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int column) {
+            if (isSelected) {
+                setBackground(table.getSelectionBackground());
+            } else {
+                setBackground(Color.WHITE);
+            }
+            return this;
+        }
+    }
+    
+    /**
+     * 表格操作列按钮面板编辑器
+     */
+    private class ButtonPanelEditor extends DefaultCellEditor {
+        private JPanel panel;
+        private JButton editButton;
+        private JButton deleteButton;
+        private int currentRow;
+        private JTable table;
+        
+        public ButtonPanelEditor(JTable table) {
+            super(new JCheckBox());
+            this.table = table;
+            
+            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+            panel.setBackground(Color.WHITE);
+            
+            editButton = new JButton("编辑");
+            editButton.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+            editButton.setBackground(UIUtil.PRIMARY_COLOR);
+            editButton.setForeground(Color.BLACK);
+            editButton.setBorder(BorderFactory.createEmptyBorder(5, 12, 5, 12));
+            editButton.setFocusPainted(false);
+            editButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            editButton.addActionListener(e -> {
+                fireEditingStopped();
+                editQuestionAtRow(currentRow);
+            });
+            
+            deleteButton = new JButton("删除");
+            deleteButton.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+            deleteButton.setBackground(UIUtil.DANGER_COLOR);
+            deleteButton.setForeground(Color.BLACK);
+            deleteButton.setBorder(BorderFactory.createEmptyBorder(5, 12, 5, 12));
+            deleteButton.setFocusPainted(false);
+            deleteButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            deleteButton.addActionListener(e -> {
+                fireEditingStopped();
+                deleteQuestionAtRow(currentRow);
+            });
+            
+            panel.add(editButton);
+            panel.add(deleteButton);
+        }
+        
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value,
+                boolean isSelected, int row, int column) {
+            currentRow = row;
+            if (isSelected) {
+                panel.setBackground(table.getSelectionBackground());
+            } else {
+                panel.setBackground(Color.WHITE);
+            }
+            return panel;
+        }
+        
+        @Override
+        public Object getCellEditorValue() {
+            return "";
+        }
+    }
+    
+    /**
+     * 编辑指定行的题目
+     */
+    private void editQuestionAtRow(int row) {
+        String subject = (String) tableModel.getValueAt(row, 0);
+        String type = (String) tableModel.getValueAt(row, 1);
+        String content = (String) tableModel.getValueAt(row, 2);
+        
+        Question question = findQuestionByDetails(subject, type, content);
+        if (question == null) {
+            UIUtil.showError(this, "无法找到对应的题目");
+            return;
+        }
+        
+        // 编辑对话框（简化版，与添加类似）
+        UIUtil.showInfo(this, "编辑功能待完善，题目ID: " + question.getQuestionId());
+    }
+    
+    /**
+     * 删除指定行的题目
+     */
+    private void deleteQuestionAtRow(int row) {
+        if (!UIUtil.showConfirm(this, "确定要删除这道题目吗？")) {
+            return;
+        }
+        
+        try {
+            String subject = (String) tableModel.getValueAt(row, 0);
+            String type = (String) tableModel.getValueAt(row, 1);
+            String content = (String) tableModel.getValueAt(row, 2);
+            
+            Question question = findQuestionByDetails(subject, type, content);
+            if (question == null) {
+                UIUtil.showError(this, "无法找到对应的题目");
+                return;
+            }
+            
+            questionService.deleteQuestion(question.getQuestionId());
+            UIUtil.showInfo(this, "删除成功");
+            loadQuestions();
+        } catch (Exception e) {
+            UIUtil.showError(this, "删除失败：" + e.getMessage());
+        }
     }
 }
