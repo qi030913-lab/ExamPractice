@@ -807,6 +807,12 @@ public class TeacherMainFrame extends JFrame {
         System.arraycopy(SUBJECTS, 1, subjectOptions, 0, SUBJECTS.length - 1);
         JComboBox<String> subjectCombo = new JComboBox<>(subjectOptions);
         subjectCombo.setEditable(true); // 允许输入自定义科目
+        // 根据当前选中的科目设置默认值
+        if ("全部".equals(currentSubject)) {
+            subjectCombo.setSelectedItem("Java"); // 全部时默认选择Java
+        } else {
+            subjectCombo.setSelectedItem(currentSubject); // 选择当前科目
+        }
         panel.add(subjectCombo, gbc);
         
         // 题目内容
