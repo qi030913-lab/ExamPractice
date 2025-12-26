@@ -38,6 +38,28 @@ public class UserDao {
     }
 
     /**
+     * 根据姓名和密码查询用户（教师登录）
+     */
+    public User findByNameAndPassword(String realName, String password) {
+        String sql = "SELECT * FROM user WHERE real_name = ? AND password = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, realName);
+            pstmt.setString(2, password);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return extractUser(rs);
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("查询用户失败", e);
+        }
+        return null;
+    }
+
+    /**
      * 根据用户ID查询用户
      */
     public User findById(Integer userId) {

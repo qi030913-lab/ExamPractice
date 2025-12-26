@@ -22,23 +22,45 @@ public class UserService {
      * @param realName 真实姓名
      * @param studentNumber 学号
      * @param password 密码
+     * @param role 角色
      * @return 用户对象
      * @throws AuthenticationException 认证失败
      */
-    public User login(String realName, String studentNumber, String password) {
+    public User login(String realName, String studentNumber, String password, UserRole role) {
         if (realName == null || realName.trim().isEmpty()) {
             throw new AuthenticationException("姓名不能为空");
-        }
-        if (studentNumber == null || studentNumber.trim().isEmpty()) {
-            throw new AuthenticationException("学号不能为空");
         }
         if (password == null || password.trim().isEmpty()) {
             throw new AuthenticationException("密码不能为空");
         }
+        if (role == null) {
+            throw new AuthenticationException("角色不能为空");
+        }
 
-        User user = userDao.findByNameNumberAndPassword(realName.trim(), studentNumber.trim(), password);
+        User user;
+        if (role == UserRole.TEACHER) {
+            // 教师登录：仅使用姓名和密码
+            user = userDao.findByNameAndPassword(realName.trim(), password);
+        } else {
+            // 学生登录：需要学号
+            if (studentNumber == null || studentNumber.trim().isEmpty()) {
+                throw new AuthenticationException("学号不能为空");
+            }
+            user = userDao.findByNameNumberAndPassword(realName.trim(), studentNumber.trim(), password);
+        }
+
         if (user == null) {
-            throw new AuthenticationException("姓名、学号或密码错误");
+            if (role == UserRole.TEACHER) {
+                throw new AuthenticationException("姓名或密码错误");
+            } else {
+                throw new AuthenticationException("姓名、学号或密码错误");
+            }
+        }
+
+        // 验证角色是否匹配
+        if (user.getRole() != role) {
+            String roleName = role == UserRole.TEACHER ? "教师" : "学生";
+            throw new AuthenticationException("当前用户不是" + roleName + "角色");
         }
 
         return user;

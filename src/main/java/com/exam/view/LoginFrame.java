@@ -17,6 +17,8 @@ public class LoginFrame extends JFrame {
     private JTextField realNameField;
     private JTextField studentNumberField;
     private JPasswordField passwordField;
+    private JComboBox<String> roleComboBox;
+    private JPanel studentNumberPanel;
 
     public LoginFrame() {
         this.userService = new UserService();
@@ -64,14 +66,19 @@ public class LoginFrame extends JFrame {
                 BorderFactory.createLineBorder(new Color(144, 202, 249), 1),
                 BorderFactory.createEmptyBorder(20, 30, 20, 30)
         ));
-        formPanel.setPreferredSize(new Dimension(400, 250));
+        formPanel.setPreferredSize(new Dimension(400, 290));
+
+        // 角色选择（放在第一栏）
+        formPanel.add(createRoleRow());
+        formPanel.add(Box.createVerticalStrut(12));
 
         // 姓名输入
         formPanel.add(createInputRow("姓　　名：", realNameField = new JTextField()));
         formPanel.add(Box.createVerticalStrut(12));
 
-        // 学号输入
-        formPanel.add(createInputRow("学　　号：", studentNumberField = new JTextField()));
+        // 学号输入（可动态隐藏）
+        studentNumberPanel = createInputRow("学　　号：", studentNumberField = new JTextField());
+        formPanel.add(studentNumberPanel);
         formPanel.add(Box.createVerticalStrut(12));
 
         // 密码输入
@@ -101,6 +108,39 @@ public class LoginFrame extends JFrame {
     }
 
     /**
+     * 角色选择行
+     */
+    private JPanel createRoleRow() {
+        JPanel panel = new JPanel(new BorderLayout(8, 0));
+        panel.setBackground(new Color(245, 250, 255));
+        JLabel label = new JLabel("角　　色：");
+        label.setFont(new Font("SimHei", Font.PLAIN, 14));
+        label.setForeground(new Color(30, 70, 120));
+        label.setPreferredSize(new Dimension(85, 30));
+        label.setOpaque(false);
+        panel.add(label, BorderLayout.WEST);
+
+        roleComboBox = new JComboBox<>(new String[]{"学生", "教师"});
+        roleComboBox.setFont(new Font("SimHei", Font.PLAIN, 14));
+        roleComboBox.setBackground(Color.WHITE);
+        roleComboBox.setForeground(new Color(30, 70, 120));
+        roleComboBox.setBorder(BorderFactory.createLineBorder(new Color(144, 202, 249), 1));
+        roleComboBox.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        // 添加角色切换监听器
+        roleComboBox.addActionListener(e -> {
+            String selectedRole = (String) roleComboBox.getSelectedItem();
+            // 教师角色隐藏学号，学生角色显示学号
+            studentNumberPanel.setVisible("学生".equals(selectedRole));
+            revalidate();
+            repaint();
+        });
+        
+        panel.add(roleComboBox, BorderLayout.CENTER);
+        return panel;
+    }
+
+    /**
      * 输入行
      */
     private JPanel createInputRow(String labelText, JTextField field) {
@@ -121,15 +161,15 @@ public class LoginFrame extends JFrame {
     }
 
     /**
-     * 焦点边框变化
+     * 焦点边框变化（用于注册表单）
      */
     private void addFocusListener(JTextField field) {
         field.addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusGained(java.awt.event.FocusEvent evt) {
-                field.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, new Color(33, 150, 243)));
+                field.setBorder(BorderFactory.createLineBorder(new Color(33, 150, 243), 2));
             }
             public void focusLost(java.awt.event.FocusEvent evt) {
-                field.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, new Color(144, 202, 249)));
+                field.setBorder(BorderFactory.createLineBorder(new Color(144, 202, 249), 1));
             }
         });
     }
@@ -157,13 +197,16 @@ public class LoginFrame extends JFrame {
         String realName = realNameField.getText().trim();
         String studentNumber = studentNumberField.getText().trim();
         String password = new String(passwordField.getPassword());
+        String roleStr = (String) roleComboBox.getSelectedItem();
+        UserRole selectedRole = "教师".equals(roleStr) ? UserRole.TEACHER : UserRole.STUDENT;
 
         if (realName.isEmpty()) {
             UIUtil.showWarning(this, "请输入姓名");
             realNameField.requestFocus();
             return;
         }
-        if (studentNumber.isEmpty()) {
+        // 学生角色需要验证学号
+        if (selectedRole == UserRole.STUDENT && studentNumber.isEmpty()) {
             UIUtil.showWarning(this, "请输入学号");
             studentNumberField.requestFocus();
             return;
@@ -175,7 +218,7 @@ public class LoginFrame extends JFrame {
         }
 
         try {
-            User user = userService.login(realName, studentNumber, password);
+            User user = userService.login(realName, studentNumber, password, selectedRole);
             SwingUtilities.invokeLater(() -> {
                 if (user.getRole() == UserRole.TEACHER) new TeacherMainFrame(user).setVisible(true);
                 else if (user.getRole() == UserRole.STUDENT) new StudentMainFrame(user).setVisible(true);
@@ -226,6 +269,9 @@ public class LoginFrame extends JFrame {
         JTextField numField = new JTextField();
         JPasswordField pwdField = new JPasswordField();
         JPasswordField confirmPwdField = new JPasswordField();
+        JComboBox<String> regRoleComboBox = new JComboBox<>(new String[]{"学生", "教师"});
+        regRoleComboBox.setFont(new Font("SimHei", Font.PLAIN, 12));
+        regRoleComboBox.setBorder(BorderFactory.createLineBorder(new Color(144, 202, 249), 1));
 
         formPanel.add(createFormField("姓 名", nameField));
         formPanel.add(Box.createVerticalStrut(8));
@@ -234,6 +280,8 @@ public class LoginFrame extends JFrame {
         formPanel.add(createFormField("密 码", pwdField));
         formPanel.add(Box.createVerticalStrut(8));
         formPanel.add(createFormField("确认密码", confirmPwdField));
+        formPanel.add(Box.createVerticalStrut(8));
+        formPanel.add(createRoleFormField("角 色", regRoleComboBox));
 
         mainPanel.add(formPanel, BorderLayout.CENTER);
 
@@ -253,12 +301,15 @@ public class LoginFrame extends JFrame {
             if (pw.isEmpty()) { UIUtil.showWarning(dialog, "请输入密码"); return; }
             if (!pw.equals(cpw)) { UIUtil.showWarning(dialog, "两次密码不一致"); return; }
 
+            String roleStr = (String) regRoleComboBox.getSelectedItem();
+            UserRole role = "教师".equals(roleStr) ? UserRole.TEACHER : UserRole.STUDENT;
+
             try {
                 User user = new User();
                 user.setRealName(rn);
                 user.setStudentNumber(sn);
                 user.setPassword(pw);
-                user.setRole(UserRole.STUDENT);
+                user.setRole(role);
                 user.setGender("MALE");
                 user.setStatus("ACTIVE");
                 userService.register(user);
@@ -301,6 +352,22 @@ public class LoginFrame extends JFrame {
         field.setBorder(BorderFactory.createLineBorder(new Color(144, 202, 249), 1));
         addFocusListener(field);
         panel.add(field);
+
+        return panel;
+    }
+
+    private JPanel createRoleFormField(String label, JComboBox<String> comboBox) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(new Color(245, 250, 255));
+
+        JLabel fieldLabel = new JLabel(label);
+        fieldLabel.setFont(new Font("SimHei", Font.PLAIN, 12));
+        fieldLabel.setForeground(new Color(30, 70, 120));
+        fieldLabel.setOpaque(false);
+        panel.add(fieldLabel);
+
+        panel.add(comboBox);
 
         return panel;
     }
