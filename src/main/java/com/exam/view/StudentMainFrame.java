@@ -1094,7 +1094,8 @@ public class StudentMainFrame extends JFrame {
                         g2d.setColor(new Color(52, 152, 219));
 
                         int prevX = padding;
-                        int prevY = height - padding - (int) (records.get(0).getScore().doubleValue() * chartHeight / maxScore);
+                        int firstScore = records.get(0).getScore() != null ? records.get(0).getScore().intValue() : 0;
+                        int prevY = height - padding - (firstScore * chartHeight / maxScore);
 
                         for (int i = 0; i < records.size(); i++) {
                             ExamRecord record = records.get(i);
