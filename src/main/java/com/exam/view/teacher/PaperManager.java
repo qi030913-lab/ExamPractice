@@ -518,8 +518,13 @@ public class PaperManager {
         infoPanel.add(createInfoLabel("考试时长："));
         infoPanel.add(createInfoValueLabel(paper.getDuration() + " 分钟"));
 
-        infoPanel.add(createInfoLabel("及格分数："));
-        infoPanel.add(createInfoValueLabel(paper.getPassScore() + " 分"));
+        String status = paper.getIsPublished() != null && paper.getIsPublished() ? "已发布" : "未发布";
+        Color statusColor = paper.getIsPublished() != null && paper.getIsPublished() ? new Color(46, 125, 50) : new Color(211, 47, 47); // 绿色表示已发布，红色表示未发布
+        JLabel statusValueLabel = new JLabel(status);
+        statusValueLabel.setFont(new Font("微软雅黑", Font.BOLD, 13));
+        statusValueLabel.setForeground(statusColor);
+        infoPanel.add(createInfoLabel("发布状态："));
+        infoPanel.add(statusValueLabel);
 
         // 题目列表
         JPanel questionsPanel = new JPanel(new BorderLayout(0, 10));

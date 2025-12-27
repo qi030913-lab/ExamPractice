@@ -70,7 +70,7 @@ public class TeacherPaperPanel extends JPanel {
         tablePanel.setBorder(BorderFactory.createEmptyBorder(0, 30, 20, 30));
 
         // 表格
-        String[] columns = {"试卷名称", "科目", "题目数", "总分", "时长(分钟)", "及格分", "操作"};
+        String[] columns = {"试卷名称", "科目", "题目数", "总分", "时长(分钟)", "状态", "操作"};
         paperTableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -161,13 +161,16 @@ public class TeacherPaperPanel extends JPanel {
             List<Paper> papers = paperService.getAllPapers();
             for (Paper paper : papers) {
                 int questionCount = paper.getQuestions() != null ? paper.getQuestions().size() : 0;
+                String status = paper.getIsPublished() != null && paper.getIsPublished() ? "已发布" : "未发布";
+                Color statusColor = paper.getIsPublished() != null && paper.getIsPublished() ? new Color(46, 125, 50) : new Color(211, 47, 47); // 绿色表示已发布，红色表示未发布
+                String statusDisplay = "<html><span style='color: rgb(" + statusColor.getRed() + "," + statusColor.getGreen() + "," + statusColor.getBlue() + "); font-weight: bold;'>" + status + "</span></html>";
                 Object[] row = {
                         paper.getPaperName(),
                         paper.getSubject(),
                         questionCount,
                         paper.getTotalScore(),
                         paper.getDuration(),
-                        paper.getPassScore(),
+                        statusDisplay,
                         "" // 操作列，由渲染器处理
                 };
                 paperTableModel.addRow(row);
