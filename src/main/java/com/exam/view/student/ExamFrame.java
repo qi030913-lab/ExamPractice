@@ -1,4 +1,4 @@
-package com.exam.view;
+package com.exam.view.student;
 
 import com.exam.model.*;
 import com.exam.model.enums.QuestionType;

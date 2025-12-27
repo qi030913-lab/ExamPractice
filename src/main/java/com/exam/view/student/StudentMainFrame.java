@@ -1,10 +1,11 @@
-package com.exam.view;
+package com.exam.view.student;
 
 import com.exam.model.User;
 import com.exam.service.ExamService;
 import com.exam.service.PaperService;
 import com.exam.util.UIUtil;
 import com.exam.util.IconUtil;
+import com.exam.view.LoginFrame;
 import com.exam.view.student.StudentExamPanel;
 import com.exam.view.student.StudentScorePanel;
 import com.exam.view.student.StudentAchievementPanel;
