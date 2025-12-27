@@ -78,10 +78,12 @@ CREATE TABLE paper (
     duration INT DEFAULT 90 COMMENT '考试时长(分钟)',
     pass_score INT DEFAULT 60 COMMENT '及格分数',
     description TEXT COMMENT '试卷描述',
+    is_published BOOLEAN DEFAULT FALSE COMMENT '是否发布',
     creator_id INT COMMENT '创建者ID',
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_subject (subject),
+    INDEX idx_is_published (is_published),
     FOREIGN KEY (creator_id) REFERENCES user(user_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='试卷表';
 

@@ -126,6 +126,39 @@ public class PaperService {
     }
 
     /**
+     * 查询所有已发布的试卷（学生端使用）
+     */
+    public List<Paper> getAllPublishedPapers() {
+        List<Paper> papers = paperDao.findAllPublished();
+        // 为每个试卷加载题目列表
+        for (Paper paper : papers) {
+            List<Question> questions = questionDao.findByPaperId(paper.getPaperId());
+            paper.setQuestions(questions);
+        }
+        return papers;
+    }
+
+    /**
+     * 发布试卷
+     */
+    public void publishPaper(Integer paperId) {
+        if (paperId == null) {
+            throw new BusinessException("试卷ID不能为空");
+        }
+        paperDao.updatePublishStatus(paperId, true);
+    }
+
+    /**
+     * 取消发布试卷
+     */
+    public void unpublishPaper(Integer paperId) {
+        if (paperId == null) {
+            throw new BusinessException("试卷ID不能为空");
+        }
+        paperDao.updatePublishStatus(paperId, false);
+    }
+
+    /**
      * 验证试卷信息
      */
     private void validatePaper(Paper paper) {

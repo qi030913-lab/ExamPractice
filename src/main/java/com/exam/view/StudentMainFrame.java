@@ -812,7 +812,7 @@ public class StudentMainFrame extends JFrame {
         }
         tableModel.setRowCount(0);
         try {
-            List<Paper> allPapers = paperService.getAllPapers();
+            List<Paper> allPapers = paperService.getAllPublishedPapers();
             List<Paper> filteredPapers;
             
             if ("全部".equals(subject)) {

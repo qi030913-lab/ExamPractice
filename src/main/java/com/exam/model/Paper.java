@@ -17,6 +17,7 @@ public class Paper {
     private Integer passScore;
     private String description;
     private Integer creatorId;
+    private Boolean isPublished; // 是否发布，默认false
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     
@@ -117,6 +118,14 @@ public class Paper {
 
     public void setCreatorId(Integer creatorId) {
         this.creatorId = creatorId;
+    }
+
+    public Boolean getIsPublished() {
+        return isPublished;
+    }
+
+    public void setIsPublished(Boolean isPublished) {
+        this.isPublished = isPublished;
     }
 
     public LocalDateTime getCreateTime() {

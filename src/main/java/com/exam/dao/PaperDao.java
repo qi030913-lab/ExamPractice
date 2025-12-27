@@ -75,6 +75,26 @@ public class PaperDao {
     }
 
     /**
+     * 查询所有已发布的试卷（学生端使用）
+     */
+    public List<Paper> findAllPublished() {
+        String sql = "SELECT * FROM paper WHERE is_published = TRUE ORDER BY paper_id DESC";
+        List<Paper> papers = new ArrayList<>();
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            
+            while (rs.next()) {
+                papers.add(extractPaper(rs));
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("查询已发布试卷列表失败", e);
+        }
+        return papers;
+    }
+
+    /**
      * 添加试卷
      */
     public int insert(Paper paper) {
@@ -172,6 +192,24 @@ public class PaperDao {
     }
 
     /**
+     * 更新试卷发布状态
+     */
+    public int updatePublishStatus(Integer paperId, Boolean isPublished) {
+        String sql = "UPDATE paper SET is_published = ? WHERE paper_id = ?";
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setBoolean(1, isPublished);
+            pstmt.setInt(2, paperId);
+            
+            return pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new DatabaseException("更新试卷发布状态失败", e);
+        }
+    }
+
+    /**
      * 删除试卷
      */
     public int delete(Integer paperId) {
@@ -198,6 +236,7 @@ public class PaperDao {
         paper.setDuration(rs.getInt("duration"));
         paper.setPassScore(rs.getInt("pass_score"));
         paper.setDescription(rs.getString("description"));
+        paper.setIsPublished(rs.getBoolean("is_published"));
         paper.setCreatorId(rs.getInt("creator_id"));
         
         Timestamp createTime = rs.getTimestamp("create_time");

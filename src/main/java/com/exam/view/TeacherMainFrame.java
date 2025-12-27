@@ -2569,6 +2569,7 @@ public class TeacherMainFrame extends JFrame {
         private JButton viewButton;
         private JButton editButton;
         private JButton deleteButton;
+        private JButton publishButton;
         
         public PaperButtonPanelRenderer() {
             setLayout(new FlowLayout(FlowLayout.CENTER, 3, 3));
@@ -2598,8 +2599,17 @@ public class TeacherMainFrame extends JFrame {
             deleteButton.setFocusPainted(false);
             deleteButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
             
+            publishButton = new JButton("发布");
+            publishButton.setFont(new Font("微软雅黑", Font.PLAIN, 11));
+            publishButton.setBackground(UIUtil.SUCCESS_COLOR);
+            publishButton.setForeground(Color.BLACK);
+            publishButton.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+            publishButton.setFocusPainted(false);
+            publishButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            
             add(viewButton);
             add(editButton);
+            add(publishButton);
             add(deleteButton);
         }
         
@@ -2623,6 +2633,7 @@ public class TeacherMainFrame extends JFrame {
         private JButton viewButton;
         private JButton editButton;
         private JButton deleteButton;
+        private JButton publishButton;
         private int currentRow;
         private JTable table;
         
@@ -2669,8 +2680,21 @@ public class TeacherMainFrame extends JFrame {
                 deletePaperAtRow(currentRow);
             });
             
+            publishButton = new JButton("发布");
+            publishButton.setFont(new Font("微软雅黑", Font.PLAIN, 11));
+            publishButton.setBackground(UIUtil.SUCCESS_COLOR);
+            publishButton.setForeground(Color.BLACK);
+            publishButton.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+            publishButton.setFocusPainted(false);
+            publishButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            publishButton.addActionListener(e -> {
+                fireEditingStopped();
+                togglePublishAtRow(currentRow);
+            });
+            
             panel.add(viewButton);
             panel.add(editButton);
+            panel.add(publishButton);
             panel.add(deleteButton);
         }
         
@@ -2678,6 +2702,24 @@ public class TeacherMainFrame extends JFrame {
         public Component getTableCellEditorComponent(JTable table, Object value,
                 boolean isSelected, int row, int column) {
             currentRow = row;
+            
+            // 根据试卷发布状态更新按钮文字和颜色
+            try {
+                String paperName = (String) paperTableModel.getValueAt(row, 0);
+                Paper paper = paperService.getPaperByName(paperName);
+                if (paper != null && paper.getIsPublished() != null && paper.getIsPublished()) {
+                    publishButton.setText("取消发布");
+                    publishButton.setBackground(new Color(255, 152, 0));
+                } else {
+                    publishButton.setText("发布");
+                    publishButton.setBackground(UIUtil.SUCCESS_COLOR);
+                }
+            } catch (Exception ex) {
+                // 如果获取失败，使用默认状态
+                publishButton.setText("发布");
+                publishButton.setBackground(UIUtil.SUCCESS_COLOR);
+            }
+            
             if (isSelected) {
                 panel.setBackground(table.getSelectionBackground());
             } else {
@@ -2689,6 +2731,46 @@ public class TeacherMainFrame extends JFrame {
         @Override
         public Object getCellEditorValue() {
             return "";
+        }
+    }
+    
+    /**
+     * 切换试卷发布状态
+     */
+    private void togglePublishAtRow(int row) {
+        String paperName = (String) paperTableModel.getValueAt(row, 0);
+        String action = ""; // 声明在外部，以便在catch块中使用
+        
+        try {
+            Paper paper = paperService.getPaperByName(paperName);
+            if (paper == null) {
+                UIUtil.showError(this, "无法找到对应的试卷");
+                return;
+            }
+            
+            boolean currentStatus = paper.getIsPublished() != null && paper.getIsPublished();
+            action = currentStatus ? "取消发布" : "发布";
+            
+            int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "确定要" + action + "试卷《" + paperName + "》吗？",
+                action + "确认",
+                JOptionPane.YES_NO_OPTION
+            );
+            
+            if (confirm == JOptionPane.YES_OPTION) {
+                if (currentStatus) {
+                    paperService.unpublishPaper(paper.getPaperId());
+                    UIUtil.showInfo(this, "试卷已取消发布");
+                } else {
+                    paperService.publishPaper(paper.getPaperId());
+                    UIUtil.showInfo(this, "试卷已发布，学生端现在可以看到该试卷了");
+                }
+                loadPapersData(); // 刷新数据
+            }
+        } catch (Exception e) {
+            UIUtil.showError(this, action + "失败：" + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
