@@ -25,6 +25,7 @@ public class TeacherImportPanel extends JPanel {
     // 回调接口
     public interface TeacherImportCallback {
         void onImportSuccess();
+        void onCreatePaperWithQuestions(List<Question> questions);
     }
     
     public TeacherImportPanel(QuestionService questionService, int userId, TeacherImportCallback callback) {
@@ -360,12 +361,49 @@ public class TeacherImportPanel extends JPanel {
         try {
             // 读取题目
             List<Question> questions = QuestionImportUtil.importFromTextFile(file, userId);
-            
-            // 批量添加题目
+
+            if (questions.isEmpty()) {
+                UIUtil.showWarning(this, "文件中没有有效的题目数据");
+                return;
+            }
+
+            // 显示确认对话框
+            String message = "成功读取 " + questions.size() + " 道题目\n\n"
+                    + "请选择操作：\n"
+                    + "1. 仅导入题目到题库\n"
+                    + "2. 导入并自动生成试卷";
+
+            Object[] options = {"仅导入题目", "导入并生成试卷", "取消"};
+            int choice = JOptionPane.showOptionDialog(this,
+                    message,
+                    "题目导入",
+                    JOptionPane.YES_NO_CANCEL_OPTION,
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    options,
+                    options[1]);
+
+            if (choice == 0) {
+                // 仅导入题目
+                importQuestionsOnly(questions);
+            } else if (choice == 1) {
+                // 导入并生成试卷
+                importAndGeneratePaper(questions);
+            }
+
+        } catch (Exception e) {
+            UIUtil.showError(this, "导入失败：" + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * 仅导入题目到题库
+     */
+    private void importQuestionsOnly(List<Question> questions) {
+        try {
             questionService.batchAddQuestions(questions);
-            
-            int importedCount = questions.size();
-            UIUtil.showInfo(this, "成功导入 " + importedCount + " 道题目！");
+            UIUtil.showInfo(this, "成功导入 " + questions.size() + " 道题目！");
             
             // 清除选择的文件
             selectedImportFile = null;
@@ -375,8 +413,18 @@ public class TeacherImportPanel extends JPanel {
                 callback.onImportSuccess();
             }
         } catch (Exception e) {
-            UIUtil.showError(this, "导入失败：" + e.getMessage());
+            UIUtil.showError(this, "导入题目失败：" + e.getMessage());
             e.printStackTrace();
+        }
+    }
+    
+    /**
+     * 导入题目并生成试卷
+     */
+    private void importAndGeneratePaper(List<Question> questions) {
+        // 通过回调通知主框架创建试卷
+        if (callback != null) {
+            callback.onCreatePaperWithQuestions(questions);
         }
     }
 }

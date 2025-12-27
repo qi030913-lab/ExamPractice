@@ -474,6 +474,11 @@ public class TeacherMainFrame extends JFrame {
                                 questionPanel.refreshData();
                             }
                         }
+
+                        @Override
+                        public void onCreatePaperWithQuestions(List<Question> questions) {
+                            importManager.importAndGeneratePaper(questions);
+                        }
                     });
                 }
                 mainContentPanel.add(importPanel, BorderLayout.CENTER);

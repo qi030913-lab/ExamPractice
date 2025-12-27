@@ -354,7 +354,7 @@ public class ImportManager {
     /**
      * 导入题目并生成试卷
      */
-    private void importAndGeneratePaper(List<Question> questions) {
+    public void importAndGeneratePaper(List<Question> questions) {
         // 显示试卷信息输入对话框
         JDialog dialog = new JDialog(mainFrame, "生成试卷", true);
         dialog.setSize(450, 350);
@@ -496,6 +496,7 @@ public class ImportManager {
                 UIUtil.showInfo(dialog, "成功生成试卷！\n导入题目：" + questions.size() + " 道");
                 dialog.dispose();
                 mainFrame.refreshQuestionData();
+                mainFrame.refreshPaperData();
 
             } catch (Exception ex) {
                 UIUtil.showError(dialog, "生成试卷失败：" + ex.getMessage());
