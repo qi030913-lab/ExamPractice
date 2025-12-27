@@ -1,0 +1,1255 @@
+package com.exam.view.teacher;
+
+import com.exam.model.User;
+import com.exam.model.Question;
+import com.exam.model.Paper;
+import com.exam.model.enums.QuestionType;
+import com.exam.model.enums.Difficulty;
+import com.exam.service.QuestionService;
+import com.exam.service.PaperService;
+import com.exam.util.UIUtil;
+import com.exam.util.IconUtil;
+import com.exam.util.QuestionImportUtil;
+import com.exam.view.LoginFrame;
+import com.exam.view.teacher.*;
+
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.io.File;
+import java.util.List;
+import java.util.ArrayList;
+
+/**
+ * 教师主界面
+ */
+public class TeacherMainFrame extends JFrame {
+    private final User teacher;
+    private final QuestionService questionService;
+    private final PaperService paperService;
+    
+    private JPanel mainContentPanel;
+    private String currentView = "home";
+    private List<JButton> menuButtons = new ArrayList<>();
+    
+    // 管理器
+    private QuestionManager questionManager;
+    private PaperManager paperManager;
+    private ImportManager importManager;
+    
+    // 面板缓存（懒加载）
+    private TeacherHomePanel homePanel;
+    private TeacherQuestionPanel questionPanel;
+    private TeacherPaperPanel paperPanel;
+    private TeacherImportPanel importPanel;
+    
+    // 题库管理相关变量（废弃，已迁移到TeacherQuestionPanel）
+    private JTable questionTable;
+    private DefaultTableModel tableModel;
+    private String currentSubject = "全部";
+
+    public TeacherMainFrame(User teacher) {
+        this.teacher = teacher;
+        this.questionService = new QuestionService();
+        this.paperService = new PaperService();
+        this.questionManager = new QuestionManager(questionService, this);
+        this.paperManager = new PaperManager(paperService, this);
+        this.importManager = new ImportManager(questionService, this);
+        initComponents();
+        setTitle("未来教育考试系统 - 教师端");
+        setSize(1200, 700);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        UIUtil.centerWindow(this);
+    }
+    
+    /**
+     * 公共方法：切换到指定视图
+     */
+    public void switchToView(String view) {
+        switchView(view);
+    }
+    
+    /**
+     * 获取教师对象
+     */
+    public User getTeacher() {
+        return teacher;
+    }
+    
+    /**
+     * 获取QuestionService
+     */
+    public QuestionService getQuestionService() {
+        return questionService;
+    }
+    
+    /**
+     * 获取PaperService
+     */
+    public PaperService getPaperService() {
+        return paperService;
+    }
+    
+    /**
+     * 刷新题库数据
+     */
+    public void refreshQuestionData() {
+        if (questionPanel != null) {
+            questionPanel.refreshData();
+        }
+    }
+    
+    /**
+     * 刷新试卷数据
+     */
+    public void refreshPaperData() {
+        if (paperPanel != null) {
+            paperPanel.refreshData();
+        }
+    }
+    
+    /**
+     * 获取questionPanel
+     */
+    public TeacherQuestionPanel getQuestionPanel() {
+        return questionPanel;
+    }
+    
+    /**
+     * 获取paperPanel
+     */
+    public TeacherPaperPanel getPaperPanel() {
+        return paperPanel;
+    }
+    
+    /**
+     * 获取importPanel
+     */
+    public TeacherImportPanel getImportPanel() {
+        return importPanel;
+    }
+
+    private void initComponents() {
+        setLayout(new BorderLayout(0, 0));
+        getContentPane().setBackground(UIUtil.BACKGROUND_COLOR);
+
+        // 顶部面板 - 与学生界面一致
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBackground(Color.WHITE);
+        topPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(220, 220, 220)),
+                BorderFactory.createEmptyBorder(15, 30, 15, 30)
+        ));
+
+        // 左侧：Logo和标题
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
+        leftPanel.setBackground(Color.WHITE);
+
+        JLabel logoLabel = new JLabel("🐬");
+        logoLabel.setFont(new Font("微软雅黑", Font.PLAIN, 32));
+        leftPanel.add(logoLabel);
+
+        JPanel titlePanel = new JPanel(new GridLayout(2, 1, 0, 0));
+        titlePanel.setBackground(Color.WHITE);
+        JLabel titleLabel = new JLabel("未来教育●考试系统");
+        titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 16));
+        titleLabel.setForeground(UIUtil.PRIMARY_COLOR);
+        JLabel versionLabel = new JLabel("版本：4.0.0.92");
+        versionLabel.setFont(new Font("微软雅黑", Font.PLAIN, 11));
+        versionLabel.setForeground(UIUtil.TEXT_GRAY);
+        titlePanel.add(titleLabel);
+        titlePanel.add(versionLabel);
+        leftPanel.add(titlePanel);
+
+        topPanel.add(leftPanel, BorderLayout.WEST);
+
+        // 右侧：用户信息和退出
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 5));
+        rightPanel.setBackground(Color.WHITE);
+
+        JLabel welcomeLabel = new JLabel("欢迎，" + teacher.getRealName() + " 老师");
+        welcomeLabel.setFont(new Font("微软雅黑", Font.PLAIN, 14));
+        welcomeLabel.setForeground(UIUtil.TEXT_COLOR);
+        rightPanel.add(welcomeLabel);
+
+        JButton logoutButton = new JButton("退出登录");
+        logoutButton.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        logoutButton.setBackground(Color.WHITE);
+        logoutButton.setForeground(UIUtil.TEXT_COLOR);
+        logoutButton.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220)),
+                BorderFactory.createEmptyBorder(5, 15, 5, 15)
+        ));
+        logoutButton.setFocusPainted(false);
+        logoutButton.addActionListener(e -> logout());
+        rightPanel.add(logoutButton);
+
+        topPanel.add(rightPanel, BorderLayout.EAST);
+
+        add(topPanel, BorderLayout.NORTH);
+
+        // 主内容区域 - 左侧导航 + 右侧内容
+        JPanel contentPanel = new JPanel(new BorderLayout(0, 0));
+        contentPanel.setBackground(UIUtil.BACKGROUND_COLOR);
+
+        // 左侧导航栏
+        JPanel sidebarPanel = createSidebarPanel();
+        contentPanel.add(sidebarPanel, BorderLayout.WEST);
+
+        // 右侧内容区
+        mainContentPanel = new JPanel(new BorderLayout());
+        mainContentPanel.setBackground(UIUtil.BACKGROUND_COLOR);
+        mainContentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        homePanel = new TeacherHomePanel(this, teacher);
+        mainContentPanel.add(homePanel, BorderLayout.CENTER); // 默认显示主页
+
+        contentPanel.add(mainContentPanel, BorderLayout.CENTER);
+
+        add(contentPanel, BorderLayout.CENTER);
+    }
+
+    private JPanel createSidebarPanel() {
+        JPanel sidebar = new JPanel();
+        sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
+        sidebar.setBackground(Color.WHITE);
+        sidebar.setPreferredSize(new Dimension(180, 0));
+        sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(230, 230, 230)));
+
+        // 用户信息区域
+        JPanel userPanel = new JPanel(new BorderLayout(15, 0));
+        userPanel.setBackground(new Color(245, 250, 255));
+        userPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(220, 230, 240)),
+                BorderFactory.createEmptyBorder(30, 0, 30, 20)
+        ));
+
+        // 左侧头像区域
+        JPanel avatarPanel = new JPanel();
+        avatarPanel.setLayout(new BoxLayout(avatarPanel, BoxLayout.Y_AXIS));
+        avatarPanel.setBackground(new Color(245, 250, 255));
+
+        // 头像圆形背景
+        JPanel avatarCircle = new JPanel(new GridBagLayout());
+        avatarCircle.setPreferredSize(new Dimension(60, 60));
+        avatarCircle.setMaximumSize(new Dimension(60, 60));
+        avatarCircle.setBackground(UIUtil.PRIMARY_COLOR);
+        avatarCircle.setBorder(BorderFactory.createLineBorder(new Color(200, 220, 240), 2));
+
+        JLabel userIconLabel = new JLabel("👨‍🏫");
+        userIconLabel.setFont(new Font("微软雅黑", Font.PLAIN, 28));
+        avatarCircle.add(userIconLabel);
+
+        avatarPanel.add(avatarCircle);
+        userPanel.add(avatarPanel, BorderLayout.WEST);
+
+        // 右侧用户信息
+        JPanel userInfoPanel = new JPanel();
+        userInfoPanel.setLayout(new BoxLayout(userInfoPanel, BoxLayout.Y_AXIS));
+        userInfoPanel.setBackground(new Color(245, 250, 255));
+
+        // 用户名
+        JLabel userNameLabel = new JLabel(teacher.getRealName());
+        userNameLabel.setFont(new Font("微软雅黑", Font.BOLD, 16));
+        userNameLabel.setForeground(new Color(34, 34, 34));
+        userNameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // 角色标签
+        JPanel rolePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        rolePanel.setBackground(new Color(245, 250, 255));
+        rolePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel roleLabel = new JLabel("教师");
+        roleLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        roleLabel.setForeground(Color.WHITE);
+        roleLabel.setBackground(new Color(231, 76, 60));
+        roleLabel.setOpaque(true);
+        roleLabel.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
+        rolePanel.add(roleLabel);
+
+        // ID信息
+        JLabel idLabel = new JLabel("ID: " + teacher.getUserId());
+        idLabel.setFont(new Font("微软雅黑", Font.PLAIN, 11));
+        idLabel.setForeground(new Color(120, 120, 120));
+        idLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        userInfoPanel.add(userNameLabel);
+        userInfoPanel.add(Box.createVerticalStrut(8));
+        userInfoPanel.add(rolePanel);
+        userInfoPanel.add(Box.createVerticalStrut(5));
+        userInfoPanel.add(idLabel);
+
+        userPanel.add(userInfoPanel, BorderLayout.CENTER);
+        Dimension pref = userPanel.getPreferredSize();
+        userPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, pref.height));
+
+        sidebar.add(userPanel);
+
+        // 分割线
+        JSeparator separator = new JSeparator();
+        separator.setMaximumSize(new Dimension(180, 1));
+        separator.setForeground(new Color(240, 240, 240));
+        sidebar.add(separator);
+
+        // 导航菜单
+        String[][] menuConfig = {
+                {"home", "我的主页"},
+                {"question", "题库管理"},
+                {"paper", "试卷管理"},
+                {"import", "导入题目"}
+        };
+
+        for (int i = 0; i < menuConfig.length; i++) {
+            String view = menuConfig[i][0];
+            String text = menuConfig[i][1];
+
+            JButton menuButton = createSidebarButton(text, view, i == 0);
+            menuButton.addActionListener(e -> switchView(view));
+
+            menuButtons.add(menuButton);
+            sidebar.add(menuButton);
+        }
+        sidebar.add(Box.createVerticalGlue());
+        return sidebar;
+    }
+
+    private JButton createSidebarButton(String text, String view, boolean isActive) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("微软雅黑", Font.PLAIN, 14));
+        button.setHorizontalAlignment(SwingConstants.LEFT);
+        button.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 0));
+        button.setFocusPainted(false);
+        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setContentAreaFilled(false);
+        button.setOpaque(true);
+
+        // 设置图标
+        Icon icon = getMenuIcon(view, isActive ? UIUtil.PRIMARY_COLOR : new Color(120, 120, 120), 16);
+        button.setIcon(icon);
+        button.setIconTextGap(10);
+
+        // 设置初始样式
+        updateButtonStyle(button, isActive);
+
+        // 添加鼠标悬停效果
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                if (!isButtonActive(button)) {
+                    button.setBackground(new Color(248, 249, 250));
+                }
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                if (!isButtonActive(button)) {
+                    button.setBackground(Color.WHITE);
+                }
+            }
+        });
+
+        return button;
+    }
+
+    private Icon getMenuIcon(String view, Color color, int size) {
+        switch (view) {
+            case "home":
+                return IconUtil.createHomeIcon(color, size);
+            case "question":
+                return IconUtil.createDocumentIcon(color, size);
+            case "paper":
+                return IconUtil.createChartIcon(color, size);
+            case "import":
+                return IconUtil.createUploadIcon(color, size);
+            default:
+                return IconUtil.createCircleIcon(color, size);
+        }
+    }
+
+    private boolean isButtonActive(JButton button) {
+        return button.getBackground().equals(new Color(240, 248, 255));
+    }
+
+    private void updateButtonStyle(JButton button, boolean isActive) {
+        if (isActive) {
+            button.setBackground(new Color(240, 248, 255));
+            button.setForeground(UIUtil.PRIMARY_COLOR);
+            button.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 3, 0, 0, UIUtil.PRIMARY_COLOR),
+                    BorderFactory.createEmptyBorder(12, 17, 12, 10)
+            ));
+        } else {
+            button.setBackground(Color.WHITE);
+            button.setForeground(new Color(51, 51, 51));
+            button.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 0));
+        }
+    }
+
+    private void updateButtonIcon(JButton button, String view, boolean isActive) {
+        Color iconColor = isActive ? UIUtil.PRIMARY_COLOR : new Color(120, 120, 120);
+        Icon icon = getMenuIcon(view, iconColor, 16);
+        button.setIcon(icon);
+    }
+
+    private void switchView(String view) {
+        if (currentView.equals(view)) {
+            return;
+        }
+
+        currentView = view;
+
+        // 更新所有按钮的状态
+        String[] views = {"home", "question", "paper", "import"};
+        for (int i = 0; i < menuButtons.size(); i++) {
+            JButton button = menuButtons.get(i);
+            boolean isActive = i == getViewIndex(view);
+            updateButtonStyle(button, isActive);
+            updateButtonIcon(button, views[i], isActive);
+        }
+
+        // 切换内容 - 使用懒加载
+        mainContentPanel.removeAll();
+
+        switch (view) {
+            case "home":
+                if (homePanel == null) {
+                    homePanel = new TeacherHomePanel(this, teacher);
+                }
+                mainContentPanel.add(homePanel, BorderLayout.CENTER);
+                break;
+            case "question":
+                if (questionPanel == null) {
+                    questionPanel = new TeacherQuestionPanel(questionService, new TeacherQuestionPanel.TeacherQuestionCallback() {
+                        @Override
+                        public void onAddQuestion() {
+                            showAddQuestionDialog();
+                        }
+                        @Override
+                        public void onEditQuestion(int row) {
+                            editQuestionAtRow(row);
+                        }
+                        @Override
+                        public void onDeleteQuestion(int row) {
+                            deleteQuestionAtRow(row);
+                        }
+                    });
+                }
+                mainContentPanel.add(questionPanel, BorderLayout.CENTER);
+                break;
+            case "paper":
+                if (paperPanel == null) {
+                    paperPanel = new TeacherPaperPanel(paperService, new TeacherPaperPanel.TeacherPaperCallback() {
+                        @Override
+                        public void onAddPaper() {
+                            paperManager.showAddPaperDialog();
+                        }
+                        @Override
+                        public void onViewPaper(int row) {
+                            viewPaperAtRow(row);
+                        }
+                        @Override
+                        public void onEditPaper(int row) {
+                            editPaperAtRow(row);
+                        }
+                        @Override
+                        public void onDeletePaper(int row) {
+                            deletePaperAtRow(row);
+                        }
+                        @Override
+                        public void onTogglePublish(int row) {
+                            togglePublishAtRow(row);
+                        }
+                    });
+                }
+                mainContentPanel.add(paperPanel, BorderLayout.CENTER);
+                break;
+            case "import":
+                if (importPanel == null) {
+                    importPanel = new TeacherImportPanel(questionService, new TeacherImportPanel.TeacherImportCallback() {
+                        @Override
+                        public void onImportSuccess() {
+                            // 刷新题库管理面板数据
+                            if (questionPanel != null) {
+                                questionPanel.refreshData();
+                            }
+                        }
+                    });
+                }
+                mainContentPanel.add(importPanel, BorderLayout.CENTER);
+                break;
+            default:
+                if (homePanel == null) {
+                    homePanel = new TeacherHomePanel(this, teacher);
+                }
+                mainContentPanel.add(homePanel, BorderLayout.CENTER);
+        }
+
+        mainContentPanel.revalidate();
+        mainContentPanel.repaint();
+    }
+
+    private int getViewIndex(String view) {
+        switch (view) {
+            case "home": return 0;
+            case "question": return 1;
+            case "paper": return 2;
+            case "import": return 3;
+            default: return -1;
+        }
+    }
+
+
+
+
+
+    /**
+     * 编辑指定行的题目
+     */
+    private void editQuestionAtRow(int row) {
+        try {
+            List<Question> questions = questionService.getAllQuestions();
+            if (row >= 0 && row < questions.size()) {
+                Question question = questions.get(row);
+                showEditQuestionDialog(question);
+            }
+        } catch (Exception e) {
+            UIUtil.showError(this, "编辑题目失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 显示编辑题目对话框
+     */
+    private void showEditQuestionDialog(Question question) {
+        JDialog dialog = new JDialog(this, "编辑题目", true);
+        dialog.setSize(600, 500);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // 题目类型
+        gbc.gridx = 0; gbc.gridy = 0;
+        panel.add(new JLabel("题目类型:"), gbc);
+        gbc.gridx = 1;
+        JComboBox<QuestionType> typeCombo = new JComboBox<>(QuestionType.values());
+        typeCombo.setSelectedItem(question.getQuestionType());
+        panel.add(typeCombo, gbc);
+
+        // 科目
+        gbc.gridx = 0; gbc.gridy = 1;
+        panel.add(new JLabel("科目:"), gbc);
+        gbc.gridx = 1;
+        // 使用下拉框选择科目，去掉"全部"选项
+        String[] subjectOptions = TeacherConstants.getSubjectsWithoutAll();
+        JComboBox<String> subjectCombo = new JComboBox<>(subjectOptions);
+        subjectCombo.setEditable(true); // 允许输入自定义科目
+        subjectCombo.setSelectedItem(question.getSubject());
+        panel.add(subjectCombo, gbc);
+
+        // 题目内容
+        gbc.gridx = 0; gbc.gridy = 2;
+        panel.add(new JLabel("题目内容:"), gbc);
+        gbc.gridx = 1;
+        JTextArea contentArea = new JTextArea(3, 20);
+        contentArea.setLineWrap(true);
+        contentArea.setText(question.getContent());
+        panel.add(new JScrollPane(contentArea), gbc);
+
+        // 选项A
+        gbc.gridx = 0; gbc.gridy = 3;
+        panel.add(new JLabel("选项A:"), gbc);
+        gbc.gridx = 1;
+        JTextField optionAField = new JTextField(20);
+        optionAField.setText(question.getOptionA());
+        panel.add(optionAField, gbc);
+
+        // 选项B
+        gbc.gridx = 0; gbc.gridy = 4;
+        panel.add(new JLabel("选项B:"), gbc);
+        gbc.gridx = 1;
+        JTextField optionBField = new JTextField(20);
+        optionBField.setText(question.getOptionB());
+        panel.add(optionBField, gbc);
+
+        // 选项C
+        gbc.gridx = 0; gbc.gridy = 5;
+        panel.add(new JLabel("选项C:"), gbc);
+        gbc.gridx = 1;
+        JTextField optionCField = new JTextField(20);
+        optionCField.setText(question.getOptionC());
+        panel.add(optionCField, gbc);
+
+        // 选项D
+        gbc.gridx = 0; gbc.gridy = 6;
+        panel.add(new JLabel("选项D:"), gbc);
+        gbc.gridx = 1;
+        JTextField optionDField = new JTextField(20);
+        optionDField.setText(question.getOptionD());
+        panel.add(optionDField, gbc);
+
+        // 正确答案
+        gbc.gridx = 0; gbc.gridy = 7;
+        panel.add(new JLabel("正确答案:"), gbc);
+        gbc.gridx = 1;
+        JTextField answerField = new JTextField(20);
+        answerField.setText(question.getCorrectAnswer());
+        panel.add(answerField, gbc);
+
+        // 分值
+        gbc.gridx = 0; gbc.gridy = 8;
+        panel.add(new JLabel("分值:"), gbc);
+        gbc.gridx = 1;
+        JSpinner scoreSpinner = new JSpinner(new SpinnerNumberModel(question.getScore().intValue(), 1, 100, 1));
+        panel.add(scoreSpinner, gbc);
+
+        // 难度
+        gbc.gridx = 0; gbc.gridy = 9;
+        panel.add(new JLabel("难度:"), gbc);
+        gbc.gridx = 1;
+        JComboBox<Difficulty> difficultyCombo = new JComboBox<>(Difficulty.values());
+        difficultyCombo.setSelectedItem(question.getDifficulty());
+        panel.add(difficultyCombo, gbc);
+
+        // 按钮
+        gbc.gridx = 0; gbc.gridy = 10; gbc.gridwidth = 2;
+        JPanel btnPanel = new JPanel();
+        JButton saveButton = UIUtil.createSuccessButton("保存");
+        JButton cancelButton = UIUtil.createDangerButton("取消");
+
+        saveButton.addActionListener(e -> {
+            try {
+                question.setQuestionType((QuestionType) typeCombo.getSelectedItem());
+                // 从下拉框获取科目
+                String selectedSubject = subjectCombo.getSelectedItem() != null
+                        ? subjectCombo.getSelectedItem().toString().trim()
+                        : "";
+                question.setSubject(selectedSubject);
+                question.setContent(contentArea.getText().trim());
+                question.setOptionA(optionAField.getText().trim());
+                question.setOptionB(optionBField.getText().trim());
+                question.setOptionC(optionCField.getText().trim());
+                question.setOptionD(optionDField.getText().trim());
+                question.setCorrectAnswer(answerField.getText().trim());
+                question.setScore((Integer) scoreSpinner.getValue());
+                question.setDifficulty((Difficulty) difficultyCombo.getSelectedItem());
+
+                questionService.updateQuestion(question);
+                UIUtil.showInfo(dialog, "修改成功");
+                dialog.dispose();
+                // 刷新题库管理面板数据
+                if (questionPanel != null) {
+                    questionPanel.refreshData();
+                }
+            } catch (Exception ex) {
+                UIUtil.showError(dialog, "修改失败：" + ex.getMessage());
+            }
+        });
+
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        btnPanel.add(saveButton);
+        btnPanel.add(cancelButton);
+        panel.add(btnPanel, gbc);
+
+        dialog.add(new JScrollPane(panel));
+        dialog.setVisible(true);
+    }
+
+
+
+
+
+    private void showAddQuestionDialog() {
+        JDialog dialog = new JDialog(this, "添加题目", true);
+        dialog.setSize(600, 500);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // 题目类型
+        gbc.gridx = 0; gbc.gridy = 0;
+        panel.add(new JLabel("题目类型:"), gbc);
+        gbc.gridx = 1;
+        JComboBox<QuestionType> typeCombo = new JComboBox<>(QuestionType.values());
+        panel.add(typeCombo, gbc);
+
+        // 科目
+        gbc.gridx = 0; gbc.gridy = 1;
+        panel.add(new JLabel("科目:"), gbc);
+        gbc.gridx = 1;
+        // 使用下拉框选择科目，去掉"全部"选项
+        String[] subjectOptions = TeacherConstants.getSubjectsWithoutAll();
+        JComboBox<String> subjectCombo = new JComboBox<>(subjectOptions);
+        subjectCombo.setEditable(true); // 允许输入自定义科目
+        // 根据当前选中的科目设置默认值
+        if ("全部".equals(currentSubject)) {
+            subjectCombo.setSelectedItem("Java"); // 全部时默认选择Java
+        } else {
+            subjectCombo.setSelectedItem(currentSubject); // 选择当前科目
+        }
+        panel.add(subjectCombo, gbc);
+
+        // 题目内容
+        gbc.gridx = 0; gbc.gridy = 2;
+        panel.add(new JLabel("题目内容:"), gbc);
+        gbc.gridx = 1;
+        JTextArea contentArea = new JTextArea(3, 20);
+        contentArea.setLineWrap(true);
+        panel.add(new JScrollPane(contentArea), gbc);
+
+        // 选项A
+        gbc.gridx = 0; gbc.gridy = 3;
+        panel.add(new JLabel("选项A:"), gbc);
+        gbc.gridx = 1;
+        JTextField optionAField = new JTextField(20);
+        panel.add(optionAField, gbc);
+
+        // 选项B
+        gbc.gridx = 0; gbc.gridy = 4;
+        panel.add(new JLabel("选项B:"), gbc);
+        gbc.gridx = 1;
+        JTextField optionBField = new JTextField(20);
+        panel.add(optionBField, gbc);
+
+        // 选项C
+        gbc.gridx = 0; gbc.gridy = 5;
+        panel.add(new JLabel("选项C:"), gbc);
+        gbc.gridx = 1;
+        JTextField optionCField = new JTextField(20);
+        panel.add(optionCField, gbc);
+
+        // 选项D
+        gbc.gridx = 0; gbc.gridy = 6;
+        panel.add(new JLabel("选项D:"), gbc);
+        gbc.gridx = 1;
+        JTextField optionDField = new JTextField(20);
+        panel.add(optionDField, gbc);
+
+        // 正确答案
+        gbc.gridx = 0; gbc.gridy = 7;
+        panel.add(new JLabel("正确答案:"), gbc);
+        gbc.gridx = 1;
+        JTextField answerField = new JTextField(20);
+        panel.add(answerField, gbc);
+
+        // 分值
+        gbc.gridx = 0; gbc.gridy = 8;
+        panel.add(new JLabel("分值:"), gbc);
+        gbc.gridx = 1;
+        JSpinner scoreSpinner = new JSpinner(new SpinnerNumberModel(5, 1, 100, 1));
+        panel.add(scoreSpinner, gbc);
+
+        // 难度
+        gbc.gridx = 0; gbc.gridy = 9;
+        panel.add(new JLabel("难度:"), gbc);
+        gbc.gridx = 1;
+        JComboBox<Difficulty> difficultyCombo = new JComboBox<>(Difficulty.values());
+        panel.add(difficultyCombo, gbc);
+
+        // 按钮
+        gbc.gridx = 0; gbc.gridy = 10; gbc.gridwidth = 2;
+        JPanel btnPanel = new JPanel();
+        JButton saveButton = UIUtil.createSuccessButton("保存");
+        JButton cancelButton = UIUtil.createDangerButton("取消");
+
+        saveButton.addActionListener(e -> {
+            try {
+                Question question = new Question();
+                question.setQuestionType((QuestionType) typeCombo.getSelectedItem());
+                // 从下拉框获取科目
+                String selectedSubject = subjectCombo.getSelectedItem() != null
+                        ? subjectCombo.getSelectedItem().toString().trim()
+                        : "";
+                question.setSubject(selectedSubject);
+                question.setContent(contentArea.getText().trim());
+                question.setOptionA(optionAField.getText().trim());
+                question.setOptionB(optionBField.getText().trim());
+                question.setOptionC(optionCField.getText().trim());
+                question.setOptionD(optionDField.getText().trim());
+                question.setCorrectAnswer(answerField.getText().trim());
+                question.setScore((Integer) scoreSpinner.getValue());
+                question.setDifficulty((Difficulty) difficultyCombo.getSelectedItem());
+                question.setCreatorId(teacher.getUserId());
+
+                questionService.addQuestion(question);
+                UIUtil.showInfo(dialog, "添加成功");
+                dialog.dispose();
+                refreshQuestionData();
+            } catch (Exception ex) {
+                UIUtil.showError(dialog, "添加失败：" + ex.getMessage());
+            }
+        });
+
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        btnPanel.add(saveButton);
+        btnPanel.add(cancelButton);
+        panel.add(btnPanel, gbc);
+
+        dialog.add(new JScrollPane(panel));
+        dialog.setVisible(true);
+    }
+
+
+
+
+
+
+    private void logout() {
+        if (UIUtil.showConfirm(this, "确定要退出登录吗？")) {
+            dispose();
+            new LoginFrame().setVisible(true);
+        }
+    }
+
+
+
+
+    /**
+     * 删除指定行的题目
+     */
+    private void deleteQuestionAtRow(int row) {
+        if (!UIUtil.showConfirm(this, "确定要删除这道题目吗？")) {
+            return;
+        }
+
+        try {
+            List<Question> questions = questionService.getAllQuestions();
+            if (row >= 0 && row < questions.size()) {
+                Question question = questions.get(row);
+                questionService.deleteQuestion(question.getQuestionId());
+                UIUtil.showInfo(this, "删除成功");
+                refreshQuestionData();
+            } else {
+                UIUtil.showError(this, "无法找到对应的题目");
+            }
+        } catch (Exception e) {
+            UIUtil.showError(this, "删除失败：" + e.getMessage());
+        }
+    }
+
+    // ========================================
+    // 试卷管理相关方法（剩余部分）
+    // ========================================
+
+    /**
+     * 编辑指定行的试卷
+     */
+    private void editPaperAtRow(int row) {
+        try {
+            // 从paperPanel获取表格数据
+            DefaultTableModel tableModel = paperPanel.getTableModel();
+            String paperName = (String) tableModel.getValueAt(row, 0);
+
+            Paper paper = paperService.getPaperByName(paperName);
+            if (paper == null) {
+                UIUtil.showError(this, "无法找到对应的试卷");
+                return;
+            }
+
+            paperManager.showEditPaperDialog(paper);
+        } catch (Exception e) {
+            UIUtil.showError(this, "加载试卷信息失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 显示编辑试卷对话框
+     */
+    private void showEditPaperDialog(Paper paper) {
+        JDialog dialog = new JDialog(this, "编辑试卷", true);
+        dialog.setSize(700, 600);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel mainPanel = new JPanel(new BorderLayout(0, 15));
+        mainPanel.setBackground(new Color(245, 250, 255));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // 标题
+        JLabel titleLabel = new JLabel("编辑试卷");
+        titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 18));
+        titleLabel.setForeground(UIUtil.PRIMARY_COLOR);
+        mainPanel.add(titleLabel, BorderLayout.NORTH);
+
+        // 表单
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBackground(Color.WHITE);
+        formPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220)),
+                BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // 试卷名称
+        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.weightx = 0;
+        JLabel nameLabel = new JLabel("试卷名称：");
+        nameLabel.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        formPanel.add(nameLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        JTextField paperNameField = new JTextField(20);
+        paperNameField.setText(paper.getPaperName());
+        paperNameField.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        formPanel.add(paperNameField, gbc);
+
+        // 科目
+        gbc.gridx = 0; gbc.gridy = 1;
+        gbc.weightx = 0;
+        JLabel subjectLabel = new JLabel("科　　目：");
+        subjectLabel.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        formPanel.add(subjectLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        String[] subjectOptions = TeacherConstants.getSubjectsWithoutAll();
+        JComboBox<String> subjectCombo = new JComboBox<>(subjectOptions);
+        subjectCombo.setSelectedItem(paper.getSubject());
+        subjectCombo.setEditable(true);
+        subjectCombo.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        formPanel.add(subjectCombo, gbc);
+
+        // 考试时长
+        gbc.gridx = 0; gbc.gridy = 2;
+        gbc.weightx = 0;
+        JLabel durationLabel = new JLabel("时长(分钟)：");
+        durationLabel.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        formPanel.add(durationLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        JSpinner durationSpinner = new JSpinner(new SpinnerNumberModel(paper.getDuration().intValue(), 10, 300, 10));
+        durationSpinner.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        formPanel.add(durationSpinner, gbc);
+
+        // 及格分数
+        gbc.gridx = 0; gbc.gridy = 3;
+        gbc.weightx = 0;
+        JLabel passScoreLabel = new JLabel("及格分数：");
+        passScoreLabel.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        formPanel.add(passScoreLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        JSpinner passScoreSpinner = new JSpinner(new SpinnerNumberModel(paper.getPassScore().intValue(), 0, 100, 5));
+        passScoreSpinner.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        formPanel.add(passScoreSpinner, gbc);
+
+        // 描述
+        gbc.gridx = 0; gbc.gridy = 4;
+        gbc.weightx = 0;
+        JLabel descLabel = new JLabel("描　　述：");
+        descLabel.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        formPanel.add(descLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        JTextArea descArea = new JTextArea(3, 20);
+        descArea.setText(paper.getDescription());
+        descArea.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        descArea.setLineWrap(true);
+        descArea.setWrapStyleWord(true);
+        JScrollPane descScroll = new JScrollPane(descArea);
+        formPanel.add(descScroll, gbc);
+
+        // 题目信息（显示，不可修改）
+        gbc.gridx = 0; gbc.gridy = 5;
+        gbc.weightx = 0;
+        JLabel questionsLabel = new JLabel("题目数量：");
+        questionsLabel.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        formPanel.add(questionsLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        int questionCount = paper.getQuestions() != null ? paper.getQuestions().size() : 0;
+        JLabel countLabel = new JLabel(questionCount + " 道题目（总分：" + paper.getTotalScore() + "分）");
+        countLabel.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        countLabel.setForeground(new Color(100, 100, 100));
+        formPanel.add(countLabel, gbc);
+
+        mainPanel.add(formPanel, BorderLayout.CENTER);
+
+        // 按钮
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        buttonPanel.setBackground(new Color(245, 250, 255));
+
+        JButton saveButton = TeacherUIHelper.createStyledButton("保存修改", UIUtil.PRIMARY_COLOR);
+        saveButton.addActionListener(e -> {
+            String paperName = paperNameField.getText().trim();
+            String subject = subjectCombo.getSelectedItem() != null
+                    ? subjectCombo.getSelectedItem().toString().trim()
+                    : "";
+
+            if (paperName.isEmpty()) {
+                UIUtil.showWarning(dialog, "试卷名称不能为空");
+                return;
+            }
+            if (subject.isEmpty()) {
+                UIUtil.showWarning(dialog, "科目不能为空");
+                return;
+            }
+
+            try {
+                paper.setPaperName(paperName);
+                paper.setSubject(subject);
+                paper.setDuration((Integer) durationSpinner.getValue());
+                paper.setPassScore((Integer) passScoreSpinner.getValue());
+                paper.setDescription(descArea.getText().trim());
+
+                paperService.updatePaper(paper);
+
+                UIUtil.showInfo(dialog, "试卷修改成功！");
+                dialog.dispose();
+                // 刷新试卷管理面板
+                if (paperPanel != null) {
+                    paperPanel.refreshData();
+                }
+
+            } catch (Exception ex) {
+                UIUtil.showError(dialog, "修改试卷失败：" + ex.getMessage());
+                ex.printStackTrace();
+            }
+        });
+
+        JButton cancelButton = TeacherUIHelper.createStyledButton("取消", new Color(120, 144, 156));
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        buttonPanel.add(saveButton);
+        buttonPanel.add(cancelButton);
+
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.add(mainPanel);
+        dialog.setVisible(true);
+    }
+
+    /**
+     * 查看指定行试卷的详细信息
+     */
+    private void viewPaperAtRow(int row) {
+        try {
+            // 从paperPanel获取表格数据
+            DefaultTableModel tableModel = paperPanel.getTableModel();
+            String paperName = (String) tableModel.getValueAt(row, 0);
+
+            Paper paper = paperService.getPaperByName(paperName);
+            if (paper == null) {
+                UIUtil.showError(this, "无法找到对应的试卷");
+                return;
+            }
+
+            showPaperDetailDialog(paper);
+        } catch (Exception e) {
+            UIUtil.showError(this, "加载试卷信息失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 显示试卷详细信息对话框
+     */
+    private void showPaperDetailDialog(Paper paper) {
+        JDialog dialog = new JDialog(this, "试卷详情", true);
+        dialog.setSize(800, 600);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel mainPanel = new JPanel(new BorderLayout(0, 15));
+        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // 标题
+        JLabel titleLabel = new JLabel("试卷详细信息");
+        titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 18));
+        titleLabel.setForeground(UIUtil.PRIMARY_COLOR);
+        mainPanel.add(titleLabel, BorderLayout.NORTH);
+
+        // 试卷基本信息
+        JPanel infoPanel = new JPanel(new GridLayout(6, 2, 10, 10));
+        infoPanel.setBackground(Color.WHITE);
+        infoPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder("基本信息"),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+
+        infoPanel.add(createInfoLabel("试卷名称："));
+        infoPanel.add(createInfoValueLabel(paper.getPaperName()));
+
+        infoPanel.add(createInfoLabel("科目："));
+        infoPanel.add(createInfoValueLabel(paper.getSubject()));
+
+        infoPanel.add(createInfoLabel("题目数量："));
+        int questionCount = paper.getQuestions() != null ? paper.getQuestions().size() : 0;
+        infoPanel.add(createInfoValueLabel(questionCount + " 道"));
+
+        infoPanel.add(createInfoLabel("总分："));
+        infoPanel.add(createInfoValueLabel(paper.getTotalScore() + " 分"));
+
+        infoPanel.add(createInfoLabel("考试时长："));
+        infoPanel.add(createInfoValueLabel(paper.getDuration() + " 分钟"));
+
+        infoPanel.add(createInfoLabel("及格分数："));
+        infoPanel.add(createInfoValueLabel(paper.getPassScore() + " 分"));
+
+        // 题目列表
+        JPanel questionsPanel = new JPanel(new BorderLayout(0, 10));
+        questionsPanel.setBackground(Color.WHITE);
+        questionsPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder("题目列表"),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+
+        String[] columns = {"序号", "类型", "题目内容", "分值"};
+        DefaultTableModel questionTableModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        if (paper.getQuestions() != null) {
+            int index = 1;
+            for (Question q : paper.getQuestions()) {
+                Object[] row = {
+                        index++,
+                        q.getQuestionType().getDescription(),
+                        TeacherUIHelper.truncate(q.getContent(), 60),
+                        q.getScore() + "分"
+                };
+                questionTableModel.addRow(row);
+            }
+        }
+
+        JTable questionTable = new JTable(questionTableModel);
+        questionTable.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        questionTable.setRowHeight(35);
+        questionTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 13));
+        questionTable.getTableHeader().setBackground(new Color(245, 247, 250));
+
+        JScrollPane scrollPane = new JScrollPane(questionTable);
+        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
+        questionsPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // 组合面板
+        JPanel centerPanel = new JPanel(new BorderLayout(0, 15));
+        centerPanel.setBackground(Color.WHITE);
+        centerPanel.add(infoPanel, BorderLayout.NORTH);
+        centerPanel.add(questionsPanel, BorderLayout.CENTER);
+
+        mainPanel.add(centerPanel, BorderLayout.CENTER);
+
+        // 关闭按钮
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        buttonPanel.setBackground(Color.WHITE);
+
+        JButton closeButton = TeacherUIHelper.createStyledButton("关闭", UIUtil.PRIMARY_COLOR);
+        closeButton.addActionListener(e -> dialog.dispose());
+        buttonPanel.add(closeButton);
+
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.add(mainPanel);
+        dialog.setVisible(true);
+    }
+
+    private JLabel createInfoLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        label.setForeground(new Color(100, 100, 100));
+        return label;
+    }
+
+    private JLabel createInfoValueLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("微软雅黑", Font.BOLD, 13));
+        label.setForeground(UIUtil.TEXT_COLOR);
+        return label;
+    }
+
+    /**
+     * 删除指定行的试卷
+     */
+    private void deletePaperAtRow(int row) {
+        if (!UIUtil.showConfirm(this, "确定要删除这份试卷吗？\n删除后将无法恢复！")) {
+            return;
+        }
+
+        try {
+            // 从paperPanel获取表格数据
+            DefaultTableModel tableModel = paperPanel.getTableModel();
+            String paperName = (String) tableModel.getValueAt(row, 0);
+            Paper paper = paperService.getPaperByName(paperName);
+
+            if (paper == null) {
+                UIUtil.showError(this, "无法找到对应的试卷");
+                return;
+            }
+
+            // 删除试卷
+            paperService.deletePaper(paper.getPaperId());
+
+            UIUtil.showInfo(this, "删除成功");
+            // 刷新试卷管理面板
+            if (paperPanel != null) {
+                paperPanel.refreshData();
+            }
+        } catch (Exception e) {
+            UIUtil.showError(this, "删除失败：" + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 切换试卷发布状态
+     */
+    private void togglePublishAtRow(int row) {
+        String action = ""; // 声明在外部，以便在catch块中使用
+
+        try {
+            // 从paperPanel获取表格数据
+            DefaultTableModel tableModel = paperPanel.getTableModel();
+            String paperName = (String) tableModel.getValueAt(row, 0);
+            
+            Paper paper = paperService.getPaperByName(paperName);
+            if (paper == null) {
+                UIUtil.showError(this, "无法找到对应的试卷");
+                return;
+            }
+
+            boolean currentStatus = paper.getIsPublished() != null && paper.getIsPublished();
+            action = currentStatus ? "取消发布" : "发布";
+
+            int confirm = JOptionPane.showConfirmDialog(
+                    this,
+                    "确定要" + action + "试卷《" + paperName + "》吗？",
+                    action + "确认",
+                    JOptionPane.YES_NO_OPTION
+            );
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                if (currentStatus) {
+                    paperService.unpublishPaper(paper.getPaperId());
+                    UIUtil.showInfo(this, "试卷已取消发布");
+                } else {
+                    paperService.publishPaper(paper.getPaperId());
+                    UIUtil.showInfo(this, "试卷已发布，学生端现在可以看到该试卷了");
+                }
+                // 刷新试卷管理面板
+                if (paperPanel != null) {
+                    paperPanel.refreshData();
+                }
+            }
+        } catch (Exception e) {
+            UIUtil.showError(this, action + "失败：" + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}

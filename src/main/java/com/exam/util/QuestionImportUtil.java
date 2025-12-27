@@ -1,0 +1,152 @@
+package com.exam.util;
+
+import com.exam.model.Question;
+import com.exam.model.enums.QuestionType;
+import com.exam.model.enums.Difficulty;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 题目导入工具类
+ * 支持从文本文件导入题目
+ */
+public class QuestionImportUtil {
+
+    /**
+     * 从文本文件导入题目
+     * 文件格式：
+     * 题目类型|科目|题目内容|选项A|选项B|选项C|选项D|正确答案|分值|难度|解析
+     * 
+     * 示例：
+     * SINGLE|Java|Java中哪个关键字用于定义常量？|const|final|static|constant|B|5|EASY|final关键字用于定义常量
+     * MULTIPLE|Java|访问修饰符包括？|public|private|protected|final|ABC|10|MEDIUM|public、private、protected是访问修饰符
+     * JUDGE|Java|Java支持多继承|正确|错误|||B|5|EASY|Java不支持类的多继承
+     */
+    public static List<Question> importFromTextFile(File file, Integer creatorId) throws Exception {
+        List<Question> questions = new ArrayList<>();
+        
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
+            
+            String line;
+            int lineNumber = 0;
+            
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+                line = line.trim();
+                
+                // 跳过空行和注释行
+                if (line.isEmpty() || line.startsWith("#") || line.startsWith("//")) {
+                    continue;
+                }
+                
+                try {
+                    Question question = parseLine(line, creatorId);
+                    questions.add(question);
+                } catch (Exception e) {
+                    throw new Exception("第" + lineNumber + "行解析错误：" + e.getMessage());
+                }
+            }
+        }
+        
+        if (questions.isEmpty()) {
+            throw new Exception("文件中没有有效的题目数据");
+        }
+        
+        return questions;
+    }
+    
+    /**
+     * 解析单行题目数据
+     */
+    private static Question parseLine(String line, Integer creatorId) throws Exception {
+        String[] parts = line.split("\\|");
+        
+        if (parts.length < 8) {
+            throw new Exception("数据格式不正确，至少需要8个字段（用|分隔）");
+        }
+        
+        Question question = new Question();
+        
+        // 题目类型
+        try {
+            question.setQuestionType(QuestionType.valueOf(parts[0].trim().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            throw new Exception("题目类型无效：" + parts[0] + "，应为SINGLE、MULTIPLE、JUDGE或BLANK");
+        }
+        
+        // 科目
+        question.setSubject(parts[1].trim());
+        if (question.getSubject().isEmpty()) {
+            throw new Exception("科目不能为空");
+        }
+        
+        // 题目内容
+        question.setContent(parts[2].trim());
+        if (question.getContent().isEmpty()) {
+            throw new Exception("题目内容不能为空");
+        }
+        
+        // 选项A-D
+        question.setOptionA(parts.length > 3 ? parts[3].trim() : null);
+        question.setOptionB(parts.length > 4 ? parts[4].trim() : null);
+        question.setOptionC(parts.length > 5 ? parts[5].trim() : null);
+        question.setOptionD(parts.length > 6 ? parts[6].trim() : null);
+        
+        // 正确答案
+        question.setCorrectAnswer(parts[7].trim().toUpperCase());
+        if (question.getCorrectAnswer().isEmpty()) {
+            throw new Exception("正确答案不能为空");
+        }
+        
+        // 分值
+        try {
+            question.setScore(parts.length > 8 && !parts[8].trim().isEmpty() 
+                ? Integer.parseInt(parts[8].trim()) : 5);
+        } catch (NumberFormatException e) {
+            throw new Exception("分值必须是数字");
+        }
+        
+        // 难度
+        if (parts.length > 9 && !parts[9].trim().isEmpty()) {
+            try {
+                question.setDifficulty(Difficulty.valueOf(parts[9].trim().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                question.setDifficulty(Difficulty.MEDIUM);
+            }
+        } else {
+            question.setDifficulty(Difficulty.MEDIUM);
+        }
+        
+        // 解析
+        question.setAnalysis(parts.length > 10 ? parts[10].trim() : "");
+        
+        // 创建者ID
+        question.setCreatorId(creatorId);
+        
+        return question;
+    }
+    
+    /**
+     * 生成导入模板文件
+     */
+    public static void generateTemplate(File file) throws IOException {
+        try (BufferedWriter writer = new BufferedWriter(
+                new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+            
+            writer.write("# 题目导入模板文件\n");
+            writer.write("# 格式说明：题目类型|科目|题目内容|选项A|选项B|选项C|选项D|正确答案|分值|难度|解析\n");
+            writer.write("# 题目类型：SINGLE(单选)、MULTIPLE(多选)、JUDGE(判断)、BLANK(填空)\n");
+            writer.write("# 难度：EASY(简单)、MEDIUM(中等)、HARD(困难)\n");
+            writer.write("# 以#开头的行为注释，会被忽略\n");
+            writer.write("\n");
+            writer.write("# 示例题目：\n");
+            writer.write("SINGLE|Java|Java中哪个关键字可以用来定义常量？|const|final|static|constant|B|5|EASY|final关键字用于定义常量，被final修饰的变量不可改变。\n");
+            writer.write("SINGLE|Java|下列哪个不是Java的基本数据类型？|int|float|boolean|String|D|5|EASY|String是引用类型，不是基本数据类型。\n");
+            writer.write("MULTIPLE|Java|Java中哪些是访问修饰符？|public|private|protected|final|ABC|10|EASY|public、private、protected是访问修饰符，final是最终修饰符。\n");
+            writer.write("JUDGE|Java|Java支持多继承|正确|错误|||B|5|EASY|Java不支持类的多继承，但支持接口的多实现。\n");
+        }
+    }
+}

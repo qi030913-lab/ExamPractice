@@ -335,6 +335,12 @@ public class ExamFrame extends JFrame {
         try {
             BigDecimal score = examService.submitExam(examRecord.getRecordId(), answers);
             
+            // 检查score是否为null，防止NullPointerException
+            if (score == null) {
+                UIUtil.showError(this, "提交失败：成绩计算异常");
+                return;
+            }
+            
             String result = String.format(
                 "考试完成！\n\n" +
                 "试卷：%s\n" +
