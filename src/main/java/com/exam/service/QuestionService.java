@@ -136,4 +136,18 @@ public class QuestionService {
                 break;
         }
     }
+    
+    /**
+     * 搜索题目
+     * @param content 题目内容关键词
+     * @param subject 科目
+     * @param type 题目类型
+     * @param difficulty 难度
+     * @param offset 偏移量
+     * @param limit 限制数量
+     * @return 题目列表
+     */
+    public List<Question> searchQuestions(String content, String subject, com.exam.model.enums.QuestionType type, com.exam.model.enums.Difficulty difficulty, int offset, int limit) {
+        return questionDao.search(content, subject, type, difficulty, offset, limit);
+    }
 }

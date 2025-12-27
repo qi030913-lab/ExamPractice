@@ -11,7 +11,8 @@ import com.exam.util.UIUtil;
 import com.exam.util.IconUtil;
 import com.exam.util.QuestionImportUtil;
 import com.exam.view.LoginFrame;
-import com.exam.view.teacher.*;
+import com.exam.view.teacher.ui.components.*;
+import com.exam.view.teacher.manager.*;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -34,9 +35,9 @@ public class TeacherMainFrame extends JFrame {
     private List<JButton> menuButtons = new ArrayList<>();
     
     // 管理器
-    private QuestionManager questionManager;
-    private PaperManager paperManager;
-    private ImportManager importManager;
+    private com.exam.view.teacher.manager.QuestionManager questionManager;
+    private com.exam.view.teacher.manager.PaperManager paperManager;
+    private com.exam.view.teacher.manager.ImportManager importManager;
     
     // 面板缓存（懒加载）
     private TeacherHomePanel homePanel;
@@ -53,9 +54,9 @@ public class TeacherMainFrame extends JFrame {
         this.teacher = teacher;
         this.questionService = new QuestionService();
         this.paperService = new PaperService();
-        this.questionManager = new QuestionManager(questionService, this);
-        this.paperManager = new PaperManager(paperService, this);
-        this.importManager = new ImportManager(questionService, this);
+        this.questionManager = new com.exam.view.teacher.manager.QuestionManager(questionService, this);
+        this.paperManager = new com.exam.view.teacher.manager.PaperManager(paperService, this);
+        this.importManager = new com.exam.view.teacher.manager.ImportManager(questionService, this);
         initComponents();
         setTitle("未来教育考试系统 - 教师端");
         setSize(1200, 700);

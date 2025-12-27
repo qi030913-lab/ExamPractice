@@ -1,10 +1,12 @@
 package com.exam.dao;
 
+
 import com.exam.exception.DatabaseException;
 import com.exam.model.Question;
-import com.exam.model.enums.QuestionType;
 import com.exam.model.enums.Difficulty;
+import com.exam.model.enums.QuestionType;
 import com.exam.util.DBUtil;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -228,5 +230,64 @@ public class QuestionDao {
         }
         
         return question;
+    }
+    
+    /**
+     * 搜索题目
+     * @param content 题目内容关键词
+     * @param subject 科目
+     * @param type 题目类型
+     * @param difficulty 难度
+     * @param offset 偏移量
+     * @param limit 限制数量
+     * @return 题目列表
+     */
+    public List<Question> search(String content, String subject, com.exam.model.enums.QuestionType type, com.exam.model.enums.Difficulty difficulty, int offset, int limit) {
+        StringBuilder sql = new StringBuilder("SELECT * FROM question WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+        
+        if (content != null && !content.trim().isEmpty()) {
+            sql.append(" AND content LIKE ?");
+            params.add("%" + content + "%");
+        }
+        
+        if (subject != null && !subject.trim().isEmpty()) {
+            sql.append(" AND subject = ?");
+            params.add(subject);
+        }
+        
+        if (type != null) {
+            sql.append(" AND question_type = ?");
+            params.add(type.name());
+        }
+        
+        if (difficulty != null) {
+            sql.append(" AND difficulty = ?");
+            params.add(difficulty.name());
+        }
+        
+        sql.append(" ORDER BY question_id LIMIT ? OFFSET ?");
+        params.add(limit);
+        params.add(offset);
+        
+        List<Question> questions = new ArrayList<>();
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+            
+            for (int i = 0; i < params.size(); i++) {
+                pstmt.setObject(i + 1, params.get(i));
+            }
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    questions.add(extractQuestion(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("搜索题目失败", e);
+        }
+        
+        return questions;
     }
 }

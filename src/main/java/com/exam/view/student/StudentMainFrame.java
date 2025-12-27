@@ -6,9 +6,9 @@ import com.exam.service.PaperService;
 import com.exam.util.UIUtil;
 import com.exam.util.IconUtil;
 import com.exam.view.LoginFrame;
-import com.exam.view.student.StudentExamPanel;
-import com.exam.view.student.StudentScorePanel;
-import com.exam.view.student.StudentAchievementPanel;
+import com.exam.view.student.ui.components.StudentExamPanel;
+import com.exam.view.student.ui.components.StudentScorePanel;
+import com.exam.view.student.ui.components.StudentAchievementPanel;
 import javax.swing.*;
 import java.awt.*;
 

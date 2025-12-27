@@ -107,4 +107,12 @@ public class UIUtil {
         int y = (screenSize.height - window.getHeight()) / 2;
         window.setLocation(x, y);
     }
+    
+    /**
+     * 截断文本
+     */
+    public static String truncate(String text, int maxLength) {
+        if (text == null) return "";
+        return text.length() > maxLength ? text.substring(0, maxLength) + "..." : text;
+    }
 }

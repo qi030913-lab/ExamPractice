@@ -149,4 +149,14 @@ public class QuestionImportUtil {
             writer.write("JUDGE|Java|Java支持多继承|正确|错误|||B|5|EASY|Java不支持类的多继承，但支持接口的多实现。\n");
         }
     }
+    
+    /**
+     * 从文本文件导入题目
+     * @param filePath 文件路径
+     * @return 题目列表
+     * @throws Exception 导入过程中的异常
+     */
+    public static List<Question> importQuestionsFromFile(String filePath) throws Exception {
+        return importFromTextFile(new File(filePath), null);
+    }
 }
