@@ -17,6 +17,7 @@ import java.util.List;
 public class TeacherImportPanel extends JPanel {
     private final TeacherImportCallback callback;
     private final QuestionService questionService;
+    private final int userId; // 用户ID
     
     // 存储选择的文件
     private File selectedImportFile = null;
@@ -26,8 +27,9 @@ public class TeacherImportPanel extends JPanel {
         void onImportSuccess();
     }
     
-    public TeacherImportPanel(QuestionService questionService, TeacherImportCallback callback) {
+    public TeacherImportPanel(QuestionService questionService, int userId, TeacherImportCallback callback) {
         this.questionService = questionService;
+        this.userId = userId;
         this.callback = callback;
         initComponents();
     }
@@ -357,7 +359,7 @@ public class TeacherImportPanel extends JPanel {
     private void importQuestionsFromFile(File file) {
         try {
             // 读取题目
-            List<Question> questions = QuestionImportUtil.importFromTextFile(file, null);
+            List<Question> questions = QuestionImportUtil.importFromTextFile(file, userId);
             
             // 批量添加题目
             questionService.batchAddQuestions(questions);
