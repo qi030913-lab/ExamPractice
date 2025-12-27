@@ -24,10 +24,12 @@ import java.util.List;
 public class StudentAchievementPanel extends JPanel {
     private final User student;
     private final ExamService examService;
+    private final StudentAchievementManager achievementManager;
 
     public StudentAchievementPanel(User student) {
         this.student = student;
         this.examService = new ExamService();
+        this.achievementManager = new StudentAchievementManager(student);
         initComponents();
     }
 
@@ -87,36 +89,18 @@ public class StudentAchievementPanel extends JPanel {
         statsPanel.setBackground(Color.WHITE);
         statsPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 30, 0));
 
-        try {
-            List<ExamRecord> records = examService.getStudentExamRecords(student.getUserId());
-            
-            // 统计数据
-            int totalExams = records.size();
-            double avgScore = records.stream()
-                .filter(r -> r.getScore() != null)
-                .mapToDouble(r -> r.getScore().doubleValue())
-                .average()
-                .orElse(0.0);
-            long totalCorrect = 0;
-            long totalQuestions = 0;
-            
-            for (ExamRecord record : records) {
-                List<AnswerRecord> answerRecords = examService.getAnswerRecords(record.getRecordId());
-                totalCorrect += answerRecords.stream().filter(a -> a.getIsCorrect() != null && a.getIsCorrect()).count();
-                totalQuestions += answerRecords.size();
-            }
-            
-            double accuracy = totalQuestions > 0 ? (totalCorrect * 100.0 / totalQuestions) : 0;
+        // 统计数据
+        double[] stats = achievementManager.getStatistics();
+        int totalExams = (int) stats[0];
+        double avgScore = stats[1];
+        long totalCorrect = (long) stats[2];
+        double accuracy = stats[3];
 
-            // 创建统计卡片
-            statsPanel.add(createStatCard(IconUtil.createDocumentIcon(new Color(52, 152, 219), 40), "考试次数", String.valueOf(totalExams), new Color(52, 152, 219)));
-            statsPanel.add(createStatCard(IconUtil.createTargetIcon(new Color(46, 204, 113), 40), "平均分", String.format("%.1f", avgScore), new Color(46, 204, 113)));
-            statsPanel.add(createStatCard(IconUtil.createCheckIcon(new Color(155, 89, 182), 40), "正确题数", String.valueOf(totalCorrect), new Color(155, 89, 182)));
-            statsPanel.add(createStatCard(IconUtil.createTrendUpIcon(new Color(231, 76, 60), 40), "正确率", String.format("%.1f%%", accuracy), new Color(231, 76, 60)));
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        // 创建统计卡片
+        statsPanel.add(createStatCard(IconUtil.createDocumentIcon(new Color(52, 152, 219), 40), "考试次数", String.valueOf(totalExams), new Color(52, 152, 219)));
+        statsPanel.add(createStatCard(IconUtil.createTargetIcon(new Color(46, 204, 113), 40), "平均分", String.format("%.1f", avgScore), new Color(46, 204, 113)));
+        statsPanel.add(createStatCard(IconUtil.createCheckIcon(new Color(155, 89, 182), 40), "正确题数", String.valueOf(totalCorrect), new Color(155, 89, 182)));
+        statsPanel.add(createStatCard(IconUtil.createTrendUpIcon(new Color(231, 76, 60), 40), "正确率", String.format("%.1f%%", accuracy), new Color(231, 76, 60)));
 
         return statsPanel;
     }
@@ -207,85 +191,80 @@ public class StudentAchievementPanel extends JPanel {
                 int height = getHeight();
                 int padding = 40;
 
-                try {
-                    List<ExamRecord> records = examService.getStudentExamRecords(student.getUserId());
-                    if (records.isEmpty()) {
-                        g2d.setFont(new Font("微软雅黑", Font.PLAIN, 14));
-                        g2d.setColor(new Color(150, 150, 150));
-                        String msg = "暂无考试记录";
+                List<ExamRecord> records = achievementManager.getExamRecords();
+                if (records.isEmpty()) {
+                    g2d.setFont(new Font("微软雅黑", Font.PLAIN, 14));
+                    g2d.setColor(new Color(150, 150, 150));
+                    String msg = "暂无考试记录";
+                    FontMetrics fm = g2d.getFontMetrics();
+                    int msgWidth = fm.stringWidth(msg);
+                    g2d.drawString(msg, (width - msgWidth) / 2, height / 2);
+                    return;
+                }
+
+                // 绘制坐标轴
+                g2d.setColor(new Color(200, 200, 200));
+                g2d.drawLine(padding, height - padding, width - padding, height - padding);
+                g2d.drawLine(padding, padding, padding, height - padding);
+
+                // 绘制网格线
+                g2d.setColor(new Color(240, 240, 240));
+                for (int i = 1; i <= 4; i++) {
+                    int y = padding + (height - 2 * padding) * i / 5;
+                    g2d.drawLine(padding, y, width - padding, y);
+                }
+
+                if (records.size() > 0) {
+                    int maxScore = 100;
+                    int chartWidth = width - 2 * padding;
+                    int chartHeight = height - 2 * padding;
+                    int pointGap = chartWidth / Math.max(records.size() - 1, 1);
+
+                    // 绘制数据点和线条
+                    g2d.setStroke(new BasicStroke(2));
+                    g2d.setColor(new Color(52, 152, 219));
+
+                    int prevX = padding;
+                    int firstScore = records.get(0).getScore() != null ? records.get(0).getScore().intValue() : 0;
+                    int prevY = height - padding - (firstScore * chartHeight / maxScore);
+
+                    for (int i = 0; i < records.size(); i++) {
+                        ExamRecord record = records.get(i);
+                        int x = padding + (records.size() > 1 ? i * pointGap : chartWidth / 2);
+                        int score = record.getScore() != null ? record.getScore().intValue() : 0;
+                        int y = height - padding - (score * chartHeight / maxScore);
+
+                        if (i > 0) {
+                            g2d.drawLine(prevX, prevY, x, y);
+                        }
+
+                        // 绘制数据点
+                        g2d.fillOval(x - 4, y - 4, 8, 8);
+
+                        // 显示分数
+                        g2d.setFont(new Font("微软雅黑", Font.PLAIN, 11));
+                        String scoreStr = String.valueOf(score);
                         FontMetrics fm = g2d.getFontMetrics();
-                        int msgWidth = fm.stringWidth(msg);
-                        g2d.drawString(msg, (width - msgWidth) / 2, height / 2);
-                        return;
-                    }
+                        g2d.drawString(scoreStr, x - fm.stringWidth(scoreStr) / 2, y - 10);
 
-                    // 绘制坐标轴
-                    g2d.setColor(new Color(200, 200, 200));
-                    g2d.drawLine(padding, height - padding, width - padding, height - padding);
-                    g2d.drawLine(padding, padding, padding, height - padding);
-
-                    // 绘制网格线
-                    g2d.setColor(new Color(240, 240, 240));
-                    for (int i = 1; i <= 4; i++) {
-                        int y = padding + (height - 2 * padding) * i / 5;
-                        g2d.drawLine(padding, y, width - padding, y);
-                    }
-
-                    if (records.size() > 0) {
-                        int maxScore = 100;
-                        int chartWidth = width - 2 * padding;
-                        int chartHeight = height - 2 * padding;
-                        int pointGap = chartWidth / Math.max(records.size() - 1, 1);
-
-                        // 绘制数据点和线条
-                        g2d.setStroke(new BasicStroke(2));
+                        // 显示考试序号
+                        g2d.setColor(new Color(120, 120, 120));
+                        String label = "#" + (i + 1);
+                        g2d.drawString(label, x - fm.stringWidth(label) / 2, height - padding + 20);
                         g2d.setColor(new Color(52, 152, 219));
 
-                        int prevX = padding;
-                        int firstScore = records.get(0).getScore() != null ? records.get(0).getScore().intValue() : 0;
-                        int prevY = height - padding - (firstScore * chartHeight / maxScore);
-
-                        for (int i = 0; i < records.size(); i++) {
-                            ExamRecord record = records.get(i);
-                            int x = padding + (records.size() > 1 ? i * pointGap : chartWidth / 2);
-                            int score = record.getScore() != null ? record.getScore().intValue() : 0;
-                            int y = height - padding - (score * chartHeight / maxScore);
-
-                            if (i > 0) {
-                                g2d.drawLine(prevX, prevY, x, y);
-                            }
-
-                            // 绘制数据点
-                            g2d.fillOval(x - 4, y - 4, 8, 8);
-
-                            // 显示分数
-                            g2d.setFont(new Font("微软雅黑", Font.PLAIN, 11));
-                            String scoreStr = String.valueOf(score);
-                            FontMetrics fm = g2d.getFontMetrics();
-                            g2d.drawString(scoreStr, x - fm.stringWidth(scoreStr) / 2, y - 10);
-
-                            // 显示考试序号
-                            g2d.setColor(new Color(120, 120, 120));
-                            String label = "#" + (i + 1);
-                            g2d.drawString(label, x - fm.stringWidth(label) / 2, height - padding + 20);
-                            g2d.setColor(new Color(52, 152, 219));
-
-                            prevX = x;
-                            prevY = y;
-                        }
+                        prevX = x;
+                        prevY = y;
                     }
+                }
 
-                    // Y轴刻度
-                    g2d.setColor(new Color(120, 120, 120));
-                    g2d.setFont(new Font("微软雅黑", Font.PLAIN, 11));
-                    for (int i = 0; i <= 5; i++) {
-                        int score = i * 20;
-                        int y = height - padding - (height - 2 * padding) * i / 5;
-                        g2d.drawString(String.valueOf(score), padding - 30, y + 5);
-                    }
-
-                } catch (Exception e) {
-                    e.printStackTrace();
+                // Y轴刻度
+                g2d.setColor(new Color(120, 120, 120));
+                g2d.setFont(new Font("微软雅黑", Font.PLAIN, 11));
+                for (int i = 0; i <= 5; i++) {
+                    int score = i * 20;
+                    int y = height - padding - (height - 2 * padding) * i / 5;
+                    g2d.drawString(String.valueOf(score), padding - 30, y + 5);
                 }
             }
         };
@@ -322,104 +301,68 @@ public class StudentAchievementPanel extends JPanel {
                 int height = getHeight();
                 int padding = 40;
 
-                try {
-                    List<ExamRecord> records = examService.getStudentExamRecords(student.getUserId());
-                    if (records.isEmpty()) {
-                        g2d.setFont(new Font("微软雅黑", Font.PLAIN, 14));
-                        g2d.setColor(new Color(150, 150, 150));
-                        String msg = "暂无考试记录";
-                        FontMetrics fm = g2d.getFontMetrics();
-                        int msgWidth = fm.stringWidth(msg);
-                        g2d.drawString(msg, (width - msgWidth) / 2, height / 2);
-                        return;
-                    }
+                int[] data = achievementManager.getQuestionTypeAccuracy();
+                int[] correctCounts = {data[0], data[2], data[4], data[6]};
+                int[] totalCounts = {data[1], data[3], data[5], data[7]};
 
-                    int[] correctCounts = new int[4];
-                    int[] totalCounts = new int[4];
+                // 绘制坐标轴
+                g2d.setColor(new Color(200, 200, 200));
+                g2d.drawLine(padding, height - padding, width - padding, height - padding);
+                g2d.drawLine(padding, padding, padding, height - padding);
 
-                    for (ExamRecord record : records) {
-                        List<AnswerRecord> answerRecords = examService.getAnswerRecords(record.getRecordId());
-                        for (AnswerRecord ar : answerRecords) {
-                            if (ar.getQuestion() != null) {
-                                int index = -1;
-                                switch (ar.getQuestion().getQuestionType()) {
-                                    case SINGLE: index = 0; break;
-                                    case MULTIPLE: index = 1; break;
-                                    case JUDGE: index = 2; break;
-                                    case BLANK: index = 3; break;
-                                }
-                                if (index >= 0) {
-                                    totalCounts[index]++;
-                                    if (ar.getIsCorrect() != null && ar.getIsCorrect()) {
-                                        correctCounts[index]++;
-                                    }
-                                }
-                            }
-                        }
-                    }
+                // 绘制网格线
+                g2d.setColor(new Color(240, 240, 240));
+                for (int i = 1; i <= 4; i++) {
+                    int y = padding + (height - 2 * padding) * i / 5;
+                    g2d.drawLine(padding, y, width - padding, y);
+                }
 
-                    // 绘制坐标轴
-                    g2d.setColor(new Color(200, 200, 200));
-                    g2d.drawLine(padding, height - padding, width - padding, height - padding);
-                    g2d.drawLine(padding, padding, padding, height - padding);
+                // 绘制柱状图
+                String[] labels = {"单选题", "多选题", "判断题", "填空题"};
+                Color[] colors = {
+                    new Color(52, 152, 219),
+                    new Color(46, 204, 113),
+                    new Color(155, 89, 182),
+                    new Color(241, 196, 15)
+                };
 
-                    // 绘制网格线
-                    g2d.setColor(new Color(240, 240, 240));
-                    for (int i = 1; i <= 4; i++) {
-                        int y = padding + (height - 2 * padding) * i / 5;
-                        g2d.drawLine(padding, y, width - padding, y);
-                    }
+                int barWidth = (width - 2 * padding - 60) / 4;
+                int chartHeight = height - 2 * padding;
 
-                    // 绘制柱状图
-                    String[] labels = {"单选题", "多选题", "判断题", "填空题"};
-                    Color[] colors = {
-                        new Color(52, 152, 219),
-                        new Color(46, 204, 113),
-                        new Color(155, 89, 182),
-                        new Color(241, 196, 15)
-                    };
+                for (int i = 0; i < 4; i++) {
+                    double accuracy = totalCounts[i] > 0 ? (correctCounts[i] * 100.0 / totalCounts[i]) : 0;
+                    int barHeight = (int) (chartHeight * accuracy / 100);
+                    int x = padding + 30 + i * (barWidth + 15);
+                    int y = height - padding - barHeight;
 
-                    int barWidth = (width - 2 * padding - 60) / 4;
-                    int chartHeight = height - 2 * padding;
+                    // 绘制柱形
+                    g2d.setColor(colors[i]);
+                    g2d.fillRect(x, y, barWidth, barHeight);
 
-                    for (int i = 0; i < 4; i++) {
-                        double accuracy = totalCounts[i] > 0 ? (correctCounts[i] * 100.0 / totalCounts[i]) : 0;
-                        int barHeight = (int) (chartHeight * accuracy / 100);
-                        int x = padding + 30 + i * (barWidth + 15);
-                        int y = height - padding - barHeight;
+                    // 绘制边框
+                    g2d.setColor(colors[i].darker());
+                    g2d.drawRect(x, y, barWidth, barHeight);
 
-                        // 绘制柱形
-                        g2d.setColor(colors[i]);
-                        g2d.fillRect(x, y, barWidth, barHeight);
+                    // 显示百分比
+                    g2d.setFont(new Font("微软雅黑", Font.BOLD, 12));
+                    String percentStr = String.format("%.1f%%", accuracy);
+                    FontMetrics fm = g2d.getFontMetrics();
+                    g2d.setColor(new Color(60, 60, 60));
+                    g2d.drawString(percentStr, x + (barWidth - fm.stringWidth(percentStr)) / 2, y - 5);
 
-                        // 绘制边框
-                        g2d.setColor(colors[i].darker());
-                        g2d.drawRect(x, y, barWidth, barHeight);
-
-                        // 显示百分比
-                        g2d.setFont(new Font("微软雅黑", Font.BOLD, 12));
-                        String percentStr = String.format("%.1f%%", accuracy);
-                        FontMetrics fm = g2d.getFontMetrics();
-                        g2d.setColor(new Color(60, 60, 60));
-                        g2d.drawString(percentStr, x + (barWidth - fm.stringWidth(percentStr)) / 2, y - 5);
-
-                        // 显示标签
-                        g2d.setColor(new Color(120, 120, 120));
-                        g2d.setFont(new Font("微软雅黑", Font.PLAIN, 11));
-                        g2d.drawString(labels[i], x + (barWidth - fm.stringWidth(labels[i])) / 2, height - padding + 20);
-                    }
-
-                    // Y轴刻度
+                    // 显示标签
                     g2d.setColor(new Color(120, 120, 120));
                     g2d.setFont(new Font("微软雅黑", Font.PLAIN, 11));
-                    for (int i = 0; i <= 5; i++) {
-                        int percent = i * 20;
-                        int y = height - padding - chartHeight * i / 5;
-                        g2d.drawString(percent + "%", padding - 35, y + 5);
-                    }
+                    g2d.drawString(labels[i], x + (barWidth - fm.stringWidth(labels[i])) / 2, height - padding + 20);
+                }
 
-                } catch (Exception e) {
-                    e.printStackTrace();
+                // Y轴刻度
+                g2d.setColor(new Color(120, 120, 120));
+                g2d.setFont(new Font("微软雅黑", Font.PLAIN, 11));
+                for (int i = 0; i <= 5; i++) {
+                    int percent = i * 20;
+                    int y = height - padding - chartHeight * i / 5;
+                    g2d.drawString(percent + "%", padding - 35, y + 5);
                 }
             }
         };

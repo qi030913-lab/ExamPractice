@@ -26,6 +26,7 @@ import java.util.List;
 public class StudentExamPanel extends JPanel {
     private final User student;
     private final PaperService paperService;
+    private final StudentExamManager examManager;
     private JTable paperTable;
     private DefaultTableModel tableModel;
     private String currentSubject = "全部";
@@ -34,6 +35,7 @@ public class StudentExamPanel extends JPanel {
     public StudentExamPanel(User student) {
         this.student = student;
         this.paperService = new PaperService();
+        this.examManager = new StudentExamManager(student);
         initComponents();
     }
 
@@ -170,8 +172,8 @@ public class StudentExamPanel extends JPanel {
         paperTable.setSelectionForeground(UIUtil.TEXT_COLOR);
         
         // 为操作列设置按钮渲染器和编辑器
-        paperTable.getColumn("操作").setCellRenderer(new ButtonRenderer());
-        paperTable.getColumn("操作").setCellEditor(new ButtonEditor(new JCheckBox()));
+        paperTable.getColumn("操作").setCellRenderer(new StudentTableButtonRenderer());
+        paperTable.getColumn("操作").setCellEditor(new StudentTableButtonEditor(new JCheckBox(), row -> startExam(row)));
         
         // 表头样式
         paperTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 13));
@@ -193,100 +195,14 @@ public class StudentExamPanel extends JPanel {
      * 根据科目加载试卷
      */
     private void loadPapersBySubject(String subject) {
-        if (tableModel == null) {
-            return;
-        }
-        tableModel.setRowCount(0);
-        try {
-            List<Paper> allPapers = paperService.getAllPublishedPapers();
-            List<Paper> filteredPapers;
-            
-            if ("全部".equals(subject)) {
-                filteredPapers = allPapers;
-            } else {
-                filteredPapers = new java.util.ArrayList<>();
-                for (Paper p : allPapers) {
-                    if (subject.equals(p.getSubject())) {
-                        filteredPapers.add(p);
-                    }
-                }
-            }
-            
-            for (Paper p : filteredPapers) {
-                // 统计各类型题目数量
-                long singleCount = 0;
-                long multipleCount = 0;
-                long judgeCount = 0;
-                long blankCount = 0;
-                
-                if (p.getQuestions() != null && !p.getQuestions().isEmpty()) {
-                    singleCount = p.getQuestions().stream()
-                        .filter(q -> q.getQuestionType() == com.exam.model.enums.QuestionType.SINGLE)
-                        .count();
-                    multipleCount = p.getQuestions().stream()
-                        .filter(q -> q.getQuestionType() == com.exam.model.enums.QuestionType.MULTIPLE)
-                        .count();
-                    judgeCount = p.getQuestions().stream()
-                        .filter(q -> q.getQuestionType() == com.exam.model.enums.QuestionType.JUDGE)
-                        .count();
-                    blankCount = p.getQuestions().stream()
-                        .filter(q -> q.getQuestionType() == com.exam.model.enums.QuestionType.BLANK)
-                        .count();
-                }
-                
-                Object[] row = {
-                    p.getPaperName(),
-                    singleCount > 0 ? String.valueOf(singleCount) : "无",
-                    multipleCount > 0 ? String.valueOf(multipleCount) : "无",
-                    judgeCount > 0 ? String.valueOf(judgeCount) : "无",
-                    blankCount > 0 ? String.valueOf(blankCount) : "无",
-                    "开始考试"
-                };
-                tableModel.addRow(row);
-            }
-            
-            if (filteredPapers.isEmpty()) {
-                UIUtil.showInfo(this, "该科目暂无试卷");
-            }
-        } catch (Exception e) {
-            UIUtil.showError(this, "加载试卷失败：" + e.getMessage());
-        }
+        examManager.loadPapersBySubject(subject, tableModel, this);
     }
 
     /**
      * 开始考试
      */
     private void startExam(int selectedRow) {
-        if (selectedRow == -1) {
-            UIUtil.showWarning(this, "请先选择要学习的试卷");
-            return;
-        }
-        
-        String paperName = (String) tableModel.getValueAt(selectedRow, 0);
-        if (paperName == null || paperName.isEmpty()) {
-            UIUtil.showWarning(this, "请选择有效的试卷");
-            return;
-        }
-        
-        if (!UIUtil.showConfirm(this, "确定要开始考试《" + paperName + "》吗？\n考试开始后将开始计时。")) {
-            return;
-        }
-        
-        try {
-            Paper paper = paperService.getPaperByName(paperName);
-            if (paper == null || paper.getQuestions().isEmpty()) {
-                UIUtil.showError(this, "该试卷没有题目，无法考试");
-                return;
-            }
-            
-            // 打开考试界面
-            com.exam.service.ExamService examService = new com.exam.service.ExamService();
-            new ExamFrame(student, paper, examService).setVisible(true);
-            
-        } catch (Exception e) {
-            UIUtil.showError(this, "开始考试失败：" + e.getMessage());
-            e.printStackTrace();
-        }
+        examManager.startExam(selectedRow, tableModel, paperTable);
     }
 
     // ========== 辅助方法 ==========
