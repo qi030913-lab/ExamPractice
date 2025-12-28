@@ -299,6 +299,9 @@ public class LoginFrame extends JFrame {
         // 创建ID号字段面板
         JPanel idFieldPanel = createFormField("学 号", numField);
         
+        // 第一栏：角色选择
+        formPanel.add(createRoleFormField("角 色", regRoleComboBox));
+        formPanel.add(Box.createVerticalStrut(8));
         formPanel.add(createFormField("姓 名", nameField));
         formPanel.add(Box.createVerticalStrut(8));
         formPanel.add(idFieldPanel);
@@ -306,8 +309,6 @@ public class LoginFrame extends JFrame {
         formPanel.add(createFormField("密 码", pwdField));
         formPanel.add(Box.createVerticalStrut(8));
         formPanel.add(createFormField("确认密码", confirmPwdField));
-        formPanel.add(Box.createVerticalStrut(8));
-        formPanel.add(createRoleFormField("角 色", regRoleComboBox));
         
         // 为注册角色下拉框添加监听器，更新ID字段标签
         regRoleComboBox.addActionListener(e -> {
@@ -386,10 +387,12 @@ public class LoginFrame extends JFrame {
         fieldLabel.setFont(new Font("SimHei", Font.PLAIN, 12));
         fieldLabel.setForeground(new Color(30, 70, 120));
         fieldLabel.setOpaque(false);
+        fieldLabel.setAlignmentX(Component.LEFT_ALIGNMENT);  // 确保标签左对齐
         panel.add(fieldLabel);
 
         field.setFont(new Font("SimHei", Font.PLAIN, 12));
         field.setBorder(BorderFactory.createLineBorder(new Color(144, 202, 249), 1));
+        field.setAlignmentX(Component.LEFT_ALIGNMENT);  // 确保输入框左对齐
         addFocusListener(field);
         panel.add(field);
 
@@ -405,9 +408,29 @@ public class LoginFrame extends JFrame {
         fieldLabel.setFont(new Font("SimHei", Font.PLAIN, 12));
         fieldLabel.setForeground(new Color(30, 70, 120));
         fieldLabel.setOpaque(false);
+        fieldLabel.setAlignmentX(Component.LEFT_ALIGNMENT);  // 确保标签左对齐
         panel.add(fieldLabel);
 
+        comboBox.setAlignmentX(Component.LEFT_ALIGNMENT);  // 确保下拉框左对齐
         panel.add(comboBox);
+
+        return panel;
+    }
+    
+    /**
+     * 创建左对齐的角色选择表单字段
+     */
+    private JPanel createRoleFormFieldLeftAlign(String label, JComboBox<String> comboBox) {
+        JPanel panel = new JPanel(new BorderLayout(8, 0));
+        panel.setBackground(new Color(245, 250, 255));
+
+        JLabel fieldLabel = new JLabel(label);
+        fieldLabel.setFont(new Font("SimHei", Font.PLAIN, 12));
+        fieldLabel.setForeground(new Color(30, 70, 120));
+        fieldLabel.setOpaque(false);
+        
+        panel.add(fieldLabel, BorderLayout.WEST);
+        panel.add(comboBox, BorderLayout.CENTER);
 
         return panel;
     }
