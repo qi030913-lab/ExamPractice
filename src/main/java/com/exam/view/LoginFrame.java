@@ -181,7 +181,7 @@ public class LoginFrame extends JFrame {
 
     private JButton createStyledButton(String text, Color bg, Color fg) {
         JButton btn = new JButton(text);
-        btn.setFont(new Font("SimHei", Font.BOLD, 14));
+        btn.setFont(new Font("SimHei", Font.BOLD, 12));
         btn.setForeground(fg);
         btn.setBackground(bg);
         btn.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
@@ -390,7 +390,12 @@ public class LoginFrame extends JFrame {
         fieldLabel.setAlignmentX(Component.LEFT_ALIGNMENT);  // 确保标签左对齐
         panel.add(fieldLabel);
 
-        field.setFont(new Font("SimHei", Font.PLAIN, 12));
+        // 如果是密码框，设置更小的字体
+        if (field instanceof JPasswordField) {
+            field.setFont(new Font("SimHei", Font.PLAIN, 10));
+        } else {
+            field.setFont(new Font("SimHei", Font.PLAIN, 12));
+        }
         field.setBorder(BorderFactory.createLineBorder(new Color(144, 202, 249), 1));
         field.setAlignmentX(Component.LEFT_ALIGNMENT);  // 确保输入框左对齐
         addFocusListener(field);
