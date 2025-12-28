@@ -10,6 +10,7 @@ import com.exam.view.teacher.ui.components.TeacherImportPanel;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -138,25 +139,57 @@ public class ImportManager {
             }
 
             try {
+                // 先导入题目并获取它们的ID
+                List<Integer> questionIds = new ArrayList<>();
+                if (questions != null && !questions.isEmpty()) {
+                    for (Question question : questions) {
+                        if (question != null) {
+                            // 检查题目是否已存在
+                            List<Question> existingQuestions = questionService.searchQuestions(question.getContent(), null, null, null, 0, Integer.MAX_VALUE);
+                            boolean exists = existingQuestions.stream()
+                                    .anyMatch(existing -> existing.getContent().equals(question.getContent()) && 
+                                                        existing.getCorrectAnswer().equals(question.getCorrectAnswer()));
+                            
+                            int questionId;
+                            if (!exists) {
+                                // 如果题目不存在，添加到数据库
+                                questionId = questionService.addQuestion(question);
+                            } else {
+                                // 如果题目已存在，使用现有ID
+                                questionId = existingQuestions.get(0).getQuestionId();
+                            }
+                            
+                            if (questionId > 0) {
+                                questionIds.add(questionId);
+                            }
+                        }
+                    }
+                }
+
+                if (questionIds.isEmpty()) {
+                    UIUtil.showError(dialog, "没有有效的题目可以生成试卷");
+                    return;
+                }
+
+                // 计算总分
+                int totalScore = questions.stream()
+                        .filter(q -> q != null)
+                        .mapToInt(Question::getScore)
+                        .sum();
+
                 // 创建试卷对象
                 Paper paper = new Paper();
                 paper.setPaperName(paperName);
                 paper.setSubject(subject);
                 paper.setPassScore(passScore);
                 paper.setDuration(duration);
+                paper.setTotalScore(totalScore);
                 paper.setCreatorId(mainFrame.getTeacher().getUserId());
 
-                // 计算总分
-                int totalScore = questions.stream()
-                        .mapToInt(Question::getScore)
-                        .sum();
-                paper.setTotalScore(totalScore);
-
                 // 创建试卷并关联题目
-                int paperId = mainFrame.getPaperService().createPaper(paper, 
-                    questions.stream().mapToInt(Question::getQuestionId).boxed().collect(java.util.stream.Collectors.toList()));
+                int paperId = mainFrame.getPaperService().createPaper(paper, questionIds);
 
-                UIUtil.showInfo(dialog, "成功生成试卷！\n导入题目：" + questions.size() + " 道");
+                UIUtil.showInfo(dialog, "成功生成试卷！\n导入题目：" + questionIds.size() + " 道");
                 dialog.dispose();
                 mainFrame.refreshQuestionData();
                 mainFrame.refreshPaperData();
