@@ -32,7 +32,19 @@ public class StudentMainFrame extends JFrame {
     private JPanel mainContentPanel;
     private String currentView = "home";
     private java.util.List<JButton> menuButtons = new java.util.ArrayList<>();
-
+    
+    // 添加一个全局变量来保存当前选择的科目
+    private String currentExamSubject = "全部";
+    
+    // 添加考试面板的引用，用于刷新
+    private StudentExamPanel examPanel;
+    
+    // 添加定时器用于定期刷新试卷列表
+    private javax.swing.Timer refreshTimer;
+    
+    // 记录上次检查的已发布试卷数量，用于优化刷新
+    private int lastPublishedPaperCount = 0;
+    
     public StudentMainFrame(User student) {
         this.student = student;
         initComponents();
@@ -40,6 +52,84 @@ public class StudentMainFrame extends JFrame {
         setSize(1200, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         UIUtil.centerWindow(this);
+        
+        // 添加窗口监听器以处理关闭事件
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                stopAutoRefreshTimer();
+                dispose();
+            }
+        });
+        
+        // 启动定时器，每30秒检查一次是否有新发布的试卷
+        startAutoRefreshTimer();
+    }
+    
+    /**
+     * 启动自动刷新定时器
+     */
+    private void startAutoRefreshTimer() {
+        // 创建一个定时器，每30秒刷新一次考试列表
+        refreshTimer = new javax.swing.Timer(30000, e -> {
+            if ("exam".equals(currentView)) {
+                // 检查已发布试卷数量是否有变化，如果有变化则刷新
+                checkAndRefreshExamList();
+            }
+        });
+        refreshTimer.start();
+    }
+    
+    /**
+     * 停止自动刷新定时器
+     */
+    private void stopAutoRefreshTimer() {
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+        }
+    }
+    
+    /**
+     * 设置当前考试科目
+     */
+    public void setCurrentExamSubject(String subject) {
+        this.currentExamSubject = subject;
+    }
+    
+    /**
+     * 刷新考试列表
+     */
+    public void refreshExamList() {
+        if (examPanel != null) {
+            examPanel.refreshExamList();
+        }
+    }
+    
+    /**
+     * 手动检查并刷新考试列表
+     */
+    public void manualRefreshExamList() {
+        checkAndRefreshExamList();
+    }
+    
+    /**
+     * 检查试卷列表是否有更新，如有则刷新
+     */
+    private void checkAndRefreshExamList() {
+        try {
+            com.exam.service.PaperService paperService = new com.exam.service.PaperService();
+            java.util.List<com.exam.model.Paper> publishedPapers = paperService.getAllPublishedPapers();
+            int currentPaperCount = publishedPapers.size();
+            
+            // 如果试卷数量发生变化，则刷新列表
+            if (currentPaperCount != lastPublishedPaperCount) {
+                lastPublishedPaperCount = currentPaperCount;
+                refreshExamList();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            // 即使检查失败也不影响正常功能，继续运行
+        }
     }
 
     private void initComponents() {
@@ -317,7 +407,12 @@ public class StudentMainFrame extends JFrame {
                 mainContentPanel.add(createHomePanel(), BorderLayout.CENTER);
                 break;
             case "exam":
-                mainContentPanel.add(new StudentExamPanel(student), BorderLayout.CENTER);
+                // 传递当前考试科目和主框架给考试面板
+                examPanel = new StudentExamPanel(student, currentExamSubject, this);
+                mainContentPanel.add(examPanel, BorderLayout.CENTER);
+                
+                // 当切换到考试页面时，立即检查是否有新发布的试卷
+                SwingUtilities.invokeLater(() -> checkAndRefreshExamList());
                 break;
             case "score":
                 mainContentPanel.add(new StudentScorePanel(student), BorderLayout.CENTER);
@@ -445,11 +540,17 @@ public class StudentMainFrame extends JFrame {
 
         return card;
     }
-
+    
     private void logout() {
         if (UIUtil.showConfirm(this, "确定要退出登录吗？")) {
             dispose();
             new LoginFrame().setVisible(true);
         }
+    }
+    
+    @Override
+    protected void finalize() throws Throwable {
+        stopAutoRefreshTimer();
+        super.finalize();
     }
 }

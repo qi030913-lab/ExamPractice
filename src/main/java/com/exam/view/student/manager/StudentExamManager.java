@@ -28,23 +28,40 @@ public class StudentExamManager {
      * @param parentComponent 父组件，用于显示消息框
      */
     public void loadPapersBySubject(String subject, DefaultTableModel tableModel, JComponent parentComponent) {
+        System.out.println("DEBUG [StudentExamManager]: loadPapersBySubject() 被调用, 科目=" + subject);
+        
         if (tableModel == null) {
+            System.out.println("DEBUG [StudentExamManager]: tableModel为null，直接返回");
             return;
         }
         tableModel.setRowCount(0);
         try {
             List<Paper> allPapers = paperService.getAllPublishedPapers();
+            System.out.println("DEBUG [StudentExamManager]: 从数据库获取到 " + allPapers.size() + " 个已发布试卷");
+            
+            // 打印所有试卷的科目信息
+            for (Paper p : allPapers) {
+                System.out.println("DEBUG [StudentExamManager]: 试卷='" + p.getPaperName() + "', 科目='" + p.getSubject() + "', 发布状态=" + p.getIsPublished());
+            }
+            
             List<Paper> filteredPapers;
-
+            
             if ("全部".equals(subject)) {
                 filteredPapers = allPapers;
+                System.out.println("DEBUG [StudentExamManager]: 选择'全部'，不过滤，共 " + filteredPapers.size() + " 个试卷");
             } else {
                 filteredPapers = new java.util.ArrayList<>();
                 for (Paper p : allPapers) {
-                    if (subject.equals(p.getSubject())) {
+                    // 优化科目匹配逻辑，处理可能的空格和大小写问题
+                    String paperSubject = p.getSubject() != null ? p.getSubject().trim() : "";
+                    String filterSubject = subject != null ? subject.trim() : "";
+                    boolean match = isSubjectMatch(paperSubject, filterSubject);
+                    System.out.println("DEBUG [StudentExamManager]: 比较 试卷科目='" + paperSubject + "' vs 筛选科目='" + filterSubject + "', 匹配=" + match);
+                    if (match) {
                         filteredPapers.add(p);
                     }
                 }
+                System.out.println("DEBUG [StudentExamManager]: 过滤后共 " + filteredPapers.size() + " 个试卷");
             }
 
             for (Paper p : filteredPapers) {
@@ -78,13 +95,19 @@ public class StudentExamManager {
                         "开始考试"
                 };
                 tableModel.addRow(row);
+                System.out.println("DEBUG [StudentExamManager]: 添加行到表格: " + p.getPaperName());
             }
+            
+            System.out.println("DEBUG [StudentExamManager]: 表格最终行数=" + tableModel.getRowCount());
 
             if (filteredPapers.isEmpty()) {
+                System.out.println("DEBUG [StudentExamManager]: 没有匹配的试卷");
                 // 当没有试卷时，不弹窗提示，只在表格中显示相应信息
                 // 表格行将由UI层处理，此处不添加任何行
             }
         } catch (Exception e) {
+            System.out.println("DEBUG [StudentExamManager]: 加载试卷失败: " + e.getMessage());
+            e.printStackTrace();
             UIUtil.showError(parentComponent, "加载试卷失败：" + e.getMessage());
         }
     }
@@ -126,5 +149,28 @@ public class StudentExamManager {
             UIUtil.showError(table, "开始考试失败：" + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    private boolean isSubjectMatch(String paperSubject, String filterSubject) {
+        // 基本的非空检查
+        if (paperSubject == null || filterSubject == null) {
+            return paperSubject == filterSubject;
+        }
+        
+        // 标准化比较 - 去除空格并转换为小写
+        String normalizedPaperSubject = paperSubject.trim().toLowerCase();
+        String normalizedFilterSubject = filterSubject.trim().toLowerCase();
+        
+        // 精确匹配
+        if (normalizedPaperSubject.equals(normalizedFilterSubject)) {
+            return true;
+        }
+        
+        // 处理一些常见的中文字符差异（如果需要）
+        // 例如：可能存在的全角/半角字符差异
+        normalizedPaperSubject = normalizedPaperSubject.replaceAll("\\s+", "");
+        normalizedFilterSubject = normalizedFilterSubject.replaceAll("\\s+", "");
+        
+        return normalizedPaperSubject.equals(normalizedFilterSubject);
     }
 }
