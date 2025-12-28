@@ -81,7 +81,8 @@ public class StudentExamManager {
             }
 
             if (filteredPapers.isEmpty()) {
-                UIUtil.showInfo(parentComponent, "该科目暂无试卷");
+                // 当没有试卷时，不弹窗提示，只在表格中显示相应信息
+                // 表格行将由UI层处理，此处不添加任何行
             }
         } catch (Exception e) {
             UIUtil.showError(parentComponent, "加载试卷失败：" + e.getMessage());

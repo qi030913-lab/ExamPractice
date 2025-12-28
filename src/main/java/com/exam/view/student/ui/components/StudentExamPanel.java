@@ -198,7 +198,78 @@ public class StudentExamPanel extends JPanel {
      * 根据科目加载试卷
      */
     private void loadPapersBySubject(String subject) {
+        // 清空现有数据
+        tableModel.setRowCount(0);
         examManager.loadPapersBySubject(subject, tableModel, this);
+        
+        // 检查是否有数据，如果没有则添加提示行并隐藏表头
+        updateTableHeaderVisibility();
+    }
+    
+    private void updateTableHeaderVisibility() {
+        // 如果表格没有数据，显示"暂无考试记录"提示
+        if (tableModel.getRowCount() == 0) {
+            showNoDataMessage();
+        } else {
+            // 显示表头
+            paperTable.getTableHeader().setVisible(true);
+            // 确保显示表格
+            showTable();
+        }
+    }
+    
+    private void showNoDataMessage() {
+        // 隐藏表格组件
+        paperTable.setVisible(false);
+        
+        // 创建"暂无考试记录"提示标签
+        JLabel noDataLabel = new JLabel("暂无考试记录", SwingConstants.CENTER);
+        noDataLabel.setFont(new Font("微软雅黑", Font.PLAIN, 18));
+        noDataLabel.setForeground(new Color(150, 150, 150));
+        noDataLabel.setVerticalAlignment(SwingConstants.CENTER);
+        
+        // 获取表格所在的面板并替换为提示标签
+        // paperTable的父组件是JViewport，JViewport的父组件是JScrollPane，JScrollPane的父组件是JPanel
+        Container viewport = paperTable.getParent();
+        if (viewport == null) return;
+        
+        Container scrollPane = viewport.getParent();
+        if (scrollPane == null) return;
+        
+        JPanel tablePanel = (JPanel) scrollPane.getParent();
+        if (tablePanel == null) return;
+        
+        tablePanel.removeAll();
+        tablePanel.setLayout(new BorderLayout(0, 15));
+        tablePanel.add(noDataLabel, BorderLayout.CENTER);
+        
+        tablePanel.revalidate();
+        tablePanel.repaint();
+    }
+    
+    private void showTable() {
+        // 确保表格可见
+        paperTable.setVisible(true);
+        
+        // 恢复表格显示
+        Container viewport = paperTable.getParent();
+        if (viewport == null) return;
+        
+        Container scrollPane = viewport.getParent();
+        if (scrollPane == null) return;
+        
+        JPanel tablePanel = (JPanel) scrollPane.getParent();
+        if (tablePanel == null) return;
+        
+        // 检查当前是否显示的是提示标签，如果是则需要重新设置
+        if (tablePanel.getComponentCount() == 0 || !(tablePanel.getComponent(0) instanceof JLabel)) {
+            tablePanel.removeAll();
+            tablePanel.setLayout(new BorderLayout(0, 15));
+            tablePanel.add(scrollPane, BorderLayout.CENTER);
+        }
+        
+        tablePanel.revalidate();
+        tablePanel.repaint();
     }
 
     /**
