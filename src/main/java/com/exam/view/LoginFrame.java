@@ -17,10 +17,10 @@ import java.awt.*;
 public class LoginFrame extends JFrame {
     private final UserService userService;
     private JTextField realNameField;
-    private JTextField studentNumberField;
+    private JTextField idNumberField;  // 通用ID字段，学生为学号，教师为教工号
     private JPasswordField passwordField;
     private JComboBox<String> roleComboBox;
-    private JPanel studentNumberPanel;
+    private JPanel idNumberPanel;
 
     public LoginFrame() {
         this.userService = new UserService();
@@ -78,9 +78,9 @@ public class LoginFrame extends JFrame {
         formPanel.add(createInputRow("姓　　名：", realNameField = new JTextField()));
         formPanel.add(Box.createVerticalStrut(12));
 
-        // 学号输入（可动态隐藏）
-        studentNumberPanel = createInputRow("学　　号：", studentNumberField = new JTextField());
-        formPanel.add(studentNumberPanel);
+        // ID号输入（根据角色动态显示标签）
+        idNumberPanel = createInputRow("学　　号：", idNumberField = new JTextField());
+        formPanel.add(idNumberPanel);
         formPanel.add(Box.createVerticalStrut(12));
 
         // 密码输入
@@ -132,11 +132,14 @@ public class LoginFrame extends JFrame {
         // 添加角色切换监听器
         roleComboBox.addActionListener(e -> {
             String selectedRole = (String) roleComboBox.getSelectedItem();
-            // 教师角色隐藏学号，学生角色显示学号
-            studentNumberPanel.setVisible("学生".equals(selectedRole));
+            // 根据角色显示相应的ID字段标签
+            updateIdFieldLabel(selectedRole);
             revalidate();
             repaint();
         });
+        
+        // 初始化标签
+        SwingUtilities.invokeLater(() -> updateIdFieldLabel("学生"));
         
         panel.add(roleComboBox, BorderLayout.CENTER);
         return panel;
@@ -197,7 +200,7 @@ public class LoginFrame extends JFrame {
      */
     private void handleLogin() {
         String realName = realNameField.getText().trim();
-        String studentNumber = studentNumberField.getText().trim();
+        String idNumber = idNumberField.getText().trim();
         String password = new String(passwordField.getPassword());
         String roleStr = (String) roleComboBox.getSelectedItem();
         UserRole selectedRole = "教师".equals(roleStr) ? UserRole.TEACHER : UserRole.STUDENT;
@@ -207,10 +210,15 @@ public class LoginFrame extends JFrame {
             realNameField.requestFocus();
             return;
         }
-        // 学生角色需要验证学号
-        if (selectedRole == UserRole.STUDENT && studentNumber.isEmpty()) {
+        // 学生角色需要验证学号，教师角色需要验证教工号
+        if (selectedRole == UserRole.STUDENT && idNumber.isEmpty()) {
             UIUtil.showWarning(this, "请输入学号");
-            studentNumberField.requestFocus();
+            idNumberField.requestFocus();
+            return;
+        }
+        if (selectedRole == UserRole.TEACHER && idNumber.isEmpty()) {
+            UIUtil.showWarning(this, "请输入教工号");
+            idNumberField.requestFocus();
             return;
         }
         if (password.isEmpty()) {
@@ -220,7 +228,7 @@ public class LoginFrame extends JFrame {
         }
 
         try {
-            User user = userService.login(realName, studentNumber, password, selectedRole);
+            User user = userService.login(realName, idNumber, password, selectedRole);
             SwingUtilities.invokeLater(() -> {
                 if (user.getRole() == UserRole.TEACHER) new TeacherMainFrame(user).setVisible(true);
                 else if (user.getRole() == UserRole.STUDENT) new StudentMainFrame(user).setVisible(true);
@@ -233,6 +241,19 @@ public class LoginFrame extends JFrame {
         } catch (Exception ex) {
             UIUtil.showError(this, "登录失败：" + ex.getMessage());
             ex.printStackTrace();
+        }
+    }
+    
+    /**
+     * 根据角色更新ID字段标签
+     */
+    private void updateIdFieldLabel(String selectedRole) {
+        // 更新ID字段的标签文本
+        JLabel label = (JLabel) idNumberPanel.getComponent(0); // 第一个组件是标签
+        if ("教师".equals(selectedRole)) {
+            label.setText("教工号：");
+        } else {
+            label.setText("学　号：");
         }
     }
 
@@ -274,16 +295,25 @@ public class LoginFrame extends JFrame {
         JComboBox<String> regRoleComboBox = new JComboBox<>(new String[]{"学生", "教师"});
         regRoleComboBox.setFont(new Font("SimHei", Font.PLAIN, 12));
         regRoleComboBox.setBorder(BorderFactory.createLineBorder(new Color(144, 202, 249), 1));
-
+        
+        // 创建ID号字段面板
+        JPanel idFieldPanel = createFormField("学 号", numField);
+        
         formPanel.add(createFormField("姓 名", nameField));
         formPanel.add(Box.createVerticalStrut(8));
-        formPanel.add(createFormField("学 号", numField));
+        formPanel.add(idFieldPanel);
         formPanel.add(Box.createVerticalStrut(8));
         formPanel.add(createFormField("密 码", pwdField));
         formPanel.add(Box.createVerticalStrut(8));
         formPanel.add(createFormField("确认密码", confirmPwdField));
         formPanel.add(Box.createVerticalStrut(8));
         formPanel.add(createRoleFormField("角 色", regRoleComboBox));
+        
+        // 为注册角色下拉框添加监听器，更新ID字段标签
+        regRoleComboBox.addActionListener(e -> {
+            String selectedRole = (String) regRoleComboBox.getSelectedItem();
+            updateRegisterIdFieldLabel(idFieldPanel, selectedRole);
+        });
 
         mainPanel.add(formPanel, BorderLayout.CENTER);
 
@@ -299,7 +329,15 @@ public class LoginFrame extends JFrame {
             String cpw = new String(confirmPwdField.getPassword());
 
             if (rn.isEmpty()) { UIUtil.showWarning(dialog, "请输入姓名"); return; }
-            if (sn.isEmpty()) { UIUtil.showWarning(dialog, "请输入学号"); return; }
+            if (sn.isEmpty()) {
+                String roleStr = (String) regRoleComboBox.getSelectedItem();
+                if ("教师".equals(roleStr)) {
+                    UIUtil.showWarning(dialog, "请输入教工号");
+                } else {
+                    UIUtil.showWarning(dialog, "请输入学号");
+                }
+                return;
+            }
             if (pw.isEmpty()) { UIUtil.showWarning(dialog, "请输入密码"); return; }
             if (!pw.equals(cpw)) { UIUtil.showWarning(dialog, "两次密码不一致"); return; }
 
@@ -318,7 +356,7 @@ public class LoginFrame extends JFrame {
                 UIUtil.showInfo(dialog, "注册成功，请登录！");
                 dialog.dispose();
                 realNameField.setText(rn);
-                studentNumberField.setText(sn);
+                idNumberField.setText(sn); // 更新为idNumberField
                 passwordField.setText("");
                 passwordField.requestFocus();
             } catch (Exception ex) {
@@ -372,5 +410,18 @@ public class LoginFrame extends JFrame {
         panel.add(comboBox);
 
         return panel;
+    }
+    
+    /**
+     * 根据角色更新注册对话框中的ID字段标签
+     */
+    private void updateRegisterIdFieldLabel(JPanel idFieldPanel, String selectedRole) {
+        // 更新注册对话框中ID字段的标签文本
+        JLabel label = (JLabel) idFieldPanel.getComponent(0); // 第一个组件是标签
+        if ("教师".equals(selectedRole)) {
+            label.setText("教工号");
+        } else {
+            label.setText("学 号");
+        }
     }
 }
