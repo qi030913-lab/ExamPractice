@@ -22,6 +22,8 @@ public class TeacherPaperPanel extends JPanel {
     
     private JTable paperManagementTable;
     private DefaultTableModel paperTableModel;
+    private JScrollPane scrollPane;
+    private JPanel tablePanel;
     
     // 回调接口
     public interface TeacherPaperCallback {
@@ -69,7 +71,7 @@ public class TeacherPaperPanel extends JPanel {
         contentPanel.add(titlePanel, BorderLayout.NORTH);
 
         // 表格面板
-        JPanel tablePanel = new JPanel(new BorderLayout(0, 15));
+        tablePanel = new JPanel(new BorderLayout(0, 15));
         tablePanel.setBackground(Color.WHITE);
         tablePanel.setBorder(BorderFactory.createEmptyBorder(0, 30, 20, 30));
 
@@ -143,7 +145,7 @@ public class TeacherPaperPanel extends JPanel {
         paperManagementTable.getTableHeader().setPreferredSize(new Dimension(0, 40));
         paperManagementTable.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(220, 220, 220)));
 
-        JScrollPane scrollPane = new JScrollPane(paperManagementTable);
+        scrollPane = new JScrollPane(paperManagementTable);
         scrollPane.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
         scrollPane.getViewport().setBackground(Color.WHITE);
 
@@ -179,10 +181,78 @@ public class TeacherPaperPanel extends JPanel {
                 };
                 paperTableModel.addRow(row);
             }
+            
+            // 检查是否有数据，如果没有则显示提示
+            updateTableDisplay();
         } catch (Exception e) {
             UIUtil.showError(this, "加载试卷失败：" + e.getMessage());
             e.printStackTrace();
         }
+    }
+    
+    private void updateTableDisplay() {
+        // 如果表格没有数据，显示"暂无试卷"提示
+        if (paperTableModel.getRowCount() == 0) {
+            showNoDataMessage();
+        } else {
+            // 显示表头
+            paperManagementTable.getTableHeader().setVisible(true);
+            // 确保显示表格
+            showTable();
+        }
+    }
+    
+    private void showNoDataMessage() {
+        // 隐藏表格组件
+        paperManagementTable.setVisible(false);
+        
+        // 创建"暂无试卷"提示标签
+        JLabel noDataLabel = new JLabel("暂无试卷", SwingConstants.CENTER);
+        noDataLabel.setFont(new Font("微软雅黑", Font.PLAIN, 18));
+        noDataLabel.setForeground(new Color(150, 150, 150));
+        noDataLabel.setVerticalAlignment(SwingConstants.CENTER);
+        
+        // 获取表格所在的面板并替换为提示标签
+        Container viewport = paperManagementTable.getParent();
+        if (viewport == null) return;
+        
+        Container scrollPane = viewport.getParent();
+        if (scrollPane == null) return;
+        
+        JPanel tablePanel = (JPanel) scrollPane.getParent();
+        if (tablePanel == null) return;
+
+        tablePanel.removeAll();
+        tablePanel.setLayout(new BorderLayout(0, 15));
+        tablePanel.add(noDataLabel, BorderLayout.CENTER);
+        
+        tablePanel.revalidate();
+        tablePanel.repaint();
+    }
+    
+    private void showTable() {
+        // 确保表格可见
+        paperManagementTable.setVisible(true);
+        
+        // 恢复表格显示
+        Container viewport = paperManagementTable.getParent();
+        if (viewport == null) return;
+        
+        Container scrollPane = viewport.getParent();
+        if (scrollPane == null) return;
+        
+        JPanel tablePanel = (JPanel) scrollPane.getParent();
+        if (tablePanel == null) return;
+        
+        // 检查当前是否显示的是提示标签，如果是则需要重新设置
+        if (tablePanel.getComponentCount() == 0 || !(tablePanel.getComponent(0) instanceof JLabel)) {
+            tablePanel.removeAll();
+            tablePanel.setLayout(new BorderLayout(0, 15));
+            tablePanel.add(scrollPane, BorderLayout.CENTER);
+        }
+        
+        tablePanel.revalidate();
+        tablePanel.repaint();
     }
     
     /**
