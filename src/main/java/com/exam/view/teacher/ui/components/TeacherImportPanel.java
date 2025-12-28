@@ -6,6 +6,7 @@ import com.exam.util.QuestionImportUtil;
 import com.exam.util.UIUtil;
 import com.exam.view.teacher.TeacherUIHelper;
 import com.exam.view.teacher.manager.ImportManager;
+import com.exam.view.teacher.TeacherMainFrame;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -19,6 +20,7 @@ import java.util.List;
 public class TeacherImportPanel extends JPanel {
     private final TeacherImportCallback callback;
     private final QuestionService questionService;
+    private final TeacherMainFrame mainFrame;  // 添加mainFrame引用
     private final int userId; // 用户ID
     
     // 存储选择的文件
@@ -30,8 +32,9 @@ public class TeacherImportPanel extends JPanel {
         void onCreatePaperWithQuestions(List<Question> questions);
     }
     
-    public TeacherImportPanel(QuestionService questionService, int userId, TeacherImportCallback callback) {
+    public TeacherImportPanel(QuestionService questionService, TeacherMainFrame mainFrame, int userId, TeacherImportCallback callback) {
         this.questionService = questionService;
+        this.mainFrame = mainFrame;
         this.userId = userId;
         this.callback = callback;
         initComponents();
@@ -361,7 +364,7 @@ public class TeacherImportPanel extends JPanel {
             );
 
             if (result == JOptionPane.YES_OPTION) { // 仅导入题目
-                ImportManager importManager = new ImportManager(questionService, null);
+                ImportManager importManager = new ImportManager(questionService, mainFrame);
                 importManager.importQuestions(questions, callback);
             } else if (result == JOptionPane.NO_OPTION) { // 导入并生成试卷
                 if (callback != null) {

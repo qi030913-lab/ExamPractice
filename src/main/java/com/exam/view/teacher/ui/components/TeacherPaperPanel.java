@@ -159,12 +159,22 @@ public class TeacherPaperPanel extends JPanel {
     }
     
     /**
+     * 刷新数据
+     */
+    public void refreshData() {
+        System.out.println("DEBUG: TeacherPaperPanel.refreshData() called");
+        loadPapersData();
+    }
+    
+    /**
      * 加载试卷数据
      */
     private void loadPapersData() {
+        System.out.println("DEBUG: TeacherPaperPanel.loadPapersData() called");
         paperTableModel.setRowCount(0);
         try {
             List<Paper> papers = paperService.getAllPapers();
+            System.out.println("DEBUG: Loaded " + papers.size() + " papers from service");
             for (Paper paper : papers) {
                 int questionCount = paper.getQuestions() != null ? paper.getQuestions().size() : 0;
                 String status = paper.getIsPublished() != null && paper.getIsPublished() ? "已发布" : "未发布";
@@ -184,17 +194,22 @@ public class TeacherPaperPanel extends JPanel {
             
             // 检查是否有数据，如果没有则显示提示
             updateTableDisplay();
+            System.out.println("DEBUG: After updateTableDisplay, row count: " + paperTableModel.getRowCount());
         } catch (Exception e) {
+            System.out.println("DEBUG: Error in loadPapersData: " + e.getMessage());
             UIUtil.showError(this, "加载试卷失败：" + e.getMessage());
             e.printStackTrace();
         }
     }
     
     private void updateTableDisplay() {
+        System.out.println("DEBUG: TeacherPaperPanel.updateTableDisplay() called, row count: " + paperTableModel.getRowCount());
         // 如果表格没有数据，显示"暂无试卷"提示
         if (paperTableModel.getRowCount() == 0) {
+            System.out.println("DEBUG: No papers found, showing '暂无试卷' message");
             showNoDataMessage();
         } else {
+            System.out.println("DEBUG: Papers found, showing table with " + paperTableModel.getRowCount() + " rows");
             // 显示表头
             paperManagementTable.getTableHeader().setVisible(true);
             // 确保显示表格
@@ -202,7 +217,36 @@ public class TeacherPaperPanel extends JPanel {
         }
     }
     
+    private void showTable() {
+        System.out.println("DEBUG: TeacherPaperPanel.showTable() called");
+        // 确保表格可见
+        paperManagementTable.setVisible(true);
+        
+        // 直接使用tablePanel，这是在initComponents中创建的表格容器
+        // 不再动态查找父容器，避免重复添加组件
+        if (tablePanel != null) {
+            // 确保tablePanel的布局正确
+            tablePanel.removeAll();
+            tablePanel.setLayout(new BorderLayout(0, 15));
+            
+            // 将表格添加到tablePanel中（这个操作应该只在初始化时做一次）
+            // 但在这里我们只是确保表格显示正确
+            JScrollPane scrollPane = new JScrollPane(paperManagementTable);
+            tablePanel.add(scrollPane, BorderLayout.CENTER);
+            
+            // 强制重新验证和重绘
+            tablePanel.revalidate();
+            tablePanel.repaint();
+        }
+        
+        // 同时对表格组件进行重绘以确保显示更新
+        paperManagementTable.revalidate();
+        paperManagementTable.repaint();
+        System.out.println("DEBUG: Called revalidate/repaint on tablePanel and paperManagementTable");
+    }
+    
     private void showNoDataMessage() {
+        System.out.println("DEBUG: TeacherPaperPanel.showNoDataMessage() called");
         // 隐藏表格组件
         paperManagementTable.setVisible(false);
         
@@ -212,54 +256,18 @@ public class TeacherPaperPanel extends JPanel {
         noDataLabel.setForeground(new Color(150, 150, 150));
         noDataLabel.setVerticalAlignment(SwingConstants.CENTER);
         
-        // 获取表格所在的面板并替换为提示标签
-        Container viewport = paperManagementTable.getParent();
-        if (viewport == null) return;
-        
-        Container scrollPane = viewport.getParent();
-        if (scrollPane == null) return;
-        
-        JPanel tablePanel = (JPanel) scrollPane.getParent();
-        if (tablePanel == null) return;
-
-        tablePanel.removeAll();
-        tablePanel.setLayout(new BorderLayout(0, 15));
-        tablePanel.add(noDataLabel, BorderLayout.CENTER);
-        
-        tablePanel.revalidate();
-        tablePanel.repaint();
-    }
-    
-    private void showTable() {
-        // 确保表格可见
-        paperManagementTable.setVisible(true);
-        
-        // 恢复表格显示
-        Container viewport = paperManagementTable.getParent();
-        if (viewport == null) return;
-        
-        Container scrollPane = viewport.getParent();
-        if (scrollPane == null) return;
-        
-        JPanel tablePanel = (JPanel) scrollPane.getParent();
-        if (tablePanel == null) return;
-        
-        // 检查当前是否显示的是提示标签，如果是则需要重新设置
-        if (tablePanel.getComponentCount() == 0 || !(tablePanel.getComponent(0) instanceof JLabel)) {
+        // 直接使用tablePanel，这是在initComponents中创建的表格容器
+        // 不再动态查找父容器，避免重复添加组件
+        if (tablePanel != null) {
             tablePanel.removeAll();
             tablePanel.setLayout(new BorderLayout(0, 15));
-            tablePanel.add(scrollPane, BorderLayout.CENTER);
+            tablePanel.add(noDataLabel, BorderLayout.CENTER);
+            
+            tablePanel.revalidate();
+            tablePanel.repaint();
         }
         
-        tablePanel.revalidate();
-        tablePanel.repaint();
-    }
-    
-    /**
-     * 刷新数据
-     */
-    public void refreshData() {
-        loadPapersData();
+        System.out.println("DEBUG: Added noDataLabel to tablePanel and called revalidate/repaint");
     }
     
     /**

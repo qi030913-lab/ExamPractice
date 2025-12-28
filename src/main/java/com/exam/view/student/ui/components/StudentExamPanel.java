@@ -268,8 +268,13 @@ public class StudentExamPanel extends JPanel {
             tablePanel.add(scrollPane, BorderLayout.CENTER);
         }
         
+        // 强制重新验证和重绘
         tablePanel.revalidate();
         tablePanel.repaint();
+        
+        // 同时对表格组件进行重绘以确保显示更新
+        paperTable.revalidate();
+        paperTable.repaint();
     }
 
     /**

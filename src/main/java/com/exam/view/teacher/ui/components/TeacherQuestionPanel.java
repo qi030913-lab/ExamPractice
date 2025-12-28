@@ -148,9 +148,11 @@ public class TeacherQuestionPanel extends JPanel {
      * 加载题目数据
      */
     private void loadQuestionsData() {
+        System.out.println("DEBUG: TeacherQuestionPanel.loadQuestionsData() called");
         tableModel.setRowCount(0);
         try {
             List<Question> questions = questionService.getAllQuestions();
+            System.out.println("DEBUG: Loaded " + questions.size() + " questions from service");
             for (Question q : questions) {
                 Object[] row = {
                         TeacherUIHelper.truncate(q.getContent(), 50), // 截断长内容
@@ -164,17 +166,22 @@ public class TeacherQuestionPanel extends JPanel {
             
             // 检查是否有数据，如果没有则显示提示
             updateTableDisplay();
+            System.out.println("DEBUG: After updateTableDisplay, row count: " + tableModel.getRowCount());
         } catch (Exception e) {
+            System.out.println("DEBUG: Error in loadQuestionsData: " + e.getMessage());
             UIUtil.showError(this, "加载题目失败：" + e.getMessage());
             e.printStackTrace();
         }
     }
     
     private void updateTableDisplay() {
+        System.out.println("DEBUG: TeacherQuestionPanel.updateTableDisplay() called, row count: " + tableModel.getRowCount());
         // 如果表格没有数据，显示"暂无题库"提示
         if (tableModel.getRowCount() == 0) {
+            System.out.println("DEBUG: No questions found, showing '暂无题库' message");
             showNoDataMessage();
         } else {
+            System.out.println("DEBUG: Questions found, showing table with " + tableModel.getRowCount() + " rows");
             // 显示表头
             questionTable.getTableHeader().setVisible(true);
             // 确保显示表格
@@ -183,6 +190,7 @@ public class TeacherQuestionPanel extends JPanel {
     }
     
     private void showNoDataMessage() {
+        System.out.println("DEBUG: TeacherQuestionPanel.showNoDataMessage() called");
         // 隐藏表格组件
         questionTable.setVisible(false);
         
@@ -194,13 +202,22 @@ public class TeacherQuestionPanel extends JPanel {
         
         // 获取表格所在的面板并替换为提示标签
         Container viewport = questionTable.getParent();
-        if (viewport == null) return;
+        if (viewport == null) {
+            System.out.println("DEBUG: viewport is null in showNoDataMessage");
+            return;
+        }
         
         Container scrollPane = viewport.getParent();
-        if (scrollPane == null) return;
+        if (scrollPane == null) {
+            System.out.println("DEBUG: scrollPane is null in showNoDataMessage");
+            return;
+        }
         
         JPanel tablePanel = (JPanel) scrollPane.getParent();
-        if (tablePanel == null) return;
+        if (tablePanel == null) {
+            System.out.println("DEBUG: tablePanel is null in showNoDataMessage");
+            return;
+        }
 
         tablePanel.removeAll();
         tablePanel.setLayout(new BorderLayout(0, 15));
@@ -208,37 +225,58 @@ public class TeacherQuestionPanel extends JPanel {
         
         tablePanel.revalidate();
         tablePanel.repaint();
+        System.out.println("DEBUG: Added noDataLabel to tablePanel and called revalidate/repaint");
     }
     
     private void showTable() {
+        System.out.println("DEBUG: TeacherQuestionPanel.showTable() called");
         // 确保表格可见
         questionTable.setVisible(true);
         
         // 恢复表格显示
         Container viewport = questionTable.getParent();
-        if (viewport == null) return;
+        if (viewport == null) {
+            System.out.println("DEBUG: viewport is null in showTable");
+            return;
+        }
         
         Container scrollPane = viewport.getParent();
-        if (scrollPane == null) return;
+        if (scrollPane == null) {
+            System.out.println("DEBUG: scrollPane is null in showTable");
+            return;
+        }
         
         JPanel tablePanel = (JPanel) scrollPane.getParent();
-        if (tablePanel == null) return;
+        if (tablePanel == null) {
+            System.out.println("DEBUG: tablePanel is null in showTable");
+            return;
+        }
         
         // 检查当前是否显示的是提示标签，如果是则需要重新设置
         if (tablePanel.getComponentCount() == 0 || !(tablePanel.getComponent(0) instanceof JLabel)) {
+            System.out.println("DEBUG: Setting up table in tablePanel");
             tablePanel.removeAll();
             tablePanel.setLayout(new BorderLayout(0, 15));
             tablePanel.add(scrollPane, BorderLayout.CENTER);
+        } else {
+            System.out.println("DEBUG: tablePanel already contains table, not replacing");
         }
         
+        // 强制重新验证和重绘
         tablePanel.revalidate();
         tablePanel.repaint();
+        
+        // 同时对表格组件进行重绘以确保显示更新
+        questionTable.revalidate();
+        questionTable.repaint();
+        System.out.println("DEBUG: Called revalidate/repaint on tablePanel and questionTable");
     }
     
     /**
      * 刷新数据
      */
     public void refreshData() {
+        System.out.println("DEBUG: TeacherQuestionPanel.refreshData() called");
         loadQuestionsData();
     }
     

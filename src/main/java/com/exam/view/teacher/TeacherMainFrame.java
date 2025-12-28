@@ -97,8 +97,12 @@ public class TeacherMainFrame extends JFrame {
      * 刷新题库数据
      */
     public void refreshQuestionData() {
+        System.out.println("DEBUG: TeacherMainFrame.refreshQuestionData() called");
         if (questionPanel != null) {
+            System.out.println("DEBUG: Calling questionPanel.refreshData()");
             questionPanel.refreshData();
+        } else {
+            System.out.println("DEBUG: questionPanel is null");
         }
     }
     
@@ -106,8 +110,19 @@ public class TeacherMainFrame extends JFrame {
      * 刷新试卷数据
      */
     public void refreshPaperData() {
+        System.out.println("DEBUG: TeacherMainFrame.refreshPaperData() called");
         if (paperPanel != null) {
+            System.out.println("DEBUG: Calling paperPanel.refreshData()");
             paperPanel.refreshData();
+        } else {
+            System.out.println("DEBUG: paperPanel is null, but still need to ensure data is updated");
+            // 即使paperPanel未初始化，也要确保试卷数据被更新
+            // 如果用户切换到试卷管理面板时，需要显示最新数据
+            // 我们可以提前初始化paperPanel或确保数据在需要时被加载
+            if ("paper".equals(currentView)) {
+                // 如果当前已经在试卷管理页面，但panel还没初始化，我们需要强制创建
+                switchView("paper");
+            }
         }
     }
     
@@ -471,12 +486,24 @@ public class TeacherMainFrame extends JFrame {
                 break;
             case "import":
                 if (importPanel == null) {
-                    importPanel = new TeacherImportPanel(questionService, teacher.getUserId(), new TeacherImportPanel.TeacherImportCallback() {
+                    importPanel = new TeacherImportPanel(questionService, this, teacher.getUserId(), new TeacherImportPanel.TeacherImportCallback() {
                         @Override
                         public void onImportSuccess() {
+                            System.out.println("DEBUG: onImportSuccess called");
                             // 刷新题库管理面板数据
                             if (questionPanel != null) {
+                                System.out.println("DEBUG: Refreshing question panel");
                                 questionPanel.refreshData();
+                            }
+                            // 刷新试卷管理面板数据（因为导入可能影响试卷）
+                            if (paperPanel != null) {
+                                System.out.println("DEBUG: Refreshing paper panel");
+                                paperPanel.refreshData();
+                            } else {
+                                System.out.println("DEBUG: paperPanel is null, but still need to ensure data is updated");
+                                // 即使paperPanel未初始化，也要确保试卷数据在需要时被更新
+                                // 我们调用mainFrame的refreshPaperData方法，该方法会处理未初始化的情况
+                                refreshPaperData();
                             }
                         }
 

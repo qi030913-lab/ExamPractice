@@ -47,8 +47,13 @@ public class PaperButtonEditor extends DefaultCellEditor {
         viewButton.setFont(new Font("微软雅黑", Font.PLAIN, 11));
         viewButton.setBackground(new Color(52, 152, 219));
         viewButton.setForeground(Color.BLACK);
-        viewButton.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        viewButton.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(200, 200, 200), 1), // 外边框
+                BorderFactory.createEmptyBorder(4, 9, 4, 9) // 内边距
+        ));
         viewButton.setFocusPainted(false);
+        viewButton.setContentAreaFilled(true);
+        viewButton.setOpaque(true);
         viewButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         viewButton.addActionListener(e -> {
             fireEditingStopped();
@@ -61,8 +66,13 @@ public class PaperButtonEditor extends DefaultCellEditor {
         editButton.setFont(new Font("微软雅黑", Font.PLAIN, 11));
         editButton.setBackground(UIUtil.PRIMARY_COLOR);
         editButton.setForeground(Color.BLACK);
-        editButton.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        editButton.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(200, 200, 200), 1), // 外边框
+                BorderFactory.createEmptyBorder(4, 9, 4, 9) // 内边距
+        ));
         editButton.setFocusPainted(false);
+        editButton.setContentAreaFilled(true);
+        editButton.setOpaque(true);
         editButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         editButton.addActionListener(e -> {
             fireEditingStopped();
@@ -75,8 +85,13 @@ public class PaperButtonEditor extends DefaultCellEditor {
         deleteButton.setFont(new Font("微软雅黑", Font.PLAIN, 11));
         deleteButton.setBackground(UIUtil.DANGER_COLOR);
         deleteButton.setForeground(Color.BLACK);
-        deleteButton.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        deleteButton.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(200, 200, 200), 1), // 外边框
+                BorderFactory.createEmptyBorder(4, 9, 4, 9) // 内边距
+        ));
         deleteButton.setFocusPainted(false);
+        deleteButton.setContentAreaFilled(true);
+        deleteButton.setOpaque(true);
         deleteButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         deleteButton.addActionListener(e -> {
             fireEditingStopped();
@@ -89,8 +104,13 @@ public class PaperButtonEditor extends DefaultCellEditor {
         publishButton.setFont(new Font("微软雅黑", Font.PLAIN, 11));
         publishButton.setBackground(UIUtil.SUCCESS_COLOR);
         publishButton.setForeground(Color.BLACK);
-        publishButton.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        publishButton.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(200, 200, 200), 1), // 外边框
+                BorderFactory.createEmptyBorder(4, 9, 4, 9) // 内边距
+        ));
         publishButton.setFocusPainted(false);
+        publishButton.setContentAreaFilled(true);
+        publishButton.setOpaque(true);
         publishButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         publishButton.addActionListener(e -> {
             fireEditingStopped();
@@ -121,10 +141,20 @@ public class PaperButtonEditor extends DefaultCellEditor {
                 publishButton.setText("发布");
                 publishButton.setBackground(UIUtil.SUCCESS_COLOR);
             }
+            // 确保按钮边框样式一致
+            publishButton.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(200, 200, 200), 1), // 外边框
+                    BorderFactory.createEmptyBorder(4, 9, 4, 9) // 内边距
+            ));
         } catch (Exception ex) {
             // 如果获取失败，使用默认状态
             publishButton.setText("发布");
             publishButton.setBackground(UIUtil.SUCCESS_COLOR);
+            // 确保按钮边框样式一致
+            publishButton.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(200, 200, 200), 1), // 外边框
+                    BorderFactory.createEmptyBorder(4, 9, 4, 9) // 内边距
+            ));
         }
 
         if (isSelected) {
