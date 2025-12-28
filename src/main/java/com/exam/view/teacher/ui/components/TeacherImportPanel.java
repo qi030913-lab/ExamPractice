@@ -73,13 +73,13 @@ public class TeacherImportPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.weightx = 1.0;
-        gbc.weighty = 0.25;
+        gbc.weighty = 0.005;  // 从0.01减小到0.005
         centerPanel.add(fileSelectionPanel, gbc);
 
         // 2. 格式说明区域
         JPanel formatPanel = createFormatDescriptionPanel();
         gbc.gridy = 1;
-        gbc.weighty = 0.6;
+        gbc.weighty = 0.845;  // 从0.84增大到0.845
         centerPanel.add(formatPanel, gbc);
 
         // 3. 导入说明区域
@@ -122,6 +122,7 @@ public class TeacherImportPanel extends JPanel {
         // 文件信息面板（包含关闭按钮）
         JPanel fileInfoWrapper = new JPanel(new BorderLayout(5, 0));
         fileInfoWrapper.setBackground(Color.WHITE);
+        fileInfoWrapper.setPreferredSize(new Dimension(450, 50));  // 增加宽度以显示完整提示语
 
         JPanel fileDetailsPanel = new JPanel();
         fileDetailsPanel.setLayout(new BoxLayout(fileDetailsPanel, BoxLayout.Y_AXIS));
@@ -178,7 +179,7 @@ public class TeacherImportPanel extends JPanel {
         contentPanel.add(fileInfoWrapper);
 
         // 添加一些水平间隙
-        contentPanel.add(Box.createHorizontalStrut(20));
+        contentPanel.add(Box.createHorizontalStrut(80));  // 从40增加到80
 
         // 选择文件按钮
         JButton selectFileButton = TeacherUIHelper.createStyledButton("选择文件", UIUtil.PRIMARY_COLOR);
@@ -238,7 +239,7 @@ public class TeacherImportPanel extends JPanel {
                 "   Java是面向对象语言|是|否|不确定||A|JUDGE|MEDIUM|5\n" +
                 "   Java中的继承关键字是|extends|implements|abstract|interface|A|SINGLE|MEDIUM|5"
         );
-        formatText.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        formatText.setFont(new Font("微软雅黑", Font.PLAIN, 14));  // 字体从12改为14
         formatText.setEditable(false);
         formatText.setLineWrap(true);
         formatText.setWrapStyleWord(true);
