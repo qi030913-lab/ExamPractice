@@ -15,8 +15,10 @@ public class TeacherHomePanel extends JPanel {
     private final QuestionService questionService;
     private final PaperService paperService;
     private final User teacher;
+    private final com.exam.view.teacher.TeacherMainFrame mainFrame;
 
     public TeacherHomePanel(com.exam.view.teacher.TeacherMainFrame mainFrame, User teacher) {
+        this.mainFrame = mainFrame;
         this.questionService = new QuestionService();
         this.paperService = new PaperService();
         this.teacher = teacher;
@@ -59,36 +61,38 @@ public class TeacherHomePanel extends JPanel {
         bannerPanel.add(welcomeContent, BorderLayout.CENTER);
         add(bannerPanel, BorderLayout.NORTH);
 
-        // 统计卡片区域
-        JPanel statsPanel = createStatsPanel();
-        add(statsPanel, BorderLayout.CENTER);
+        // 功能区域
+        JPanel functionPanel = createFunctionPanel();
+        add(functionPanel, BorderLayout.CENTER);
     }
 
-    private JPanel createStatsPanel() {
-        JPanel statsPanel = new JPanel(new GridLayout(2, 2, 30, 30));
-        statsPanel.setBackground(Color.WHITE);
-        statsPanel.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
+    private JPanel createFunctionPanel() {
+        JPanel functionPanel = new JPanel(new GridBagLayout());
+        functionPanel.setBackground(Color.WHITE);
+        functionPanel.setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
 
-        try {
-            int totalQuestions = questionService.getAllQuestions().size();
-            int totalPapers = paperService.getAllPapers().size();
-            int publishedPapers = paperService.getAllPublishedPapers().size();
-            int unpublishedPapers = totalPapers - publishedPapers;
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(15, 15, 15, 15);
+        gbc.fill = GridBagConstraints.BOTH;
 
-            // 创建统计卡片
-            statsPanel.add(createStatCard("📊", "题目总数", String.valueOf(totalQuestions), new Color(52, 152, 219)));
-            statsPanel.add(createStatCard("📋", "试卷总数", String.valueOf(totalPapers), new Color(46, 204, 113)));
-            statsPanel.add(createStatCard("✅", "已发布试卷", String.valueOf(publishedPapers), new Color(155, 89, 182)));
-            statsPanel.add(createStatCard("❌", "未发布试卷", String.valueOf(unpublishedPapers), new Color(231, 76, 60)));
+        // 创建功能卡片
+        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.weightx = 1.0; gbc.weighty = 1.0;
+        functionPanel.add(createFunctionCard("题库管理", "管理所有考试题目", new Color(52, 152, 219), "question"), gbc);
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        gbc.gridx = 1;
+        functionPanel.add(createFunctionCard("试卷管理", "创建和管理考试试卷", new Color(46, 204, 113), "paper"), gbc);
 
-        return statsPanel;
+        gbc.gridx = 0; gbc.gridy = 1;
+        functionPanel.add(createFunctionCard("导入题目", "从文件导入题目", new Color(155, 89, 182), "import"), gbc);
+
+        gbc.gridx = 1;
+        functionPanel.add(createFunctionCard("数据统计", "查看教学统计数据", new Color(231, 76, 60), "home"), gbc);
+
+        return functionPanel;
     }
 
-    private JPanel createStatCard(String icon, String title, String value, Color color) {
+    private JPanel createFunctionCard(String title, String description, Color color, String viewType) {
         JPanel card = new JPanel(new BorderLayout(15, 15));
         card.setBackground(Color.WHITE);
         card.setBorder(BorderFactory.createCompoundBorder(
@@ -97,44 +101,29 @@ public class TeacherHomePanel extends JPanel {
         ));
         card.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        // 图标
-        JLabel iconLabel = new JLabel(icon);
-        iconLabel.setFont(new Font("微软雅黑", Font.PLAIN, 32));
-        iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
-
-        // 标题和值
+        // 文本内容
         JPanel textPanel = new JPanel(new GridLayout(2, 1, 0, 8));
         textPanel.setBackground(Color.WHITE);
 
         JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
-        titleLabel.setFont(new Font("微软雅黑", Font.PLAIN, 16));
-        titleLabel.setForeground(new Color(100, 100, 100));
+        titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 18));
+        titleLabel.setForeground(color);
 
-        JLabel valueLabel = new JLabel(value, SwingConstants.CENTER);
-        valueLabel.setFont(new Font("微软雅黑", Font.BOLD, 24));
-        valueLabel.setForeground(color);
+        JLabel descLabel = new JLabel(description, SwingConstants.CENTER);
+        descLabel.setFont(new Font("微软雅黑", Font.PLAIN, 14));
+        descLabel.setForeground(new Color(100, 100, 100));
 
         textPanel.add(titleLabel);
-        textPanel.add(valueLabel);
+        textPanel.add(descLabel);
 
-        card.add(iconLabel, BorderLayout.NORTH);
         card.add(textPanel, BorderLayout.CENTER);
 
-        // 悬停效果
+        // 添加点击事件
         card.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                card.setBackground(new Color(248, 249, 250));
-                card.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(color, 2),
-                        BorderFactory.createEmptyBorder(30, 25, 30, 25)
-                ));
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                card.setBackground(Color.WHITE);
-                card.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
-                        BorderFactory.createEmptyBorder(30, 25, 30, 25)
-                ));
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                if (mainFrame != null) {
+                    mainFrame.switchToView(viewType);
+                }
             }
         });
 
