@@ -312,11 +312,11 @@ public class IconUtil {
                 int headY = y + 2;
                 g2d.fillOval(headX, headY, headSize, headSize);
                 
-                // 绘制用户身体（矩形）
+                // 绘制用户身体（矩形）- 调整位置使头像和身体之间距离更小
                 int bodyWidth = size * 2 / 3;
                 int bodyHeight = size / 2;
                 int bodyX = x + (size - bodyWidth) / 2;
-                int bodyY = y + headY + headSize;
+                int bodyY = y + headY + headSize - 10; // 减小头像和身体之间的间距
                 g2d.fillRect(bodyX, bodyY, bodyWidth, bodyHeight);
                 
                 g2d.dispose();
