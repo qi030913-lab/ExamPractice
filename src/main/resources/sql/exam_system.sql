@@ -262,3 +262,15 @@ INSERT INTO paper_question (paper_id, question_id, question_order) VALUES
 (7, 31, 2),  -- ACID特性
 (7, 32, 3),  -- 数据库约束
 (7, 33, 4);  -- 索引可以提高查询效率
+
+-- ========================================
+-- 清除所有表的数据
+-- ========================================
+SET FOREIGN_KEY_CHECKS = 0;  -- 禁用外键检查
+TRUNCATE TABLE answer_record;
+TRUNCATE TABLE exam_record;
+TRUNCATE TABLE paper_question;
+TRUNCATE TABLE paper;
+TRUNCATE TABLE question;
+TRUNCATE TABLE user;
+SET FOREIGN_KEY_CHECKS = 1;  -- 启用外键检查
