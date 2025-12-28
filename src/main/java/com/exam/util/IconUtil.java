@@ -294,4 +294,39 @@ public class IconUtil {
             public int getIconHeight() { return size; }
         };
     }
+    
+    /**
+     * 创建用户图标
+     */
+    public static Icon createUserIcon(Color color, int size) {
+        return new Icon() {
+            @Override
+            public void paintIcon(Component c, Graphics g, int x, int y) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setColor(color);
+                
+                // 绘制用户头像（圆形）
+                int headSize = size / 2;
+                int headX = x + (size - headSize) / 2;
+                int headY = y + 2;
+                g2d.fillOval(headX, headY, headSize, headSize);
+                
+                // 绘制用户身体（矩形）
+                int bodyWidth = size * 2 / 3;
+                int bodyHeight = size / 2;
+                int bodyX = x + (size - bodyWidth) / 2;
+                int bodyY = y + headY + headSize;
+                g2d.fillRect(bodyX, bodyY, bodyWidth, bodyHeight);
+                
+                g2d.dispose();
+            }
+            
+            @Override
+            public int getIconWidth() { return size; }
+            
+            @Override
+            public int getIconHeight() { return size; }
+        };
+    }
 }

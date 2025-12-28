@@ -87,7 +87,7 @@ public class TeacherHomePanel extends JPanel {
         functionPanel.add(createFunctionCard("导入题目", "从文件导入题目", new Color(155, 89, 182), "import"), gbc);
 
         gbc.gridx = 1;
-        functionPanel.add(createFunctionCard("数据统计", "查看教学统计数据", new Color(231, 76, 60), "home"), gbc);
+        functionPanel.add(createFunctionCard("学生管理", "管理注册学生及考试记录", new Color(231, 76, 60), "student"), gbc);
 
         return functionPanel;
     }

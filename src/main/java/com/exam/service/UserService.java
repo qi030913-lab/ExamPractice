@@ -6,6 +6,8 @@ import com.exam.exception.BusinessException;
 import com.exam.model.User;
 import com.exam.model.enums.UserRole;
 
+import java.util.List;
+
 /**
  * 用户服务类
  * 处理用户相关的业务逻辑
@@ -147,5 +149,13 @@ public class UserService {
         if (user.getPassword().length() < 6) {
             throw new BusinessException("密码长度不能少于6个字符");
         }
+    }
+
+    /**
+     * 获取所有学生用户
+     * @return 学生用户列表
+     */
+    public List<User> getStudents() {
+        return userDao.findAllStudents();
     }
 }

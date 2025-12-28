@@ -44,6 +44,7 @@ public class TeacherMainFrame extends JFrame {
     private TeacherQuestionPanel questionPanel;
     private TeacherPaperPanel paperPanel;
     private TeacherImportPanel importPanel;
+    private TeacherStudentPanel studentPanel;
     
     // 题库管理相关变量（废弃，已迁移到TeacherQuestionPanel）
     private JTable questionTable;
@@ -297,7 +298,8 @@ public class TeacherMainFrame extends JFrame {
                 {"home", "我的主页"},
                 {"question", "题库管理"},
                 {"paper", "试卷管理"},
-                {"import", "导入题目"}
+                {"import", "导入题目"},
+                {"student", "学生管理"}
         };
 
         for (int i = 0; i < menuConfig.length; i++) {
@@ -363,6 +365,8 @@ public class TeacherMainFrame extends JFrame {
                 return IconUtil.createChartIcon(color, size);
             case "import":
                 return IconUtil.createUploadIcon(color, size);
+            case "student":
+                return IconUtil.createUserIcon(color, size);
             default:
                 return IconUtil.createCircleIcon(color, size);
         }
@@ -401,7 +405,7 @@ public class TeacherMainFrame extends JFrame {
         currentView = view;
 
         // 更新所有按钮的状态
-        String[] views = {"home", "question", "paper", "import"};
+        String[] views = {"home", "question", "paper", "import", "student"};
         for (int i = 0; i < menuButtons.size(); i++) {
             JButton button = menuButtons.get(i);
             boolean isActive = i == getViewIndex(view);
@@ -484,6 +488,12 @@ public class TeacherMainFrame extends JFrame {
                 }
                 mainContentPanel.add(importPanel, BorderLayout.CENTER);
                 break;
+            case "student":
+                if (studentPanel == null) {
+                    studentPanel = new TeacherStudentPanel(this);
+                }
+                mainContentPanel.add(studentPanel, BorderLayout.CENTER);
+                break;
             default:
                 if (homePanel == null) {
                     homePanel = new TeacherHomePanel(this, teacher);
@@ -501,6 +511,7 @@ public class TeacherMainFrame extends JFrame {
             case "question": return 1;
             case "paper": return 2;
             case "import": return 3;
+            case "student": return 4;
             default: return -1;
         }
     }
