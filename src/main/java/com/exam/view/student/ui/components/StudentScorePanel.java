@@ -32,6 +32,9 @@ public class StudentScorePanel extends JPanel {
     private final ExamService examService;
     private final StudentScoreManager scoreManager;
     private DefaultTableModel scoreTableModel;
+    private JTable scoreTable;
+    private JScrollPane scrollPane;
+    private JPanel tablePanel;
 
     public StudentScorePanel(User student) {
         this.student = student;
@@ -50,7 +53,7 @@ public class StudentScorePanel extends JPanel {
         add(titlePanel, BorderLayout.NORTH);
 
         // 成绩记录表格区域
-        JPanel tablePanel = createTablePanel();
+        tablePanel = createTablePanel();
         add(tablePanel, BorderLayout.CENTER);
         
         // 加载成绩数据
@@ -89,7 +92,7 @@ public class StudentScorePanel extends JPanel {
                 return column == 7;
             }
         };
-        JTable scoreTable = new JTable(scoreTableModel);
+        scoreTable = new JTable(scoreTableModel);
         scoreTable.setFont(new Font("微软雅黑", Font.PLAIN, 14));
         scoreTable.setRowHeight(45);
         scoreTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -118,7 +121,7 @@ public class StudentScorePanel extends JPanel {
         scoreTable.getTableHeader().setPreferredSize(new Dimension(0, 40));
         scoreTable.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(220, 220, 220)));
         
-        JScrollPane scrollPane = new JScrollPane(scoreTable);
+        scrollPane = new JScrollPane(scoreTable);
         scrollPane.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
         scrollPane.getViewport().setBackground(Color.WHITE);
         
@@ -131,7 +134,76 @@ public class StudentScorePanel extends JPanel {
      * 加载成绩数据
      */
     private void loadScores() {
+        // 清空现有数据
+        scoreTableModel.setRowCount(0);
         scoreManager.loadScores(scoreTableModel, this);
+        // 检查是否有数据，如果没有则显示提示
+        updateTableHeaderVisibility();
+    }
+    
+    private void updateTableHeaderVisibility() {
+        // 如果表格没有数据，显示"暂无考试记录"提示
+        if (scoreTableModel.getRowCount() == 0) {
+            showNoDataMessage();
+        } else {
+            // 显示表头
+            scoreTable.getTableHeader().setVisible(true);
+            // 确保显示表格
+            showTable();
+        }
+    }
+    
+    private void showNoDataMessage() {
+        // 隐藏表格组件
+        scoreTable.setVisible(false);
+        
+        // 创建"暂无考试记录"提示标签
+        JLabel noDataLabel = new JLabel("暂无考试记录", SwingConstants.CENTER);
+        noDataLabel.setFont(new Font("微软雅黑", Font.PLAIN, 18));
+        noDataLabel.setForeground(new Color(150, 150, 150));
+        noDataLabel.setVerticalAlignment(SwingConstants.CENTER);
+        
+        // 获取表格所在的面板并替换为提示标签
+        Container viewport = scoreTable.getParent();
+        if (viewport == null) return;
+        
+        Container scrollPane = viewport.getParent();
+        if (scrollPane == null) return;
+        
+        JPanel tablePanel = (JPanel) scrollPane.getParent();
+        if (tablePanel == null) return;
+
+        tablePanel.removeAll();
+        tablePanel.setLayout(new BorderLayout(0, 15));
+        tablePanel.add(noDataLabel, BorderLayout.CENTER);
+        
+        tablePanel.revalidate();
+        tablePanel.repaint();
+    }
+    
+    private void showTable() {
+        // 确保表格可见
+        scoreTable.setVisible(true);
+        
+        // 恢复表格显示
+        Container viewport = scoreTable.getParent();
+        if (viewport == null) return;
+        
+        Container scrollPane = viewport.getParent();
+        if (scrollPane == null) return;
+        
+        JPanel tablePanel = (JPanel) scrollPane.getParent();
+        if (tablePanel == null) return;
+        
+        // 检查当前是否显示的是提示标签，如果是则需要重新设置
+        if (tablePanel.getComponentCount() == 0 || !(tablePanel.getComponent(0) instanceof JLabel)) {
+            tablePanel.removeAll();
+            tablePanel.setLayout(new BorderLayout(0, 15));
+            tablePanel.add(scrollPane, BorderLayout.CENTER);
+        }
+        
+        tablePanel.revalidate();
+        tablePanel.repaint();
     }
 
     /**

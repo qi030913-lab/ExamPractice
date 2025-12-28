@@ -65,8 +65,7 @@ public class StudentScoreManager {
             }
             
             if (records.isEmpty()) {
-                Object[] row = {"暂无考试记录", "", "", "", "", "", "", ""};
-                tableModel.addRow(row);
+                // 当没有成绩记录时，不添加行，由UI层处理显示
             }
         } catch (Exception e) {
             UIUtil.showError(parentComponent, "加载成绩失败：" + e.getMessage());
