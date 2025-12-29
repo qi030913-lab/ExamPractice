@@ -66,19 +66,19 @@ public class TeacherPaperPanel extends JPanel {
         tablePanel.setBorder(BorderFactory.createEmptyBorder(0, 30, 20, 30));
 
         // 表格
-        String[] columns = {"试卷名称", "科目", "题目数", "总分", "时长(分钟)", "状态", "操作"};
+        String[] columns = {"试卷名称", "科目", "题目数", "总分", "时长(分钟)", "状态", "操作", "发布"};
         paperTableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                // 操作列可编辑
-                return column == 6;
+                // 发布列和操作列可编辑
+                return column == 6 || column == 7;
             }
         };
         paperManagementTable = new JTable(paperTableModel) {
             @Override
             public Class<?> getColumnClass(int column) {
-                // 操作列使用JPanel类型
-                if (column == 6) {
+                // 发布列和操作列使用JPanel类型
+                if (column == 6 || column == 7) {
                     return JPanel.class;
                 }
                 return String.class;
@@ -116,7 +116,15 @@ public class TeacherPaperPanel extends JPanel {
                     callback.onDeletePaper(row);
                 }
             }
+        }));
+        // 设置操作列宽度
+        paperManagementTable.getColumnModel().getColumn(6).setPreferredWidth(150);
+        paperManagementTable.getColumnModel().getColumn(6).setMinWidth(150);
 
+        // 设置发布列渲染器和编辑器
+        paperManagementTable.getColumnModel().getColumn(7).setCellRenderer(new PaperPublishButtonRenderer());
+        paperManagementTable.getColumnModel().getColumn(7).setCellEditor(new PaperPublishButtonEditor(
+                paperManagementTable, paperTableModel, paperService, new PaperPublishButtonEditor.PublishButtonCallback() {
             @Override
             public void onTogglePublish(int row) {
                 if (callback != null) {
@@ -124,9 +132,9 @@ public class TeacherPaperPanel extends JPanel {
                 }
             }
         }));
-        // 设置操作列宽度
-        paperManagementTable.getColumnModel().getColumn(6).setPreferredWidth(180);
-        paperManagementTable.getColumnModel().getColumn(6).setMinWidth(180);
+        // 设置发布列宽度
+        paperManagementTable.getColumnModel().getColumn(7).setPreferredWidth(100);
+        paperManagementTable.getColumnModel().getColumn(7).setMinWidth(100);
 
         // 表头样式
         paperManagementTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 13));
@@ -177,7 +185,8 @@ public class TeacherPaperPanel extends JPanel {
                         paper.getTotalScore(),
                         paper.getDuration(),
                         statusDisplay,
-                        "" // 操作列，由渲染器处理
+                        "", // 操作列，由渲染器处理
+                        "" // 发布列，由渲染器处理
                 };
                 paperTableModel.addRow(row);
             }

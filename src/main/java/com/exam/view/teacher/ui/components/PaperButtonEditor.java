@@ -16,7 +16,6 @@ public class PaperButtonEditor extends DefaultCellEditor {
     private JButton viewButton;
     private JButton editButton;
     private JButton deleteButton;
-    private JButton publishButton;
     private int currentRow;
     private JTable table;
     private DefaultTableModel tableModel;
@@ -27,7 +26,6 @@ public class PaperButtonEditor extends DefaultCellEditor {
         void onView(int row);
         void onEdit(int row);
         void onDelete(int row);
-        void onTogglePublish(int row);
     }
     
     private PaperButtonCallback callback;
@@ -100,28 +98,8 @@ public class PaperButtonEditor extends DefaultCellEditor {
             }
         });
 
-        publishButton = new JButton("发布");
-        publishButton.setFont(new Font("微软雅黑", Font.PLAIN, 11));
-        publishButton.setBackground(UIUtil.SUCCESS_COLOR);
-        publishButton.setForeground(Color.BLACK);
-        publishButton.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200), 1), // 外边框
-                BorderFactory.createEmptyBorder(4, 9, 4, 9) // 内边距
-        ));
-        publishButton.setFocusPainted(false);
-        publishButton.setContentAreaFilled(true);
-        publishButton.setOpaque(true);
-        publishButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        publishButton.addActionListener(e -> {
-            fireEditingStopped();
-            if (callback != null) {
-                callback.onTogglePublish(currentRow);
-            }
-        });
-
         panel.add(viewButton);
         panel.add(editButton);
-        panel.add(publishButton);
         panel.add(deleteButton);
     }
 
@@ -129,33 +107,6 @@ public class PaperButtonEditor extends DefaultCellEditor {
     public Component getTableCellEditorComponent(JTable table, Object value,
                                                  boolean isSelected, int row, int column) {
         currentRow = row;
-
-        // 根据试卷发布状态更新按钮文字和颜色
-        try {
-            String paperName = (String) tableModel.getValueAt(row, 0);
-            Paper paper = paperService.getPaperByName(paperName);
-            if (paper != null && paper.getIsPublished() != null && paper.getIsPublished()) {
-                publishButton.setText("取消发布");
-                publishButton.setBackground(new Color(255, 152, 0));
-            } else {
-                publishButton.setText("发布");
-                publishButton.setBackground(UIUtil.SUCCESS_COLOR);
-            }
-            // 确保按钮边框样式一致
-            publishButton.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(200, 200, 200), 1), // 外边框
-                    BorderFactory.createEmptyBorder(4, 9, 4, 9) // 内边距
-            ));
-        } catch (Exception ex) {
-            // 如果获取失败，使用默认状态
-            publishButton.setText("发布");
-            publishButton.setBackground(UIUtil.SUCCESS_COLOR);
-            // 确保按钮边框样式一致
-            publishButton.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(200, 200, 200), 1), // 外边框
-                    BorderFactory.createEmptyBorder(4, 9, 4, 9) // 内边距
-            ));
-        }
 
         if (isSelected) {
             panel.setBackground(table.getSelectionBackground());
