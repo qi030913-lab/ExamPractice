@@ -45,8 +45,8 @@ public class TeacherStudentPanel extends JPanel {
 
         // 主内容区域
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitPane.setDividerLocation(0.5);
         splitPane.setBorder(BorderFactory.createEmptyBorder());
+        splitPane.setResizeWeight(0.5); // 设置左右两侧平分剩余空间
         
         // 左侧 - 学生列表
         splitPane.setLeftComponent(createStudentListPanel());
@@ -55,6 +55,11 @@ public class TeacherStudentPanel extends JPanel {
         splitPane.setRightComponent(createExamRecordPanel());
 
         add(splitPane, BorderLayout.CENTER);
+        
+        // 在界面显示后设置分隔条位置
+        SwingUtilities.invokeLater(() -> {
+            splitPane.setDividerLocation(0.5);
+        });
     }
 
     private JPanel createStudentListPanel() {
