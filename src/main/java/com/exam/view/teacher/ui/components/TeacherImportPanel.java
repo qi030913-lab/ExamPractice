@@ -110,19 +110,23 @@ public class TeacherImportPanel extends JPanel {
                 BorderFactory.createEmptyBorder(10, 20, 15, 20)
         ));
 
-        // 所有内容放在一行：文件图标 + 文件信息 + 按钮
-        JPanel contentPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
+        // 使用BorderLayout确保所有元素可见
+        JPanel contentPanel = new JPanel(new BorderLayout(15, 10));
         contentPanel.setBackground(Color.WHITE);
+
+        // 左侧：文件信息区域
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        leftPanel.setBackground(Color.WHITE);
 
         // 文件图标
         JLabel fileIconLabel = new JLabel("📄");
         fileIconLabel.setFont(new Font("微软雅黑", Font.PLAIN, 32));
-        contentPanel.add(fileIconLabel);
+        leftPanel.add(fileIconLabel);
 
         // 文件信息面板（包含关闭按钮）
         JPanel fileInfoWrapper = new JPanel(new BorderLayout(5, 0));
         fileInfoWrapper.setBackground(Color.WHITE);
-        fileInfoWrapper.setPreferredSize(new Dimension(450, 50));  // 增加宽度以显示完整提示语
+        fileInfoWrapper.setPreferredSize(new Dimension(400, 50));
 
         JPanel fileDetailsPanel = new JPanel();
         fileDetailsPanel.setLayout(new BoxLayout(fileDetailsPanel, BoxLayout.Y_AXIS));
@@ -176,10 +180,12 @@ public class TeacherImportPanel extends JPanel {
         });
 
         fileInfoWrapper.add(closeButton, BorderLayout.EAST);
-        contentPanel.add(fileInfoWrapper);
+        leftPanel.add(fileInfoWrapper);
+        contentPanel.add(leftPanel, BorderLayout.CENTER);
 
-        // 添加一些水平间隙
-        contentPanel.add(Box.createHorizontalStrut(80));  // 从40增加到80
+        // 右侧：按钮区域
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setBackground(Color.WHITE);
 
         // 选择文件按钮
         JButton selectFileButton = TeacherUIHelper.createStyledButton("选择文件", UIUtil.PRIMARY_COLOR);
@@ -198,12 +204,14 @@ public class TeacherImportPanel extends JPanel {
                 closeButton.setVisible(true); // 显示关闭按钮
             }
         });
-        contentPanel.add(selectFileButton);
+        buttonPanel.add(selectFileButton);
 
         // 开始导入按钮
         JButton importButton = TeacherUIHelper.createStyledButton("开始导入", UIUtil.SUCCESS_COLOR);
         importButton.addActionListener(e -> startImport());
-        contentPanel.add(importButton);
+        buttonPanel.add(importButton);
+        
+        contentPanel.add(buttonPanel, BorderLayout.EAST);
 
         panel.add(contentPanel, BorderLayout.CENTER);
         return panel;

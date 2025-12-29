@@ -156,16 +156,12 @@ public class StudentMainFrame extends JFrame {
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
         leftPanel.setBackground(Color.WHITE);
 
-        JLabel logoLabel = new JLabel("🐬");
-        logoLabel.setFont(new Font("微软雅黑", Font.PLAIN, 32));
-        leftPanel.add(logoLabel);
-
         JPanel titlePanel = new JPanel(new GridLayout(2, 1, 0, 0));
         titlePanel.setBackground(Color.WHITE);
         JLabel titleLabel = new JLabel("小考试系统");
         titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 16));
         titleLabel.setForeground(UIUtil.PRIMARY_COLOR);
-        JLabel versionLabel = new JLabel("版本：4.0.0.92");
+        JLabel versionLabel = new JLabel("版本：v1.0");
         versionLabel.setFont(new Font("微软雅黑", Font.PLAIN, 11));
         versionLabel.setForeground(UIUtil.TEXT_GRAY);
         titlePanel.add(titleLabel);
