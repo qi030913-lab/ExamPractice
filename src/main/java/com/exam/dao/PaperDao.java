@@ -136,7 +136,8 @@ public class PaperDao {
      * 添加试卷题目关联
      */
     public void addPaperQuestion(Integer paperId, Integer questionId, Integer order) {
-        String sql = "INSERT INTO paper_question (paper_id, question_id, question_order) VALUES (?, ?, ?)";
+        // 使用 INSERT IGNORE 忽略重复的题目
+        String sql = "INSERT IGNORE INTO paper_question (paper_id, question_id, question_order) VALUES (?, ?, ?)";
         
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {

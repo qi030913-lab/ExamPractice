@@ -11,7 +11,9 @@ import com.exam.view.teacher.ui.components.TeacherImportPanel;
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 教师端导入管理器 - 处理所有与题目导入相关的操作
@@ -141,6 +143,7 @@ public class ImportManager {
             try {
                 // 先导入题目并获取它们的ID
                 List<Integer> questionIds = new ArrayList<>();
+                Set<Integer> addedQuestionIds = new HashSet<>(); // 用于去重
                 if (questions != null && !questions.isEmpty()) {
                     for (Question question : questions) {
                         if (question != null) {
@@ -159,8 +162,10 @@ public class ImportManager {
                                 questionId = existingQuestions.get(0).getQuestionId();
                             }
                             
-                            if (questionId > 0) {
+                            // 只添加不重复的题目ID
+                            if (questionId > 0 && !addedQuestionIds.contains(questionId)) {
                                 questionIds.add(questionId);
+                                addedQuestionIds.add(questionId);
                             }
                         }
                     }

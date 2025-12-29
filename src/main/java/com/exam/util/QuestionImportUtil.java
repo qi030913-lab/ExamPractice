@@ -23,6 +23,9 @@ public class QuestionImportUtil {
      * SINGLE|Java|Java中哪个关键字用于定义常量？|const|final|static|constant|B|5|EASY|final关键字用于定义常量
      * MULTIPLE|Java|访问修饰符包括？|public|private|protected|final|ABC|10|MEDIUM|public、private、protected是访问修饰符
      * JUDGE|Java|Java支持多继承|正确|错误|||B|5|EASY|Java不支持类的多继承
+     * BLANK|Java|Java中声明整数变量的关键字是____。||||int|5|EASY|使用int关键字声明整数类型
+     * APPLICATION|Java|请编写一个Java程序，实现学生成绩管理系统|||||1.定义Student类 2.使用ArrayList存储|20|MEDIUM|考查面向对象和集合框架
+     * ALGORITHM|算法|请设计一个算法，实现快速排序|||||1.选择基准元素 2.分区操作|25|HARD|快速排序是分治算法的应用
      */
     public static List<Question> importFromTextFile(File file, Integer creatorId) throws Exception {
         List<Question> questions = new ArrayList<>();
@@ -74,7 +77,7 @@ public class QuestionImportUtil {
         try {
             question.setQuestionType(QuestionType.valueOf(parts[0].trim().toUpperCase()));
         } catch (IllegalArgumentException e) {
-            throw new Exception("题目类型无效：" + parts[0] + "，应为SINGLE、MULTIPLE、JUDGE或BLANK");
+            throw new Exception("题目类型无效：" + parts[0] + "，应为SINGLE、MULTIPLE、JUDGE、BLANK、APPLICATION或ALGORITHM");
         }
         
         // 科目
@@ -138,15 +141,29 @@ public class QuestionImportUtil {
             
             writer.write("# 题目导入模板文件\n");
             writer.write("# 格式说明：题目类型|科目|题目内容|选项A|选项B|选项C|选项D|正确答案|分值|难度|解析\n");
-            writer.write("# 题目类型：SINGLE(单选)、MULTIPLE(多选)、JUDGE(判断)、BLANK(填空)\n");
+            writer.write("# 题目类型：SINGLE(单选)、MULTIPLE(多选)、JUDGE(判断)、BLANK(填空)、APPLICATION(应用题)、ALGORITHM(算法设计题)\n");
             writer.write("# 难度：EASY(简单)、MEDIUM(中等)、HARD(困难)\n");
             writer.write("# 以#开头的行为注释，会被忽略\n");
             writer.write("\n");
             writer.write("# 示例题目：\n");
+            writer.write("# 单选题示例\n");
             writer.write("SINGLE|Java|Java中哪个关键字可以用来定义常量？|const|final|static|constant|B|5|EASY|final关键字用于定义常量，被final修饰的变量不可改变。\n");
             writer.write("SINGLE|Java|下列哪个不是Java的基本数据类型？|int|float|boolean|String|D|5|EASY|String是引用类型，不是基本数据类型。\n");
+            writer.write("\n");
+            writer.write("# 多选题示例\n");
             writer.write("MULTIPLE|Java|Java中哪些是访问修饰符？|public|private|protected|final|ABC|10|EASY|public、private、protected是访问修饰符，final是最终修饰符。\n");
+            writer.write("\n");
+            writer.write("# 判断题示例\n");
             writer.write("JUDGE|Java|Java支持多继承|正确|错误|||B|5|EASY|Java不支持类的多继承，但支持接口的多实现。\n");
+            writer.write("\n");
+            writer.write("# 填空题示例\n");
+            writer.write("BLANK|Java|Java中声明整数变量的关键字是____。||||int|5|EASY|使用int关键字声明整数类型。\n");
+            writer.write("\n");
+            writer.write("# 应用题示例（正确答案可以为关键要点描述）\n");
+            writer.write("APPLICATION|Java|请编写一个Java程序，实现学生成绩管理系统，要求包含添加、删除、查询、修改功能。|||||1.定义Student类 2.使用ArrayList存储 3.实现CRUD操作 4.提供菜单交互|20|MEDIUM|考查面向对象、集合框架和系统设计能力。\n");
+            writer.write("\n");
+            writer.write("# 算法设计题示例（正确答案可以为算法描述或关键代码）\n");
+            writer.write("ALGORITHM|算法|请设计一个算法，实现快速排序（Quick Sort），并分析其时间复杂度。|||||1.选择基准元素 2.分区操作 3.递归排序 4.时间复杂度O(nlogn)|25|HARD|快速排序是分治算法的典型应用，平均时间复杂度为O(nlogn)。\n");
         }
     }
     
