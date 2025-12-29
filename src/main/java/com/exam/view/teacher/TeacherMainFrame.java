@@ -230,7 +230,7 @@ public class TeacherMainFrame extends JFrame {
         JPanel sidebar = new JPanel();
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
         sidebar.setBackground(Color.WHITE);
-        sidebar.setPreferredSize(new Dimension(200, 0));
+        sidebar.setPreferredSize(new Dimension(220, 0));
         sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(230, 230, 230)));
 
         // 用户信息区域
@@ -284,8 +284,8 @@ public class TeacherMainFrame extends JFrame {
         roleLabel.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
         rolePanel.add(roleLabel);
 
-        // ID信息
-        JLabel idLabel = new JLabel("ID: " + teacher.getUserId());
+        // 教工号信息
+        JLabel idLabel = new JLabel("教工号: " + teacher.getStudentNumber());
         idLabel.setFont(new Font("微软雅黑", Font.PLAIN, 11));
         idLabel.setForeground(new Color(120, 120, 120));
         idLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -304,7 +304,7 @@ public class TeacherMainFrame extends JFrame {
 
         // 分割线
         JSeparator separator = new JSeparator();
-        separator.setMaximumSize(new Dimension(200, 1));
+        separator.setMaximumSize(new Dimension(220, 1));
         separator.setForeground(new Color(240, 240, 240));
         sidebar.add(separator);
 
