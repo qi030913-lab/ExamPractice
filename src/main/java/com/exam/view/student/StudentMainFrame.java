@@ -5,7 +5,7 @@ import com.exam.service.ExamService;
 import com.exam.service.PaperService;
 import com.exam.util.UIUtil;
 import com.exam.util.IconUtil;
-import com.exam.view.LoginFrame;
+// import com.exam.view.LoginFrame; // 已删除,使用StudentLoginFrame
 import com.exam.view.student.ui.components.StudentExamPanel;
 import com.exam.view.student.ui.components.StudentScorePanel;
 import com.exam.view.student.ui.components.StudentAchievementPanel;
@@ -542,9 +542,9 @@ public class StudentMainFrame extends JFrame {
     }
     
     private void logout() {
-        if (UIUtil.showConfirm(this, "确定要退出登录吗？")) {
+        if (UIUtil.showConfirm(this, "确定要退出登录吗?")) {
             dispose();
-            new LoginFrame().setVisible(true);
+            new StudentLoginFrame().setVisible(true);
         }
     }
     

@@ -10,7 +10,7 @@ import com.exam.service.PaperService;
 import com.exam.util.UIUtil;
 import com.exam.util.IconUtil;
 import com.exam.util.QuestionImportUtil;
-import com.exam.view.LoginFrame;
+// import com.exam.view.LoginFrame; // 已删除,使用TeacherLoginFrame
 import com.exam.view.teacher.ui.components.*;
 import com.exam.view.teacher.manager.*;
 
@@ -568,9 +568,9 @@ public class TeacherMainFrame extends JFrame {
 
 
     private void logout() {
-        if (UIUtil.showConfirm(this, "确定要退出登录吗？")) {
+        if (UIUtil.showConfirm(this, "确定要退出登录吗?")) {
             dispose();
-            new LoginFrame().setVisible(true);
+            new TeacherLoginFrame().setVisible(true);
         }
     }
 

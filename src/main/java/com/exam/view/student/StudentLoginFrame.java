@@ -1,35 +1,46 @@
-package com.exam.view;
+package com.exam.view.student;
 
 import com.exam.exception.AuthenticationException;
 import com.exam.model.User;
 import com.exam.model.enums.UserRole;
 import com.exam.service.UserService;
 import com.exam.util.UIUtil;
-import com.exam.view.student.StudentMainFrame;
-import com.exam.view.teacher.TeacherMainFrame;
+import com.exam.view.RoleSelectionFrame;
 
 import javax.swing.*;
+import javax.swing.border.AbstractBorder;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.geom.RoundRectangle2D;
 
 /**
- * 登录界面（优化版：紧凑布局）
+ * 学生登录注册界面
  */
-public class LoginFrame extends JFrame {
+public class StudentLoginFrame extends JFrame {
     private final UserService userService;
     private JTextField realNameField;
-    private JTextField idNumberField;  // 通用ID字段，学生为学号，教师为教工号
+    private JTextField studentNumberField;
     private JPasswordField passwordField;
-    private JComboBox<String> roleComboBox;
-    private JPanel idNumberPanel;
 
-    public LoginFrame() {
+    public StudentLoginFrame() {
         this.userService = new UserService();
         initComponents();
-        setTitle("考试练习系统 - 登录");
+        setTitle("考试练习系统 - 学生登录");
         setSize(700, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
+        
+        // 添加窗口关闭监听器
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                // 关闭所有窗口
+                System.exit(0);
+            }
+        });
+        
         UIUtil.centerWindow(this);
     }
 
@@ -41,15 +52,15 @@ public class LoginFrame extends JFrame {
         JPanel logoPanel = new JPanel();
         logoPanel.setLayout(new BoxLayout(logoPanel, BoxLayout.Y_AXIS));
         logoPanel.setBackground(new Color(230, 240, 250));
-        logoPanel.setBorder(BorderFactory.createEmptyBorder(50, 0, 20, 0));
+        logoPanel.setBorder(BorderFactory.createEmptyBorder(40, 0, 20, 0));
 
-        JLabel titleLabel = new JLabel("考试练习系统");
+        JLabel titleLabel = new JLabel("学生登录");
         titleLabel.setFont(new Font("SimHei", Font.BOLD, 24));
-        titleLabel.setForeground(new Color(25, 118, 210));
+        titleLabel.setForeground(new Color(33, 150, 243));
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         logoPanel.add(titleLabel);
 
-        JLabel subTitleLabel = new JLabel("ONLINE EXAM SYSTEM");
+        JLabel subTitleLabel = new JLabel("STUDENT LOGIN");
         subTitleLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         subTitleLabel.setForeground(new Color(66, 133, 244));
         subTitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -65,35 +76,30 @@ public class LoginFrame extends JFrame {
         formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
         formPanel.setBackground(Color.WHITE);
         formPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(144, 202, 249), 1),
+                new RoundedBorder(new Color(144, 202, 249), 1, 15),
                 BorderFactory.createEmptyBorder(20, 30, 20, 30)
         ));
-        formPanel.setPreferredSize(new Dimension(400, 290));
-
-        // 角色选择（放在第一栏）
-        formPanel.add(createRoleRow());
-        formPanel.add(Box.createVerticalStrut(12));
+        formPanel.setPreferredSize(new Dimension(400, 260));
 
         // 姓名输入
         formPanel.add(createInputRow("姓　　名：", realNameField = new JTextField()));
-        formPanel.add(Box.createVerticalStrut(12));
+        formPanel.add(Box.createVerticalStrut(15));
 
-        // ID号输入（根据角色动态显示标签）
-        idNumberPanel = createInputRow("学　　号：", idNumberField = new JTextField());
-        formPanel.add(idNumberPanel);
-        formPanel.add(Box.createVerticalStrut(12));
+        // 学号输入
+        formPanel.add(createInputRow("学　　号：", studentNumberField = new JTextField()));
+        formPanel.add(Box.createVerticalStrut(15));
 
         // 密码输入
         formPanel.add(createInputRow("密　　码：", passwordField = new JPasswordField()));
-        formPanel.add(Box.createVerticalStrut(18));
+        formPanel.add(Box.createVerticalStrut(20));
 
         // 按钮
         JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 8, 0));
         buttonPanel.setBackground(new Color(245, 250, 255));
-        JButton loginButton = createStyledButton("登录", new Color(33, 150, 243), new Color(25, 25, 25));
+        JButton loginButton = createStyledButton("登录", new Color(33, 150, 243), Color.WHITE);
         loginButton.addActionListener(e -> handleLogin());
 
-        JButton registerButton = createStyledButton("注册", new Color(66, 165, 245), new Color(25, 25, 25));
+        JButton registerButton = createStyledButton("注册", new Color(66, 165, 245), Color.WHITE);
         registerButton.addActionListener(e -> showRegisterDialog());
 
         buttonPanel.add(loginButton);
@@ -107,42 +113,6 @@ public class LoginFrame extends JFrame {
         passwordField.addActionListener(e -> handleLogin());
 
         add(mainPanel);
-    }
-
-    /**
-     * 角色选择行
-     */
-    private JPanel createRoleRow() {
-        JPanel panel = new JPanel(new BorderLayout(8, 0));
-        panel.setBackground(new Color(245, 250, 255));
-        JLabel label = new JLabel("角　　色：");
-        label.setFont(new Font("SimHei", Font.PLAIN, 14));
-        label.setForeground(new Color(30, 70, 120));
-        label.setPreferredSize(new Dimension(85, 30));
-        label.setOpaque(false);
-        panel.add(label, BorderLayout.WEST);
-
-        roleComboBox = new JComboBox<>(new String[]{"学生", "教师"});
-        roleComboBox.setFont(new Font("SimHei", Font.PLAIN, 14));
-        roleComboBox.setBackground(Color.WHITE);
-        roleComboBox.setForeground(new Color(30, 70, 120));
-        roleComboBox.setBorder(BorderFactory.createLineBorder(new Color(144, 202, 249), 1));
-        roleComboBox.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        // 添加角色切换监听器
-        roleComboBox.addActionListener(e -> {
-            String selectedRole = (String) roleComboBox.getSelectedItem();
-            // 根据角色显示相应的ID字段标签
-            updateIdFieldLabel(selectedRole);
-            revalidate();
-            repaint();
-        });
-        
-        // 初始化标签
-        SwingUtilities.invokeLater(() -> updateIdFieldLabel("学生"));
-        
-        panel.add(roleComboBox, BorderLayout.CENTER);
-        return panel;
     }
 
     /**
@@ -166,28 +136,39 @@ public class LoginFrame extends JFrame {
     }
 
     /**
-     * 焦点边框变化（用于注册表单）
+     * 焦点边框变化
      */
     private void addFocusListener(JTextField field) {
         field.addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusGained(java.awt.event.FocusEvent evt) {
-                field.setBorder(BorderFactory.createLineBorder(new Color(33, 150, 243), 2));
+                field.setBorder(new RoundedBorder(new Color(33, 150, 243), 2, 8));
             }
             public void focusLost(java.awt.event.FocusEvent evt) {
-                field.setBorder(BorderFactory.createLineBorder(new Color(144, 202, 249), 1));
+                field.setBorder(new RoundedBorder(new Color(144, 202, 249), 1, 8));
             }
         });
     }
 
     private JButton createStyledButton(String text, Color bg, Color fg) {
-        JButton btn = new JButton(text);
-        btn.setFont(new Font("SimHei", Font.BOLD, 12));
-        btn.setForeground(fg);
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setColor(getBackground());
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2d.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btn.setFont(new Font("SimHei", Font.BOLD, 14));
+        btn.setForeground(Color.BLACK);
         btn.setBackground(bg);
-        btn.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        btn.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         btn.setFocusPainted(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.setOpaque(true);
+        btn.setOpaque(false);
+        btn.setContentAreaFilled(false);
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) { btn.setBackground(bg.darker()); }
             public void mouseExited(java.awt.event.MouseEvent evt) { btn.setBackground(bg); }
@@ -200,25 +181,17 @@ public class LoginFrame extends JFrame {
      */
     private void handleLogin() {
         String realName = realNameField.getText().trim();
-        String idNumber = idNumberField.getText().trim();
+        String studentNumber = studentNumberField.getText().trim();
         String password = new String(passwordField.getPassword());
-        String roleStr = (String) roleComboBox.getSelectedItem();
-        UserRole selectedRole = "教师".equals(roleStr) ? UserRole.TEACHER : UserRole.STUDENT;
 
         if (realName.isEmpty()) {
             UIUtil.showWarning(this, "请输入姓名");
             realNameField.requestFocus();
             return;
         }
-        // 学生角色需要验证学号，教师角色需要验证教工号
-        if (selectedRole == UserRole.STUDENT && idNumber.isEmpty()) {
+        if (studentNumber.isEmpty()) {
             UIUtil.showWarning(this, "请输入学号");
-            idNumberField.requestFocus();
-            return;
-        }
-        if (selectedRole == UserRole.TEACHER && idNumber.isEmpty()) {
-            UIUtil.showWarning(this, "请输入教工号");
-            idNumberField.requestFocus();
+            studentNumberField.requestFocus();
             return;
         }
         if (password.isEmpty()) {
@@ -228,10 +201,9 @@ public class LoginFrame extends JFrame {
         }
 
         try {
-            User user = userService.login(realName, idNumber, password, selectedRole);
+            User user = userService.login(realName, studentNumber, password, UserRole.STUDENT);
             SwingUtilities.invokeLater(() -> {
-                if (user.getRole() == UserRole.TEACHER) new TeacherMainFrame(user).setVisible(true);
-                else if (user.getRole() == UserRole.STUDENT) new StudentMainFrame(user).setVisible(true);
+                new StudentMainFrame(user).setVisible(true);
                 dispose();
             });
         } catch (AuthenticationException ex) {
@@ -243,26 +215,13 @@ public class LoginFrame extends JFrame {
             ex.printStackTrace();
         }
     }
-    
-    /**
-     * 根据角色更新ID字段标签
-     */
-    private void updateIdFieldLabel(String selectedRole) {
-        // 更新ID字段的标签文本
-        JLabel label = (JLabel) idNumberPanel.getComponent(0); // 第一个组件是标签
-        if ("教师".equals(selectedRole)) {
-            label.setText("教工号：");
-        } else {
-            label.setText("学　号：");
-        }
-    }
 
     /**
-     * 注册对话框（保留原功能）
+     * 注册对话框
      */
     private void showRegisterDialog() {
-        JDialog dialog = new JDialog(this, "用户注册", true);
-        dialog.setSize(400, 400);
+        JDialog dialog = new JDialog(this, "学生注册", true);
+        dialog.setSize(400, 380);
         dialog.setLocationRelativeTo(this);
         dialog.setResizable(false);
 
@@ -274,9 +233,9 @@ public class LoginFrame extends JFrame {
         JPanel titlePanel = new JPanel();
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
         titlePanel.setBackground(new Color(230, 240, 250));
-        JLabel titleLabel = new JLabel("创建新账户");
+        JLabel titleLabel = new JLabel("学生账户注册");
         titleLabel.setFont(new Font("SimHei", Font.BOLD, 18));
-        titleLabel.setForeground(new Color(25, 118, 210));
+        titleLabel.setForeground(new Color(33, 150, 243));
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         titlePanel.add(titleLabel);
 
@@ -292,29 +251,14 @@ public class LoginFrame extends JFrame {
         JTextField numField = new JTextField();
         JPasswordField pwdField = new JPasswordField();
         JPasswordField confirmPwdField = new JPasswordField();
-        JComboBox<String> regRoleComboBox = new JComboBox<>(new String[]{"学生", "教师"});
-        regRoleComboBox.setFont(new Font("SimHei", Font.PLAIN, 12));
-        regRoleComboBox.setBorder(BorderFactory.createLineBorder(new Color(144, 202, 249), 1));
-        
-        // 创建ID号字段面板
-        JPanel idFieldPanel = createFormField("学 号", numField);
-        
-        // 第一栏：角色选择
-        formPanel.add(createRoleFormField("角 色", regRoleComboBox));
-        formPanel.add(Box.createVerticalStrut(8));
+
         formPanel.add(createFormField("姓 名", nameField));
-        formPanel.add(Box.createVerticalStrut(8));
-        formPanel.add(idFieldPanel);
-        formPanel.add(Box.createVerticalStrut(8));
+        formPanel.add(Box.createVerticalStrut(10));
+        formPanel.add(createFormField("学 号", numField));
+        formPanel.add(Box.createVerticalStrut(10));
         formPanel.add(createFormField("密 码", pwdField));
-        formPanel.add(Box.createVerticalStrut(8));
+        formPanel.add(Box.createVerticalStrut(10));
         formPanel.add(createFormField("确认密码", confirmPwdField));
-        
-        // 为注册角色下拉框添加监听器，更新ID字段标签
-        regRoleComboBox.addActionListener(e -> {
-            String selectedRole = (String) regRoleComboBox.getSelectedItem();
-            updateRegisterIdFieldLabel(idFieldPanel, selectedRole);
-        });
 
         mainPanel.add(formPanel, BorderLayout.CENTER);
 
@@ -322,7 +266,7 @@ public class LoginFrame extends JFrame {
         JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 8, 0));
         buttonPanel.setBackground(new Color(230, 240, 250));
 
-        JButton registerBtn = createStyledButton("注册", new Color(33, 150, 243), new Color(25, 25, 25));
+        JButton registerBtn = createStyledButton("注册", new Color(33, 150, 243), Color.WHITE);
         registerBtn.addActionListener(e -> {
             String rn = nameField.getText().trim();
             String sn = numField.getText().trim();
@@ -330,34 +274,23 @@ public class LoginFrame extends JFrame {
             String cpw = new String(confirmPwdField.getPassword());
 
             if (rn.isEmpty()) { UIUtil.showWarning(dialog, "请输入姓名"); return; }
-            if (sn.isEmpty()) {
-                String roleStr = (String) regRoleComboBox.getSelectedItem();
-                if ("教师".equals(roleStr)) {
-                    UIUtil.showWarning(dialog, "请输入教工号");
-                } else {
-                    UIUtil.showWarning(dialog, "请输入学号");
-                }
-                return;
-            }
+            if (sn.isEmpty()) { UIUtil.showWarning(dialog, "请输入学号"); return; }
             if (pw.isEmpty()) { UIUtil.showWarning(dialog, "请输入密码"); return; }
             if (!pw.equals(cpw)) { UIUtil.showWarning(dialog, "两次密码不一致"); return; }
-
-            String roleStr = (String) regRoleComboBox.getSelectedItem();
-            UserRole role = "教师".equals(roleStr) ? UserRole.TEACHER : UserRole.STUDENT;
 
             try {
                 User user = new User();
                 user.setRealName(rn);
                 user.setStudentNumber(sn);
                 user.setPassword(pw);
-                user.setRole(role);
+                user.setRole(UserRole.STUDENT);
                 user.setGender("MALE");
                 user.setStatus("ACTIVE");
                 userService.register(user);
                 UIUtil.showInfo(dialog, "注册成功，请登录！");
                 dialog.dispose();
                 realNameField.setText(rn);
-                idNumberField.setText(sn); // 更新为idNumberField
+                studentNumberField.setText(sn);
                 passwordField.setText("");
                 passwordField.requestFocus();
             } catch (Exception ex) {
@@ -366,7 +299,7 @@ public class LoginFrame extends JFrame {
             }
         });
 
-        JButton cancelBtn = createStyledButton("取消", new Color(120, 144, 156), new Color(25, 25, 25));
+        JButton cancelBtn = createStyledButton("取消", new Color(120, 144, 156), Color.WHITE);
         cancelBtn.addActionListener(e -> dialog.dispose());
 
         buttonPanel.add(registerBtn);
@@ -387,69 +320,55 @@ public class LoginFrame extends JFrame {
         fieldLabel.setFont(new Font("SimHei", Font.PLAIN, 12));
         fieldLabel.setForeground(new Color(30, 70, 120));
         fieldLabel.setOpaque(false);
-        fieldLabel.setAlignmentX(Component.LEFT_ALIGNMENT);  // 确保标签左对齐
+        fieldLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(fieldLabel);
 
-        // 如果是密码框，设置更小的字体
         if (field instanceof JPasswordField) {
             field.setFont(new Font("SimHei", Font.PLAIN, 10));
         } else {
             field.setFont(new Font("SimHei", Font.PLAIN, 12));
         }
-        field.setBorder(BorderFactory.createLineBorder(new Color(144, 202, 249), 1));
-        field.setAlignmentX(Component.LEFT_ALIGNMENT);  // 确保输入框左对齐
+        field.setBorder(new RoundedBorder(new Color(144, 202, 249), 1, 8));
+        field.setAlignmentX(Component.LEFT_ALIGNMENT);
         addFocusListener(field);
         panel.add(field);
 
         return panel;
     }
 
-    private JPanel createRoleFormField(String label, JComboBox<String> comboBox) {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(new Color(245, 250, 255));
-
-        JLabel fieldLabel = new JLabel(label);
-        fieldLabel.setFont(new Font("SimHei", Font.PLAIN, 12));
-        fieldLabel.setForeground(new Color(30, 70, 120));
-        fieldLabel.setOpaque(false);
-        fieldLabel.setAlignmentX(Component.LEFT_ALIGNMENT);  // 确保标签左对齐
-        panel.add(fieldLabel);
-
-        comboBox.setAlignmentX(Component.LEFT_ALIGNMENT);  // 确保下拉框左对齐
-        panel.add(comboBox);
-
-        return panel;
-    }
-    
     /**
-     * 创建左对齐的角色选择表单字段
+     * 圆角边框类
      */
-    private JPanel createRoleFormFieldLeftAlign(String label, JComboBox<String> comboBox) {
-        JPanel panel = new JPanel(new BorderLayout(8, 0));
-        panel.setBackground(new Color(245, 250, 255));
+    static class RoundedBorder extends AbstractBorder {
+        private final Color color;
+        private final int thickness;
+        private final int radius;
 
-        JLabel fieldLabel = new JLabel(label);
-        fieldLabel.setFont(new Font("SimHei", Font.PLAIN, 12));
-        fieldLabel.setForeground(new Color(30, 70, 120));
-        fieldLabel.setOpaque(false);
-        
-        panel.add(fieldLabel, BorderLayout.WEST);
-        panel.add(comboBox, BorderLayout.CENTER);
+        RoundedBorder(Color color, int thickness, int radius) {
+            this.color = color;
+            this.thickness = thickness;
+            this.radius = radius;
+        }
 
-        return panel;
-    }
-    
-    /**
-     * 根据角色更新注册对话框中的ID字段标签
-     */
-    private void updateRegisterIdFieldLabel(JPanel idFieldPanel, String selectedRole) {
-        // 更新注册对话框中ID字段的标签文本
-        JLabel label = (JLabel) idFieldPanel.getComponent(0); // 第一个组件是标签
-        if ("教师".equals(selectedRole)) {
-            label.setText("教工号");
-        } else {
-            label.setText("学 号");
+        @Override
+        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.setColor(color);
+            g2d.setStroke(new BasicStroke(thickness));
+            g2d.drawRoundRect(x, y, width - 1, height - 1, radius, radius);
+            g2d.dispose();
+        }
+
+        @Override
+        public Insets getBorderInsets(Component c) {
+            return new Insets(thickness + 2, thickness + 2, thickness + 2, thickness + 2);
+        }
+
+        @Override
+        public Insets getBorderInsets(Component c, Insets insets) {
+            insets.left = insets.right = insets.top = insets.bottom = thickness + 2;
+            return insets;
         }
     }
 }
