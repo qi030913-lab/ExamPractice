@@ -238,7 +238,7 @@ public class TeacherMainFrame extends JFrame {
         userPanel.setBackground(new Color(245, 250, 255));
         userPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(220, 230, 240)),
-                BorderFactory.createEmptyBorder(30, 0, 30, 20)
+                BorderFactory.createEmptyBorder(30, 35, 30, 20)
         ));
 
         // 左侧头像区域
@@ -253,8 +253,17 @@ public class TeacherMainFrame extends JFrame {
         avatarCircle.setBackground(UIUtil.PRIMARY_COLOR);
         avatarCircle.setBorder(BorderFactory.createLineBorder(new Color(200, 220, 240), 2));
 
-        JLabel userIconLabel = new JLabel("👨‍🏫");
-        userIconLabel.setFont(new Font("微软雅黑", Font.PLAIN, 28));
+        // 加载教师头像图片
+        JLabel userIconLabel = new JLabel();
+        try {
+            ImageIcon avatarIcon = new ImageIcon(getClass().getClassLoader().getResource("pic/tea.jpg"));
+            Image scaledImage = avatarIcon.getImage().getScaledInstance(56, 56, Image.SCALE_SMOOTH);
+            userIconLabel.setIcon(new ImageIcon(scaledImage));
+        } catch (Exception e) {
+            // 如果加载图片失败，使用默认emoji
+            userIconLabel.setText("\uD83D\uDC68\u200D\uD83C\uDFEB");
+            userIconLabel.setFont(new Font("微软雅黑", Font.PLAIN, 28));
+        }
         avatarCircle.add(userIconLabel);
 
         avatarPanel.add(avatarCircle);
