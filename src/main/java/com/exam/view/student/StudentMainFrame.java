@@ -311,7 +311,7 @@ public class StudentMainFrame extends JFrame {
         JButton button = new JButton(text);
         button.setFont(new Font("微软雅黑", Font.PLAIN, 14));
         button.setHorizontalAlignment(SwingConstants.LEFT);
-        button.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 0));
+        button.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 10));
         button.setFocusPainted(false);
         button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -373,7 +373,7 @@ public class StudentMainFrame extends JFrame {
         } else {
             button.setBackground(Color.WHITE);
             button.setForeground(new Color(51, 51, 51));
-            button.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 0));
+            button.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 10));
         }
     }
     
