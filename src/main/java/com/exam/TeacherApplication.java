@@ -13,11 +13,21 @@ import javax.swing.*;
 public class TeacherApplication {
     
     public static void main(String[] args) {
-        // 设置系统外观
+        // 设置现代化外观 - Nimbus主题
         try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
         } catch (Exception e) {
-            e.printStackTrace();
+            // 如果Nimbus不可用，使用系统默认外观
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
         }
         
         // 启动教师登录界面
