@@ -51,6 +51,14 @@ public class StudentMainFrame extends JFrame {
         setTitle("未来教育考试系统 - 学生端");
         setSize(1200, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        
+        // 设置窗口图标
+        try {
+            setIconImage(new ImageIcon(getClass().getClassLoader().getResource("pic/logo.png")).getImage());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
         UIUtil.centerWindow(this);
         
         // 添加窗口监听器以处理关闭事件

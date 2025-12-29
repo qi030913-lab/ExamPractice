@@ -32,6 +32,13 @@ public class TeacherLoginFrame extends JFrame {
         setLocationRelativeTo(null);
         setResizable(false);
         
+        // 设置窗口图标
+        try {
+            setIconImage(new ImageIcon(getClass().getClassLoader().getResource("pic/logo.png")).getImage());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
         // 添加窗口关闭监听器
         addWindowListener(new WindowAdapter() {
             @Override

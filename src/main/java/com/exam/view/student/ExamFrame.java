@@ -52,6 +52,14 @@ public class ExamFrame extends JFrame {
         setTitle("在线考试 - " + paper.getPaperName());
         setSize(900, 700);
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        
+        // 设置窗口图标
+        try {
+            setIconImage(new ImageIcon(getClass().getClassLoader().getResource("pic/logo.png")).getImage());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {

@@ -62,6 +62,14 @@ public class TeacherMainFrame extends JFrame {
         setTitle("未来教育考试系统 - 教师端");
         setSize(1200, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        
+        // 设置窗口图标
+        try {
+            setIconImage(new ImageIcon(getClass().getClassLoader().getResource("pic/logo.png")).getImage());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
         UIUtil.centerWindow(this);
     }
     
