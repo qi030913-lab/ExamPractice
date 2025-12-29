@@ -46,68 +46,132 @@ public class StudentLoginFrame extends JFrame {
 
     private void initComponents() {
         JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBackground(new Color(230, 240, 250));
+        mainPanel.setBackground(Color.WHITE);
 
-        // 顶部 Logo
-        JPanel logoPanel = new JPanel();
-        logoPanel.setLayout(new BoxLayout(logoPanel, BoxLayout.Y_AXIS));
-        logoPanel.setBackground(new Color(230, 240, 250));
-        logoPanel.setBorder(BorderFactory.createEmptyBorder(40, 0, 20, 0));
+        // 左侧背景图片面板
+        JPanel leftPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                try {
+                    ImageIcon imageIcon = new ImageIcon(getClass().getResource("/pic/lan.jpg"));
+                    Image image = imageIcon.getImage();
+                    g.drawImage(image, 0, 0, getWidth(), getHeight(), this);
+                } catch (Exception e) {
+                    // 如果图片加载失败，使用默认背景色
+                    setBackground(new Color(33, 150, 243));
+                }
+            }
+        };
+        leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
+        leftPanel.setPreferredSize(new Dimension(350, 500));
 
-        JLabel titleLabel = new JLabel("学生登录");
-        titleLabel.setFont(new Font("SimHei", Font.BOLD, 24));
-        titleLabel.setForeground(new Color(33, 150, 243));
-        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        logoPanel.add(titleLabel);
+        mainPanel.add(leftPanel, BorderLayout.WEST);
 
-        JLabel subTitleLabel = new JLabel("STUDENT LOGIN");
-        subTitleLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        subTitleLabel.setForeground(new Color(66, 133, 244));
-        subTitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        logoPanel.add(subTitleLabel);
+        // 右侧登录表单面板
+        JPanel rightPanel = new JPanel();
+        rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
+        rightPanel.setBackground(Color.WHITE);
+        rightPanel.setBorder(BorderFactory.createEmptyBorder(80, 60, 80, 60));
 
-        mainPanel.add(logoPanel, BorderLayout.NORTH);
+        JLabel welcomeLabel = new JLabel("欢迎回来");
+        welcomeLabel.setFont(new Font("SimHei", Font.BOLD, 32));
+        welcomeLabel.setForeground(new Color(33, 33, 33));
+        welcomeLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        rightPanel.add(welcomeLabel);
 
-        // 中间表单面板
-        JPanel centerPanel = new JPanel(new GridBagLayout());
-        centerPanel.setBackground(new Color(230, 240, 250));
+        rightPanel.add(Box.createVerticalStrut(10));
 
-        JPanel formPanel = new JPanel();
-        formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
-        formPanel.setBackground(Color.WHITE);
-        formPanel.setBorder(BorderFactory.createCompoundBorder(
-                new RoundedBorder(new Color(144, 202, 249), 1, 15),
-                BorderFactory.createEmptyBorder(20, 30, 20, 30)
-        ));
-        formPanel.setPreferredSize(new Dimension(400, 260));
+        JLabel tipLabel = new JLabel("请登录您的账号继续使用");
+        tipLabel.setFont(new Font("SimHei", Font.PLAIN, 14));
+        tipLabel.setForeground(new Color(120, 120, 120));
+        tipLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        rightPanel.add(tipLabel);
+
+        rightPanel.add(Box.createVerticalStrut(40));
 
         // 姓名输入
-        formPanel.add(createInputRow("姓　　名：", realNameField = new JTextField()));
-        formPanel.add(Box.createVerticalStrut(15));
+        JLabel nameLabel = new JLabel("姓名");
+        nameLabel.setFont(new Font("SimHei", Font.PLAIN, 14));
+        nameLabel.setForeground(new Color(60, 60, 60));
+        nameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        rightPanel.add(nameLabel);
+        rightPanel.add(Box.createVerticalStrut(8));
+
+        realNameField = new JTextField();
+        realNameField.setFont(new Font("SimHei", Font.PLAIN, 14));
+        realNameField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        realNameField.setBorder(new RoundedBorder(new Color(200, 200, 200), 1, 8));
+        realNameField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        addFieldFocusListener(realNameField);
+        rightPanel.add(realNameField);
+
+        rightPanel.add(Box.createVerticalStrut(20));
 
         // 学号输入
-        formPanel.add(createInputRow("学　　号：", studentNumberField = new JTextField()));
-        formPanel.add(Box.createVerticalStrut(15));
+        JLabel numberLabel = new JLabel("学号");
+        numberLabel.setFont(new Font("SimHei", Font.PLAIN, 14));
+        numberLabel.setForeground(new Color(60, 60, 60));
+        numberLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        rightPanel.add(numberLabel);
+        rightPanel.add(Box.createVerticalStrut(8));
+
+        studentNumberField = new JTextField();
+        studentNumberField.setFont(new Font("SimHei", Font.PLAIN, 14));
+        studentNumberField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        studentNumberField.setBorder(new RoundedBorder(new Color(200, 200, 200), 1, 8));
+        studentNumberField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        addFieldFocusListener(studentNumberField);
+        rightPanel.add(studentNumberField);
+
+        rightPanel.add(Box.createVerticalStrut(20));
 
         // 密码输入
-        formPanel.add(createInputRow("密　　码：", passwordField = new JPasswordField()));
-        formPanel.add(Box.createVerticalStrut(20));
+        JLabel passwordLabel = new JLabel("密码");
+        passwordLabel.setFont(new Font("SimHei", Font.PLAIN, 14));
+        passwordLabel.setForeground(new Color(60, 60, 60));
+        passwordLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        rightPanel.add(passwordLabel);
+        rightPanel.add(Box.createVerticalStrut(8));
 
-        // 按钮
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 8, 0));
-        buttonPanel.setBackground(new Color(245, 250, 255));
-        JButton loginButton = createStyledButton("登录", new Color(33, 150, 243), Color.WHITE);
+        passwordField = new JPasswordField();
+        passwordField.setFont(new Font("SimHei", Font.PLAIN, 14));
+        passwordField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        passwordField.setBorder(new RoundedBorder(new Color(200, 200, 200), 1, 8));
+        passwordField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        addFieldFocusListener(passwordField);
+        rightPanel.add(passwordField);
+
+        rightPanel.add(Box.createVerticalStrut(30));
+
+        // 按钮面板
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.X_AXIS));
+        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        buttonPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+
+        // 登录按钮
+        JButton loginButton = createStyledButton("登录", new Color(33, 150, 243), Color.WHITE, true);
+        loginButton.setPreferredSize(new Dimension(150, 45));
+        loginButton.setMaximumSize(new Dimension(150, 45));
         loginButton.addActionListener(e -> handleLogin());
-
-        JButton registerButton = createStyledButton("注册", new Color(66, 165, 245), Color.WHITE);
-        registerButton.addActionListener(e -> showRegisterDialog());
-
         buttonPanel.add(loginButton);
-        buttonPanel.add(registerButton);
-        formPanel.add(buttonPanel);
 
-        centerPanel.add(formPanel);
-        mainPanel.add(centerPanel, BorderLayout.CENTER);
+        buttonPanel.add(Box.createHorizontalStrut(15));
+
+        // 注册按钮
+        JButton registerButton = createStyledButton("注册", Color.WHITE, new Color(33, 150, 243), false);
+        registerButton.setPreferredSize(new Dimension(150, 45));
+        registerButton.setMaximumSize(new Dimension(150, 45));
+        registerButton.addActionListener(e -> showRegisterDialog());
+        buttonPanel.add(registerButton);
+
+        buttonPanel.add(Box.createHorizontalGlue());
+
+        rightPanel.add(buttonPanel);
+
+        mainPanel.add(rightPanel, BorderLayout.CENTER);
 
         // 回车直接登录
         passwordField.addActionListener(e -> handleLogin());
@@ -116,27 +180,21 @@ public class StudentLoginFrame extends JFrame {
     }
 
     /**
-     * 输入行
+     * 输入框焦点监听器
      */
-    private JPanel createInputRow(String labelText, JTextField field) {
-        JPanel panel = new JPanel(new BorderLayout(8, 0));
-        panel.setBackground(new Color(245, 250, 255));
-        JLabel label = new JLabel(labelText);
-        label.setFont(new Font("SimHei", Font.PLAIN, 14));
-        label.setForeground(new Color(30, 70, 120));
-        label.setPreferredSize(new Dimension(85, 30));
-        label.setOpaque(false);
-        panel.add(label, BorderLayout.WEST);
-
-        field.setFont(new Font("SimHei", Font.PLAIN, 14));
-        field.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, new Color(230, 230, 230)));
-        addFocusListener(field);
-        panel.add(field, BorderLayout.CENTER);
-        return panel;
+    private void addFieldFocusListener(JTextField field) {
+        field.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                field.setBorder(new RoundedBorder(new Color(33, 150, 243), 2, 8));
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                field.setBorder(new RoundedBorder(new Color(200, 200, 200), 1, 8));
+            }
+        });
     }
 
     /**
-     * 焦点边框变化
+     * 注册对话框输入框焦点监听器
      */
     private void addFocusListener(JTextField field) {
         field.addFocusListener(new java.awt.event.FocusAdapter() {
@@ -149,29 +207,45 @@ public class StudentLoginFrame extends JFrame {
         });
     }
 
-    private JButton createStyledButton(String text, Color bg, Color fg) {
+    private JButton createStyledButton(String text, Color bg, Color fg, boolean filled) {
         JButton btn = new JButton(text) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(getBackground());
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                if (filled) {
+                    g2d.setColor(getBackground());
+                    g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                } else {
+                    g2d.setColor(getBackground());
+                    g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                    g2d.setColor(new Color(33, 150, 243));
+                    g2d.setStroke(new BasicStroke(2));
+                    g2d.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 10, 10);
+                }
                 g2d.dispose();
                 super.paintComponent(g);
             }
         };
         btn.setFont(new Font("SimHei", Font.BOLD, 14));
-        btn.setForeground(Color.BLACK);
+        btn.setForeground(fg);
         btn.setBackground(bg);
-        btn.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
+        btn.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         btn.setFocusPainted(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.setOpaque(false);
         btn.setContentAreaFilled(false);
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) { btn.setBackground(bg.darker()); }
-            public void mouseExited(java.awt.event.MouseEvent evt) { btn.setBackground(bg); }
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                if (filled) {
+                    btn.setBackground(bg.darker());
+                } else {
+                    btn.setBackground(new Color(240, 248, 255));
+                }
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btn.setBackground(bg);
+            }
         });
         return btn;
     }
@@ -266,7 +340,7 @@ public class StudentLoginFrame extends JFrame {
         JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 8, 0));
         buttonPanel.setBackground(new Color(230, 240, 250));
 
-        JButton registerBtn = createStyledButton("注册", new Color(33, 150, 243), Color.WHITE);
+        JButton registerBtn = createStyledButton("注册", new Color(33, 150, 243), Color.WHITE, true);
         registerBtn.addActionListener(e -> {
             String rn = nameField.getText().trim();
             String sn = numField.getText().trim();
@@ -299,7 +373,7 @@ public class StudentLoginFrame extends JFrame {
             }
         });
 
-        JButton cancelBtn = createStyledButton("取消", new Color(120, 144, 156), Color.WHITE);
+        JButton cancelBtn = createStyledButton("取消", new Color(120, 144, 156), Color.WHITE, true);
         cancelBtn.addActionListener(e -> dialog.dispose());
 
         buttonPanel.add(registerBtn);
