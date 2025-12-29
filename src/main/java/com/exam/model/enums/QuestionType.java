@@ -9,7 +9,9 @@ public enum QuestionType {
     JUDGE("判断题"),
     BLANK("填空题"),
     APPLICATION("应用题"),
-    ALGORITHM("算法设计题");
+    ALGORITHM("算法设计题"),
+    SHORT_ANSWER("简答题"),
+    COMPREHENSIVE("综合题");
 
     private final String description;
 

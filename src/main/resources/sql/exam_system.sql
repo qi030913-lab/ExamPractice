@@ -46,7 +46,7 @@ CREATE TABLE user (
 DROP TABLE IF EXISTS question;
 CREATE TABLE question (
     question_id INT PRIMARY KEY AUTO_INCREMENT COMMENT '题目ID',
-    question_type ENUM('SINGLE', 'MULTIPLE', 'JUDGE', 'BLANK', 'APPLICATION', 'ALGORITHM') NOT NULL COMMENT '题目类型：单选、多选、判断、填空、应用题、算法设计题',
+    question_type ENUM('SINGLE', 'MULTIPLE', 'JUDGE', 'BLANK', 'APPLICATION', 'ALGORITHM', 'SHORT_ANSWER', 'COMPREHENSIVE') NOT NULL COMMENT '题目类型：单选、多选、判断、填空、应用题、算法设计题、简答题、综合题',
     subject VARCHAR(50) NOT NULL COMMENT '科目',
     content TEXT NOT NULL COMMENT '题目内容',
     option_a VARCHAR(500) COMMENT '选项A',

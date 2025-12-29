@@ -26,6 +26,8 @@ public class QuestionImportUtil {
      * BLANK|Java|Java中声明整数变量的关键字是____。||||int|5|EASY|使用int关键字声明整数类型
      * APPLICATION|Java|请编写一个Java程序，实现学生成绩管理系统|||||1.定义Student类 2.使用ArrayList存储|20|MEDIUM|考查面向对象和集合框架
      * ALGORITHM|算法|请设计一个算法，实现快速排序|||||1.选择基准元素 2.分区操作|25|HARD|快速排序是分治算法的应用
+     * SHORT_ANSWER|Java|请简述Java中面向对象的三大特征|||||1.封装 2.继承 3.多态|15|MEDIUM|面向对象的核心概念
+     * COMPREHENSIVE|Java|请设计并实现一个学生管理系统|||||1.架构设计 2.数据库设计|30|HARD|综合考查系统能力
      */
     public static List<Question> importFromTextFile(File file, Integer creatorId) throws Exception {
         List<Question> questions = new ArrayList<>();
@@ -77,7 +79,7 @@ public class QuestionImportUtil {
         try {
             question.setQuestionType(QuestionType.valueOf(parts[0].trim().toUpperCase()));
         } catch (IllegalArgumentException e) {
-            throw new Exception("题目类型无效：" + parts[0] + "，应为SINGLE、MULTIPLE、JUDGE、BLANK、APPLICATION或ALGORITHM");
+            throw new Exception("题目类型无效：" + parts[0] + "，应为SINGLE、MULTIPLE、JUDGE、BLANK、APPLICATION、ALGORITHM、SHORT_ANSWER或COMPREHENSIVE");
         }
         
         // 科目
@@ -141,7 +143,7 @@ public class QuestionImportUtil {
             
             writer.write("# 题目导入模板文件\n");
             writer.write("# 格式说明：题目类型|科目|题目内容|选项A|选项B|选项C|选项D|正确答案|分值|难度|解析\n");
-            writer.write("# 题目类型：SINGLE(单选)、MULTIPLE(多选)、JUDGE(判断)、BLANK(填空)、APPLICATION(应用题)、ALGORITHM(算法设计题)\n");
+            writer.write("# 题目类型：SINGLE(单选)、MULTIPLE(多选)、JUDGE(判断)、BLANK(填空)、APPLICATION(应用题)、ALGORITHM(算法设计题)、SHORT_ANSWER(简答题)、COMPREHENSIVE(综合题)\n");
             writer.write("# 难度：EASY(简单)、MEDIUM(中等)、HARD(困难)\n");
             writer.write("# 以#开头的行为注释，会被忽略\n");
             writer.write("\n");
@@ -164,6 +166,12 @@ public class QuestionImportUtil {
             writer.write("\n");
             writer.write("# 算法设计题示例（正确答案可以为算法描述或关键代码）\n");
             writer.write("ALGORITHM|算法|请设计一个算法，实现快速排序（Quick Sort），并分析其时间复杂度。|||||1.选择基准元素 2.分区操作 3.递归排序 4.时间复杂度O(nlogn)|25|HARD|快速排序是分治算法的典型应用，平均时间复杂度为O(nlogn)。\n");
+            writer.write("\n");
+            writer.write("# 简答题示例（正确答案为关键要点）\n");
+            writer.write("SHORT_ANSWER|Java|请简述Java中面向对象的三大特征及其含义。|||||1.封装：将数据和方法封装在类中 2.继承：子类继承父类的属性和方法 3.多态：同一接口的不同实现|15|MEDIUM|面向对象的三大特征是Java的核心概念。\n");
+            writer.write("\n");
+            writer.write("# 综合题示例（正确答案为详细解答要点）\n");
+            writer.write("COMPREHENSIVE|Java|请设计并实现一个学生管理系统，包括学生信息管理、成绩管理、课程管理等功能。|||||1.系统架构设计 2.数据库设计 3.类图设计 4.核心功能实现 5.异常处理|30|HARD|综合考查系统分析、设计和实现能力。\n");
         }
     }
     

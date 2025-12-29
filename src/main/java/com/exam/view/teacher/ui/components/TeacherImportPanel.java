@@ -233,13 +233,15 @@ public class TeacherImportPanel extends JPanel {
                 "文件格式要求：\n\n" +
                 "1. 每道题目占一行，格式为：\n" +
                 "   题目内容|选项A|选项B|选项C|选项D|正确答案|题目类型|难度|分值\n\n" +
-                "2. 题目类型：SINGLE(单选)、MULTIPLE(多选)、JUDGE(判断)、BLANK(填空)、APPLICATION(应用题)、ALGORITHM(算法设计题)\n" +
+                "2. 题目类型：SINGLE(单选)、MULTIPLE(多选)、JUDGE(判断)、BLANK(填空)、APPLICATION(应用题)、ALGORITHM(算法设计题)、SHORT_ANSWER(简答题)、COMPREHENSIVE(综合题)\n" +
                 "3. 难度：EASY(简单)、MEDIUM(中等)、HARD(困难)\n\n" +
                 "示例：\n" +
                 "   Java是面向对象语言|是|否|不确定||A|JUDGE|MEDIUM|5\n" +
                 "   Java中的继承关键字是|extends|implements|abstract|interface|A|SINGLE|MEDIUM|5\n" +
                 "   请编写一个Java程序，实现链表的反转|||||1.定义链表结构 2.递归或迭代实现|APPLICATION|HARD|20\n" +
-                "   请设计一个快速排序算法|||||1.选择基准元素 2.分区递归|ALGORITHM|HARD|25"
+                "   请设计一个快速排序算法|||||1.选择基准元素 2.分区递归|ALGORITHM|HARD|25\n" +
+                "   请简述Java中面向对象的三大特征|||||1.封装 2.继承 3.多态|SHORT_ANSWER|MEDIUM|15\n" +
+                "   请设计并实现学生管理系统|||||1.架构设计 2.数据库设计|COMPREHENSIVE|HARD|30"
         );
         formatText.setFont(new Font("微软雅黑", Font.PLAIN, 14));  // 字体从12改为14
         formatText.setEditable(false);
@@ -309,6 +311,8 @@ public class TeacherImportPanel extends JPanel {
             "Java中的继承关键字是|extends|implements|abstract|interface|A|SINGLE|MEDIUM|5\n" +
             "请编写一个Java程序，实现学生成绩管理系统|||||1.定义Student类 2.使用ArrayList存储 3.实现CRUD操作|APPLICATION|MEDIUM|20\n" +
             "请设计一个快速排序算法并分析时间复杂度|||||1.选择基准元素 2.分区操作 3.递归排序 4.时间复杂度O(nlogn)|ALGORITHM|HARD|25\n" +
+            "请简述Java中面向对象的三大特征及其含义|||||1.封装 2.继承 3.多态|SHORT_ANSWER|MEDIUM|15\n" +
+            "请设计并实现一个学生管理系统，包括学生信息管理、成绩管理等功能|||||1.系统架构设计 2.数据库设计 3.类图设计|COMPREHENSIVE|HARD|30\n" +
             "请在此处添加您的题目内容|选项A|选项B|选项C|选项D|A|SINGLE|EASY|5\n";
 
         try {
