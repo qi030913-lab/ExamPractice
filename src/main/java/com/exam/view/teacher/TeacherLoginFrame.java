@@ -26,7 +26,7 @@ public class TeacherLoginFrame extends JFrame {
     public TeacherLoginFrame() {
         this.userService = new UserService();
         initComponents();
-        setTitle("考试练习系统 - 教师登录");
+        setTitle("小考试系统 - 教师登录");
         setSize(700, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);

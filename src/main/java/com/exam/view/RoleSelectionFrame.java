@@ -15,7 +15,7 @@ public class RoleSelectionFrame extends JFrame {
 
     public RoleSelectionFrame() {
         initComponents();
-        setTitle("考试练习系统 - 角色选择");
+        setTitle("小考试系统 - 角色选择");
         setSize(600, 450);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -33,7 +33,7 @@ public class RoleSelectionFrame extends JFrame {
         logoPanel.setBackground(new Color(230, 240, 250));
         logoPanel.setBorder(BorderFactory.createEmptyBorder(50, 0, 30, 0));
 
-        JLabel titleLabel = new JLabel("考试练习系统");
+        JLabel titleLabel = new JLabel("小考试系统");
         titleLabel.setFont(new Font("SimHei", Font.BOLD, 28));
         titleLabel.setForeground(new Color(25, 118, 210));
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);

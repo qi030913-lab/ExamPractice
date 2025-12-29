@@ -59,7 +59,7 @@ public class TeacherMainFrame extends JFrame {
         this.paperManager = new com.exam.view.teacher.manager.PaperManager(paperService, this);
         this.importManager = new com.exam.view.teacher.manager.ImportManager(questionService, this);
         initComponents();
-        setTitle("未来教育考试系统 - 教师端");
+        setTitle("小考试系统 - 教师端");
         setSize(1200, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
@@ -177,7 +177,7 @@ public class TeacherMainFrame extends JFrame {
 
         JPanel titlePanel = new JPanel(new GridLayout(2, 1, 0, 0));
         titlePanel.setBackground(Color.WHITE);
-        JLabel titleLabel = new JLabel("未来教育●考试系统");
+        JLabel titleLabel = new JLabel("小考试系统");
         titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 16));
         titleLabel.setForeground(UIUtil.PRIMARY_COLOR);
         JLabel versionLabel = new JLabel("版本：4.0.0.92");
