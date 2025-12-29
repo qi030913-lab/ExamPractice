@@ -461,10 +461,6 @@ public class TeacherMainFrame extends JFrame {
                 if (paperPanel == null) {
                     paperPanel = new TeacherPaperPanel(paperService, new TeacherPaperPanel.TeacherPaperCallback() {
                         @Override
-                        public void onAddPaper() {
-                            paperManager.showAddPaperDialog();
-                        }
-                        @Override
                         public void onViewPaper(int row) {
                             viewPaperAtRow(row);
                         }

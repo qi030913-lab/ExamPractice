@@ -154,27 +154,11 @@ public class StudentExamPanel extends JPanel {
         titleLabel.setForeground(UIUtil.TEXT_COLOR);
         titlePanel.add(titleLabel, BorderLayout.WEST);
         
-        // 当前科目显示
+        // 当前科目显示（保留但不显示）
         currentSubjectLabel = new JLabel("当前科目：" + currentSubject);
         currentSubjectLabel.setFont(new Font("微软雅黑", Font.PLAIN, 14));
         currentSubjectLabel.setForeground(new Color(100, 100, 100));
-        titlePanel.add(currentSubjectLabel, BorderLayout.CENTER);
-        
-        // 刷新按钮
-        JButton refreshButton = new JButton("刷新列表");
-        refreshButton.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        refreshButton.setBackground(Color.WHITE);
-        refreshButton.setForeground(Color.BLACK);
-        refreshButton.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(220, 220, 220)),
-            BorderFactory.createEmptyBorder(8, 20, 8, 20)
-        ));
-        refreshButton.setFocusPainted(false);
-        refreshButton.addActionListener(e -> {
-            System.out.println("DEBUG [StudentExamPanel]: 刷新按钮被点击");
-            loadPapersBySubject(currentSubject);
-        });
-        titlePanel.add(refreshButton, BorderLayout.EAST);
+        // titlePanel.add(currentSubjectLabel, BorderLayout.CENTER); // 不显示
 
         contentPanel.add(titlePanel, BorderLayout.NORTH);
 

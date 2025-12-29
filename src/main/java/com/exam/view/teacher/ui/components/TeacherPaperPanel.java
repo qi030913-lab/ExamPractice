@@ -27,7 +27,6 @@ public class TeacherPaperPanel extends JPanel {
     
     // 回调接口
     public interface TeacherPaperCallback {
-        void onAddPaper();
         void onViewPaper(int row);
         void onEditPaper(int row);
         void onDeletePaper(int row);
@@ -58,15 +57,6 @@ public class TeacherPaperPanel extends JPanel {
         titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 20));
         titleLabel.setForeground(UIUtil.TEXT_COLOR);
         titlePanel.add(titleLabel, BorderLayout.WEST);
-
-        // 添加试卷按钮放在右侧
-        JButton addPaperButton = TeacherUIHelper.createStyledButton("创建试卷", UIUtil.SUCCESS_COLOR);
-        addPaperButton.addActionListener(e -> {
-            if (callback != null) {
-                callback.onAddPaper();
-            }
-        });
-        titlePanel.add(addPaperButton, BorderLayout.EAST);
 
         contentPanel.add(titlePanel, BorderLayout.NORTH);
 
