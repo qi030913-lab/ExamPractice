@@ -11,7 +11,9 @@ public enum QuestionType {
     APPLICATION("应用题"),
     ALGORITHM("算法设计题"),
     SHORT_ANSWER("简答题"),
-    COMPREHENSIVE("综合题");
+    COMPREHENSIVE("综合题"),
+    ESSAY("论述题"),
+    MATERIAL_ANALYSIS("材料分析题");
 
     private final String description;
 

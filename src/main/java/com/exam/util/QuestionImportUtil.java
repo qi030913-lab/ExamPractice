@@ -28,6 +28,8 @@ public class QuestionImportUtil {
      * ALGORITHM|算法|请设计一个算法，实现快速排序|||||1.选择基准元素 2.分区操作|25|HARD|快速排序是分治算法的应用
      * SHORT_ANSWER|Java|请简述Java中面向对象的三大特征|||||1.封装 2.继承 3.多态|15|MEDIUM|面向对象的核心概念
      * COMPREHENSIVE|Java|请设计并实现一个学生管理系统|||||1.架构设计 2.数据库设计|30|HARD|综合考查系统能力
+     * ESSAY|马克思主义|请论述马克思主义在中国的传播和发展|||||1.传入背景 2.与实际结合|25|HARD|考查理论分析能力
+     * MATERIAL_ANALYSIS|语文|阅读材料并分析修辞手法|||||1.拟人手法 2.营造意境|20|MEDIUM|考查材料分析能力
      */
     public static List<Question> importFromTextFile(File file, Integer creatorId) throws Exception {
         List<Question> questions = new ArrayList<>();
@@ -79,7 +81,7 @@ public class QuestionImportUtil {
         try {
             question.setQuestionType(QuestionType.valueOf(parts[0].trim().toUpperCase()));
         } catch (IllegalArgumentException e) {
-            throw new Exception("题目类型无效：" + parts[0] + "，应为SINGLE、MULTIPLE、JUDGE、BLANK、APPLICATION、ALGORITHM、SHORT_ANSWER或COMPREHENSIVE");
+            throw new Exception("题目类型无效：" + parts[0] + "，应为SINGLE、MULTIPLE、JUDGE、BLANK、APPLICATION、ALGORITHM、SHORT_ANSWER、COMPREHENSIVE、ESSAY或MATERIAL_ANALYSIS");
         }
         
         // 科目
@@ -143,7 +145,7 @@ public class QuestionImportUtil {
             
             writer.write("# 题目导入模板文件\n");
             writer.write("# 格式说明：题目类型|科目|题目内容|选项A|选项B|选项C|选项D|正确答案|分值|难度|解析\n");
-            writer.write("# 题目类型：SINGLE(单选)、MULTIPLE(多选)、JUDGE(判断)、BLANK(填空)、APPLICATION(应用题)、ALGORITHM(算法设计题)、SHORT_ANSWER(简答题)、COMPREHENSIVE(综合题)\n");
+            writer.write("# 题目类型：SINGLE(单选)、MULTIPLE(多选)、JUDGE(判断)、BLANK(填空)、APPLICATION(应用题)、ALGORITHM(算法设计题)、SHORT_ANSWER(简答题)、COMPREHENSIVE(综合题)、ESSAY(论述题)、MATERIAL_ANALYSIS(材料分析题)\n");
             writer.write("# 难度：EASY(简单)、MEDIUM(中等)、HARD(困难)\n");
             writer.write("# 以#开头的行为注释，会被忽略\n");
             writer.write("\n");
@@ -172,6 +174,12 @@ public class QuestionImportUtil {
             writer.write("\n");
             writer.write("# 综合题示例（正确答案为详细解答要点）\n");
             writer.write("COMPREHENSIVE|Java|请设计并实现一个学生管理系统，包括学生信息管理、成绩管理、课程管理等功能。|||||1.系统架构设计 2.数据库设计 3.类图设计 4.核心功能实现 5.异常处理|30|HARD|综合考查系统分析、设计和实现能力。\n");
+            writer.write("\n");
+            writer.write("# 论述题示例（正确答案为论述要点和论据）\n");
+            writer.write("ESSAY|马克思主义|请论述马克思主义在中国的传播和发展，并结合实际谈谈其对中国革命和建设的指导意义。|||||1.马克思主义传入中国的历史背景 2.与中国实际相结合 3.指导中国革命实践|25|HARD|论述题考查学生的理论分析和论证能力。\n");
+            writer.write("\n");
+            writer.write("# 材料分析题示例（题目内容包含材料，正确答案为分析要点）\n");
+            writer.write("MATERIAL_ANALYSIS|语文|阅读下面材料：《荷塘月色》节选，请分析这句话的修辞手法和表达效果。|||||1.拟人修辞手法 2.营造宁静优美的意境|20|MEDIUM|考查文学作品的阅读理解和分析能力。\n");
         }
     }
     
