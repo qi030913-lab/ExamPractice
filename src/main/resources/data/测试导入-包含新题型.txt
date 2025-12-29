@@ -1,0 +1,22 @@
+# 题目导入测试文件 - 包含应用题和算法设计题
+# 格式说明：题目类型|科目|题目内容|选项A|选项B|选项C|选项D|正确答案|分值|难度|解析
+
+# 单选题示例
+SINGLE|Java|Java中哪个关键字可以用来定义常量？|const|final|static|constant|B|5|EASY|final关键字用于定义常量，被final修饰的变量不可改变。
+
+# 多选题示例
+MULTIPLE|Java|Java中哪些是访问修饰符？|public|private|protected|final|ABC|10|EASY|public、private、protected是访问修饰符，final是最终修饰符。
+
+# 判断题示例
+JUDGE|Java|Java支持多继承|正确|错误|||B|5|EASY|Java不支持类的多继承，但支持接口的多实现。
+
+# 填空题示例
+BLANK|Java|Java中声明整数变量的关键字是____。||||int|5|EASY|使用int关键字声明整数类型。
+
+# 应用题示例
+APPLICATION|Java|请编写一个Java程序，实现学生成绩管理系统，要求包含添加、删除、查询、修改功能。|||||1.定义Student类 2.使用ArrayList存储 3.实现CRUD操作 4.提供菜单交互|20|MEDIUM|考查面向对象、集合框架和系统设计能力。
+APPLICATION|数据库|设计一个图书管理系统的数据库，包含图书表、读者表、借阅记录表，并编写查询借阅统计的SQL语句。|||||1.设计ER图 2.创建表结构 3.设置主外键 4.编写统计查询SQL|25|MEDIUM|考查数据库设计和SQL语句编写能力。
+
+# 算法设计题示例
+ALGORITHM|算法|请设计一个算法，实现快速排序（Quick Sort），并分析其时间复杂度。|||||1.选择基准元素 2.分区操作 3.递归排序 4.时间复杂度O(nlogn)|25|HARD|快速排序是分治算法的典型应用，平均时间复杂度为O(nlogn)。
+ALGORITHM|算法|实现一个二叉树的层序遍历算法，要求使用队列数据结构。|||||1.使用队列存储节点 2.逐层遍历 3.输出每层节点值|20|MEDIUM|层序遍历是广度优先搜索的应用，需要掌握队列的使用。
