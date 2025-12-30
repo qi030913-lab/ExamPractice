@@ -192,6 +192,7 @@ public class TeacherImportPanel extends JPanel {
         selectFileButton.addActionListener(e -> {
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setDialogTitle("选择题目文件");
+            fileChooser.setPreferredSize(new Dimension(600, 400)); // 设置文件选择器弹窗大小
             FileNameExtensionFilter filter = new FileNameExtensionFilter("文本文件 (*.txt)", "txt");
             fileChooser.setFileFilter(filter);
 

@@ -118,11 +118,13 @@ public class TeacherStudentPanel extends JPanel {
 
     private void loadStudentData() {
         try {
+            System.out.println("[TeacherStudentPanel] 开始加载学生数据...");
             // 清空现有数据
             studentTableModel.setRowCount(0);
 
             // 获取所有学生用户
             List<User> students = userService.getStudents();
+            System.out.println("[TeacherStudentPanel] 找到 " + students.size() + " 个学生");
 
             // 添加数据到表格
             for (User student : students) {
@@ -134,7 +136,22 @@ public class TeacherStudentPanel extends JPanel {
                 };
                 studentTableModel.addRow(rowData);
             }
+            
+            // 如果有学生数据，自动选中第一行并加载其考试记录
+            if (students.size() > 0) {
+                System.out.println("[TeacherStudentPanel] 自动选中第一个学生");
+                SwingUtilities.invokeLater(() -> {
+                    studentTable.setRowSelectionInterval(0, 0);
+                    int userId = (Integer) studentTable.getValueAt(0, 0);
+                    loadExamRecordData(userId);
+                });
+            } else {
+                System.out.println("[TeacherStudentPanel] 没有学生数据");
+                // 清空考试记录表
+                examRecordTableModel.setRowCount(0);
+            }
         } catch (Exception e) {
+            System.err.println("[TeacherStudentPanel] 加载学生数据失败: " + e.getMessage());
             UIUtil.showError(this, "加载学生数据失败：" + e.getMessage());
             e.printStackTrace();
         }
@@ -179,94 +196,54 @@ public class TeacherStudentPanel extends JPanel {
 
     private void loadExamRecordData(int userId) {
         try {
-            System.out.println("正在加载用户ID为 " + userId + " 的考试记录...");
+            System.out.println("[TeacherStudentPanel] 正在加载用户ID为 " + userId + " 的考试记录...");
             
             // 获取该学生的考试记录
             List<ExamRecord> examRecords = examService.getStudentExamRecords(userId);
-            System.out.println("找到 " + examRecords.size() + " 条考试记录");
+            System.out.println("[TeacherStudentPanel] 找到 " + examRecords.size() + " 条考试记录");
 
-            // 通过组件层次结构直接获取考试记录面板
-            // 获取主面板中的JSplitPane
-            JSplitPane splitPane = null;
-            for (Component comp : this.getComponents()) {
-                if (comp instanceof JSplitPane) {
-                    splitPane = (JSplitPane) comp;
-                    break;
-                }
-            }
+            // 清空现有数据
+            examRecordTableModel.setRowCount(0);
             
-            if (splitPane != null) {
-                // 获取右侧面板（考试记录面板）
-                JPanel rightPanel = (JPanel) splitPane.getRightComponent();
-                if (rightPanel != null) {
-                    System.out.println("右侧面板组件数量: " + rightPanel.getComponentCount());
-                    if (examRecords.isEmpty()) {
-                        System.out.println("没有考试记录，显示提示信息");
-                        // 如果没有考试记录，显示提示信息而不是表格
-                        // 创建提示标签
-                        JLabel noRecordLabel = new JLabel("暂无考试记录", SwingConstants.CENTER);
-                        noRecordLabel.setFont(new Font("微软雅黑", Font.PLAIN, 16));
-                        noRecordLabel.setForeground(new Color(150, 150, 150));
-                        noRecordLabel.setBorder(BorderFactory.createEmptyBorder(50, 0, 50, 0));
-                        
-                        // 移除除标题外的所有组件，保留标题
-                        Component[] components = rightPanel.getComponents();
-                        for (int i = components.length - 1; i >= 0; i--) {
-                            if (!(components[i] instanceof JLabel && ((JLabel) components[i]).getText().equals("考试记录"))) {
-                                rightPanel.remove(components[i]);
-                            }
-                        }
-                        
-                        // 添加提示标签到中心位置
-                        rightPanel.add(noRecordLabel, BorderLayout.CENTER);
-                        rightPanel.revalidate();
-                        rightPanel.repaint();
-                    } else {
-                        System.out.println("有考试记录，填充表格");
-                        // 清空现有数据
-                        examRecordTableModel.setRowCount(0);
-
-                        // 添加数据到表格
-                        for (ExamRecord record : examRecords) {
-                            System.out.println("处理考试记录: " + record.getRecordId() + ", 状态: " + record.getStatus());
-                            // 确保试卷信息已加载
-                            if (record.getPaper() == null) {
-                                System.out.println("试卷信息为空，跳过记录ID: " + record.getRecordId());
-                                continue; // 跳过试卷信息为空的记录
-                            }
-                            System.out.println("试卷信息: " + record.getPaper().getPaperName());
-                            long durationMinutes = java.time.Duration.between(record.getStartTime(), record.getEndTime()).toMinutes();
-                            Object[] rowData = {
-                                record.getPaper().getPaperName(),
-                                record.getStartTime(),
-                                record.getEndTime(),
-                                durationMinutes,
-                                record.getScore()
-                            };
-                            examRecordTableModel.addRow(rowData);
-                        }
-                        
-                        System.out.println("表格中记录数量: " + examRecordTableModel.getRowCount());
-                        
-                        // 移除除标题外的所有组件，保留标题
-                        Component[] components = rightPanel.getComponents();
-                        for (int i = components.length - 1; i >= 0; i--) {
-                            if (!(components[i] instanceof JLabel && ((JLabel) components[i]).getText().equals("考试记录"))) {
-                                rightPanel.remove(components[i]);
-                            }
-                        }
-                        
-                        // 添加表格滚动面板
-                        JScrollPane scrollPane = new JScrollPane(examRecordTable);
-                        scrollPane.setBorder(BorderFactory.createLineBorder(UIUtil.PRIMARY_COLOR, 1));
-                        rightPanel.add(scrollPane, BorderLayout.CENTER);
-                        rightPanel.revalidate();
-                        rightPanel.repaint();
+            if (examRecords.isEmpty()) {
+                System.out.println("[TeacherStudentPanel] 没有考试记录");
+                // 如果没有考试记录，显示提示信息
+                // 考试记录表格已经清空，不需要额外操作
+            } else {
+                System.out.println("[TeacherStudentPanel] 有考试记录，填充表格");
+                
+                // 添加数据到表格
+                for (ExamRecord record : examRecords) {
+                    System.out.println("[TeacherStudentPanel] 处理考试记录: ID=" + record.getRecordId() + ", 状态=" + record.getStatus());
+                    
+                    // 确保试卷信息已加载
+                    if (record.getPaper() == null) {
+                        System.out.println("[TeacherStudentPanel] 试卷信息为空，跳过记录ID: " + record.getRecordId());
+                        continue; // 跳过试卷信息为空的记录
                     }
+                    
+                    System.out.println("[TeacherStudentPanel] 试卷信息: " + record.getPaper().getPaperName());
+                    
+                    // 计算用时
+                    long durationMinutes = 0;
+                    if (record.getStartTime() != null && record.getEndTime() != null) {
+                        durationMinutes = java.time.Duration.between(record.getStartTime(), record.getEndTime()).toMinutes();
+                    }
+                    
+                    Object[] rowData = {
+                        record.getPaper().getPaperName(),
+                        record.getStartTime(),
+                        record.getEndTime(),
+                        durationMinutes,
+                        record.getScore() != null ? record.getScore() : "-"
+                    };
+                    examRecordTableModel.addRow(rowData);
                 }
+                
+                System.out.println("[TeacherStudentPanel] 表格中记录数量: " + examRecordTableModel.getRowCount());
             }
         } catch (Exception e) {
-            System.out.println("加载考试记录时出错: " + e.getMessage());
+            System.err.println("[TeacherStudentPanel] 加载考试记录时出错: " + e.getMessage());
             e.printStackTrace();
             UIUtil.showError(this, "加载考试记录失败：" + e.getMessage());
         }

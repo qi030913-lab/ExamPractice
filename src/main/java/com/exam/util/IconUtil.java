@@ -329,4 +329,49 @@ public class IconUtil {
             public int getIconHeight() { return size; }
         };
     }
+    
+    /**
+     * 创建网络图标
+     */
+    public static Icon createNetworkIcon(Color color, int size) {
+        return new Icon() {
+            @Override
+            public void paintIcon(Component c, Graphics g, int x, int y) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setColor(color);
+                g2d.setStroke(new BasicStroke(2f));
+                
+                // 绘制中心节点
+                int centerX = x + size / 2;
+                int centerY = y + size / 2;
+                int nodeSize = size / 5;
+                g2d.fillOval(centerX - nodeSize/2, centerY - nodeSize/2, nodeSize, nodeSize);
+                
+                // 绘制四个周边节点及连线
+                int radius = size / 3;
+                int[][] positions = {
+                    {centerX, centerY - radius},           // 上
+                    {centerX + radius, centerY},           // 右
+                    {centerX, centerY + radius},           // 下
+                    {centerX - radius, centerY}            // 左
+                };
+                
+                for (int[] pos : positions) {
+                    // 绘制连线
+                    g2d.drawLine(centerX, centerY, pos[0], pos[1]);
+                    // 绘制节点
+                    g2d.fillOval(pos[0] - nodeSize/2, pos[1] - nodeSize/2, nodeSize, nodeSize);
+                }
+                
+                g2d.dispose();
+            }
+            
+            @Override
+            public int getIconWidth() { return size; }
+            
+            @Override
+            public int getIconHeight() { return size; }
+        };
+    }
 }

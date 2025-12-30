@@ -7,6 +7,7 @@ import com.exam.util.UIUtil;
 import com.exam.util.IconUtil;
 // import com.exam.view.LoginFrame; // 已删除,使用StudentLoginFrame
 import com.exam.view.student.ui.components.StudentExamPanel;
+import com.exam.view.student.ui.components.StudentNetworkPanel;
 import com.exam.view.student.ui.components.StudentScorePanel;
 import com.exam.view.student.ui.components.StudentAchievementPanel;
 import javax.swing.*;
@@ -303,7 +304,8 @@ public class StudentMainFrame extends JFrame {
             {"home", "我的主页"},
             {"exam", "考试题库"},
             {"score", "成绩查询"},
-            {"achievement", "我的成就"}
+            {"achievement", "我的成就"},
+            {"network", "网络通信"}
         };
 
         for (int i = 0; i < menuConfig.length; i++) {
@@ -367,6 +369,8 @@ public class StudentMainFrame extends JFrame {
                 return IconUtil.createChartIcon(color, size);
             case "achievement":
                 return IconUtil.createTrophyIcon(color, size);
+            case "network":
+                return IconUtil.createNetworkIcon(color, size);
             default:
                 return IconUtil.createCircleIcon(color, size);
         }
@@ -405,7 +409,7 @@ public class StudentMainFrame extends JFrame {
         currentView = view;
 
         // 更新所有按钮的状态
-        String[] views = {"home", "exam", "score", "achievement"};
+        String[] views = {"home", "exam", "score", "achievement", "network"};
         for (int i = 0; i < menuButtons.size(); i++) {
             JButton button = menuButtons.get(i);
             boolean isActive = i == getViewIndex(view);
@@ -434,6 +438,9 @@ public class StudentMainFrame extends JFrame {
             case "achievement":
                 mainContentPanel.add(new StudentAchievementPanel(student), BorderLayout.CENTER);
                 break;
+            case "network":
+                mainContentPanel.add(new StudentNetworkPanel(student), BorderLayout.CENTER);
+                break;
             default:
                 mainContentPanel.add(createHomePanel(), BorderLayout.CENTER);
         }
@@ -448,6 +455,7 @@ public class StudentMainFrame extends JFrame {
             case "exam": return 1;
             case "score": return 2;
             case "achievement": return 3;
+            case "network": return 4;
             default: return -1;
         }
     }

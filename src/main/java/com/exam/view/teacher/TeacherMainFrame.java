@@ -45,6 +45,7 @@ public class TeacherMainFrame extends JFrame {
     private TeacherPaperPanel paperPanel;
     private TeacherImportPanel importPanel;
     private TeacherStudentPanel studentPanel;
+    private TeacherNetworkPanel networkPanel;
     
     // 题库管理相关变量（废弃，已迁移到TeacherQuestionPanel）
     private JTable questionTable;
@@ -327,7 +328,8 @@ public class TeacherMainFrame extends JFrame {
                 {"question", "题库管理"},
                 {"paper", "试卷管理"},
                 {"import", "导入题目"},
-                {"student", "学生管理"}
+                {"student", "学生管理"},
+                {"network", "网络通信"}
         };
 
         for (int i = 0; i < menuConfig.length; i++) {
@@ -395,6 +397,8 @@ public class TeacherMainFrame extends JFrame {
                 return IconUtil.createUploadIcon(color, size);
             case "student":
                 return IconUtil.createUserIcon(color, size);
+            case "network":
+                return IconUtil.createNetworkIcon(color, size);
             default:
                 return IconUtil.createCircleIcon(color, size);
         }
@@ -433,7 +437,7 @@ public class TeacherMainFrame extends JFrame {
         currentView = view;
 
         // 更新所有按钮的状态
-        String[] views = {"home", "question", "paper", "import", "student"};
+        String[] views = {"home", "question", "paper", "import", "student", "network"};
         for (int i = 0; i < menuButtons.size(); i++) {
             JButton button = menuButtons.get(i);
             boolean isActive = i == getViewIndex(view);
@@ -527,8 +531,18 @@ public class TeacherMainFrame extends JFrame {
             case "student":
                 if (studentPanel == null) {
                     studentPanel = new TeacherStudentPanel(this);
+                } else {
+                    // 每次切换到学生管理时，刷新数据
+                    System.out.println("[TeacherMainFrame] 切换到学生管理，刷新数据");
+                    studentPanel.refreshData();
                 }
                 mainContentPanel.add(studentPanel, BorderLayout.CENTER);
+                break;
+            case "network":
+                if (networkPanel == null) {
+                    networkPanel = new TeacherNetworkPanel();
+                }
+                mainContentPanel.add(networkPanel, BorderLayout.CENTER);
                 break;
             default:
                 if (homePanel == null) {
@@ -548,6 +562,7 @@ public class TeacherMainFrame extends JFrame {
             case "paper": return 2;
             case "import": return 3;
             case "student": return 4;
+            case "network": return 5;
             default: return -1;
         }
     }
