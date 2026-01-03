@@ -1,6 +1,8 @@
 package com.exam.view.student.ui.components;
 
 import com.exam.model.User;
+import com.exam.model.NetworkLog;
+import com.exam.dao.NetworkLogDao;
 import com.exam.util.NetworkUtil;
 import com.exam.util.UIUtil;
 import javax.swing.*;
@@ -9,6 +11,7 @@ import java.awt.*;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 /**
  * 学生端网络通信面板
@@ -31,15 +34,15 @@ public class StudentNetworkPanel extends JPanel {
     private JButton connectButton;
     private JButton disconnectButton;
     private JButton sendButton;
-    private JTextField hostField;
-    private JTextField portField;
     private JTextField messageField;
     private JLabel statusLabel;
     private boolean isConnected = false;
-    private DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private NetworkLogDao networkLogDao;
     
     public StudentNetworkPanel(User student) {
         this.student = student;
+        this.networkLogDao = new NetworkLogDao();
         initComponents();
     }
     
@@ -78,7 +81,7 @@ public class StudentNetworkPanel extends JPanel {
         
         // 左侧控制面板
         JPanel controlPanel = createControlPanel();
-        controlPanel.setPreferredSize(new Dimension(350, 0));
+        controlPanel.setPreferredSize(new Dimension(300, 0));
         mainPanel.add(controlPanel, BorderLayout.WEST);
         
         // 右侧日志面板
@@ -96,53 +99,6 @@ public class StudentNetworkPanel extends JPanel {
             BorderFactory.createLineBorder(new Color(220, 220, 220)),
             BorderFactory.createEmptyBorder(15, 15, 15, 15)
         ));
-        
-        // 服务器配置
-        JPanel configPanel = new JPanel(new GridBagLayout());
-        configPanel.setBackground(Color.WHITE);
-        configPanel.setBorder(new TitledBorder(
-            BorderFactory.createLineBorder(new Color(200, 200, 200)),
-            "服务器配置",
-            TitledBorder.LEFT,
-            TitledBorder.TOP,
-            new Font("微软雅黑", Font.BOLD, 13)
-        ));
-        
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(5, 5, 5, 5);
-        
-        // 主机配置
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 0.3;
-        JLabel hostLabel = new JLabel("服务器地址:");
-        hostLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        configPanel.add(hostLabel, gbc);
-        
-        gbc.gridx = 1;
-        gbc.weightx = 0.7;
-        hostField = new JTextField(NetworkUtil.DEFAULT_HOST);
-        hostField.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        configPanel.add(hostField, gbc);
-        
-        // 端口配置
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.weightx = 0.3;
-        JLabel portLabel = new JLabel("端口:");
-        portLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        configPanel.add(portLabel, gbc);
-        
-        gbc.gridx = 1;
-        gbc.weightx = 0.7;
-        portField = new JTextField(String.valueOf(NetworkUtil.DEFAULT_PORT));
-        portField.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        configPanel.add(portField, gbc);
-        
-        configPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
-        panel.add(configPanel);
-        panel.add(Box.createVerticalStrut(10));
         
         // 状态显示
         JPanel statusPanel = new JPanel();
@@ -166,13 +122,20 @@ public class StudentNetworkPanel extends JPanel {
         userLabel.setForeground(UIUtil.TEXT_GRAY);
         userLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         
+//        JLabel serverLabel = new JLabel("服务器: " + NetworkUtil.DEFAULT_HOST + ":" + NetworkUtil.DEFAULT_PORT);
+//        serverLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+//        serverLabel.setForeground(UIUtil.TEXT_GRAY);
+//        serverLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
         statusPanel.add(Box.createVerticalStrut(5));
         statusPanel.add(statusLabel);
         statusPanel.add(Box.createVerticalStrut(8));
         statusPanel.add(userLabel);
         statusPanel.add(Box.createVerticalStrut(5));
+//        statusPanel.add(serverLabel);
+        statusPanel.add(Box.createVerticalStrut(5));
         
-        statusPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
+        statusPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
         panel.add(statusPanel);
         panel.add(Box.createVerticalStrut(10));
         
@@ -275,18 +238,15 @@ public class StudentNetworkPanel extends JPanel {
             @Override
             protected Void doInBackground() {
                 try {
-                    String host = hostField.getText().trim();
-                    int port = Integer.parseInt(portField.getText());
-                    
-                    publish("============ 开始连接 ============");
-                    publish("目标服务器: " + host + ":" + port);
-                    publish("当前用户: " + student.getRealName() + " (" + student.getStudentNumber() + ")");
+                    String host = NetworkUtil.DEFAULT_HOST;
+                    int port = NetworkUtil.DEFAULT_PORT;
                     
                     client = new NetworkUtil.TcpClient(new NetworkUtil.ClientMessageListener() {
                         @Override
                         public void onMessageReceived(String message) {
                             SwingUtilities.invokeLater(() -> {
-                                appendLog("接收: " + message);
+                                // 解析消息，提取用户名和内容
+                                appendChatLog(message, "RECEIVE");
                             });
                         }
                         
@@ -297,15 +257,15 @@ public class StudentNetworkPanel extends JPanel {
                                 connectButton.setText("连接服务器");
                                 connectButton.setEnabled(false);
                                 disconnectButton.setEnabled(true);
-                                hostField.setEnabled(false);
-                                portField.setEnabled(false);
                                 messageField.setEnabled(true);
                                 sendButton.setEnabled(true);
                                 statusLabel.setText("状态: 已连接");
                                 statusLabel.setForeground(UIUtil.SUCCESS_COLOR);
-                                appendLog("连接成功！");
                                 
-                                // 发送用户信息
+                                // 加载历史聊天记录
+                                loadHistoryLogs();
+                                
+                                // 发送用户信息（不记录到日志）
                                 String userInfo = "[" + student.getRealName() + "-" + student.getStudentNumber() + "] 已上线";
                                 client.sendMessage(userInfo);
                             });
@@ -317,45 +277,31 @@ public class StudentNetworkPanel extends JPanel {
                                 isConnected = false;
                                 connectButton.setText("连接服务器");
                                 connectButton.setEnabled(true);
+                                disconnectButton.setText("断开连接");
                                 disconnectButton.setEnabled(false);
-                                hostField.setEnabled(true);
-                                portField.setEnabled(true);
                                 messageField.setEnabled(false);
                                 sendButton.setEnabled(false);
                                 statusLabel.setText("状态: 已断开");
                                 statusLabel.setForeground(UIUtil.DANGER_COLOR);
-                                appendLog("连接已断开");
                             });
                         }
                         
                         @Override
                         public void onError(String error) {
                             SwingUtilities.invokeLater(() -> {
-                                appendLog("错误: " + error);
                                 System.err.println("客户端错误: " + error);
                             });
                         }
                     });
                     
-                    publish("正在尝试连接...");
                     client.connect(host, port);
-                    publish("连接请求已发送");
                     
-                } catch (NumberFormatException e) {
-                    connectionError = new Exception("端口号格式错误");
                 } catch (IOException e) {
                     connectionError = e;
                 } catch (Exception e) {
                     connectionError = e;
                 }
                 return null;
-            }
-            
-            @Override
-            protected void process(java.util.List<String> chunks) {
-                for (String msg : chunks) {
-                    appendLog(msg);
-                }
             }
             
             @Override
@@ -367,27 +313,12 @@ public class StudentNetworkPanel extends JPanel {
                     statusLabel.setText("状态: 连接失败");
                     statusLabel.setForeground(UIUtil.DANGER_COLOR);
                     
-                    if (connectionError instanceof NumberFormatException || 
-                        connectionError.getMessage().contains("端口号格式错误")) {
-                        appendLog("端口号格式错误");
-                        JOptionPane.showMessageDialog(StudentNetworkPanel.this, 
-                            "端口号格式错误", "错误", JOptionPane.ERROR_MESSAGE);
-                    } else if (connectionError instanceof IOException) {
-                        String msg = "连接服务器失败: " + connectionError.getMessage();
-                        appendLog(msg);
-                        appendLog("可能原因:");
-                        appendLog("1. 服务器未启动");
-                        appendLog("2. 服务器防火墙阻止了连接");
-                        appendLog("3. 网络不可达");
-                        appendLog("4. IP地址或端口错误");
-                        JOptionPane.showMessageDialog(StudentNetworkPanel.this, 
-                            msg, "连接失败", JOptionPane.ERROR_MESSAGE);
-                    } else {
-                        String msg = "未知错误: " + connectionError.getMessage();
-                        appendLog(msg);
-                        JOptionPane.showMessageDialog(StudentNetworkPanel.this, 
-                            msg, "错误", JOptionPane.ERROR_MESSAGE);
-                    }
+                    String msg = connectionError instanceof IOException 
+                        ? "连接服务器失败: " + connectionError.getMessage() 
+                        : "未知错误: " + connectionError.getMessage();
+                    JOptionPane.showMessageDialog(StudentNetworkPanel.this, 
+                        msg + "\n\n可能原因:\n1. 服务器未启动\n2. 服务器防火墙阻止了连接\n3. 网络不可达\n4. IP地址或端口错误", 
+                        "连接失败", JOptionPane.ERROR_MESSAGE);
                 }
             }
         };
@@ -396,11 +327,42 @@ public class StudentNetworkPanel extends JPanel {
     
     private void disconnectFromServer() {
         if (client != null) {
-            // 发送下线通知
-            String userInfo = "[" + student.getRealName() + "-" + student.getStudentNumber() + "] 已下线";
-            client.sendMessage(userInfo);
+            // 禁用断开按钮，防止重复点击
+            disconnectButton.setEnabled(false);
+            disconnectButton.setText("断开中...");
             
-            client.disconnect();
+            // 使用SwingWorker异步断开连接，避免UI卡顿
+            SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+                @Override
+                protected Void doInBackground() {
+                    try {
+                        // 发送下线通知
+                        String userInfo = "[" + student.getRealName() + "-" + student.getStudentNumber() + "] 已下线";
+                        client.sendMessage(userInfo);
+                        
+                        // 短暂延迟，确保消息发送完成
+                        Thread.sleep(100);
+                        
+                        // 断开连接
+                        client.disconnect();
+                    } catch (Exception e) {
+                        // 如果断开失败，也要恢复UI状态
+                        SwingUtilities.invokeLater(() -> {
+                            isConnected = false;
+                            connectButton.setText("连接服务器");
+                            connectButton.setEnabled(true);
+                            disconnectButton.setText("断开连接");
+                            disconnectButton.setEnabled(false);
+                            messageField.setEnabled(false);
+                            sendButton.setEnabled(false);
+                            statusLabel.setText("状态: 已断开");
+                            statusLabel.setForeground(UIUtil.DANGER_COLOR);
+                        });
+                    }
+                    return null;
+                }
+            };
+            worker.execute();
         }
     }
     
@@ -409,15 +371,65 @@ public class StudentNetworkPanel extends JPanel {
         if (!message.isEmpty() && client != null && isConnected) {
             String fullMessage = "[" + student.getRealName() + "]: " + message;
             client.sendMessage(fullMessage);
-            appendLog("发送: " + message);
+            // 显示自己发送的消息
+            appendChatMessage(student.getRealName(), message, "SEND");
             messageField.setText("");
         }
     }
     
-    private void appendLog(String message) {
+    /**
+     * 解析并显示聊天消息
+     */
+    private void appendChatLog(String message, String messageType) {
+        // 解析消息格式: [用户名]: 消息内容
+        if (message.contains("]: ")) {
+            int nameStart = message.indexOf("[");
+            int nameEnd = message.indexOf("]:");
+            if (nameStart >= 0 && nameEnd > nameStart) {
+                String userName = message.substring(nameStart + 1, nameEnd);
+                String content = message.substring(nameEnd + 2).trim();
+                appendChatMessage(userName, content, messageType);
+            }
+        }
+    }
+    
+    /**
+     * 显示聊天消息
+     */
+    private void appendChatMessage(String userName, String message, String messageType) {
         String timestamp = LocalDateTime.now().format(timeFormatter);
-        logArea.append("[" + timestamp + "] " + message + "\n");
+        logArea.append("[" + timestamp + "] " + userName + ": " + message + "\n");
         logArea.setCaretPosition(logArea.getDocument().getLength());
+        
+        // 保存到数据库
+        try {
+            String logContent = userName + ": " + message;
+            NetworkLog log = new NetworkLog(student.getUserId(), messageType, logContent);
+            networkLogDao.insert(log);
+        } catch (Exception e) {
+            // 数据库保存失败不影响显示
+            System.err.println("保存通信日志失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 加载历史聊天记录
+     */
+    private void loadHistoryLogs() {
+        try {
+            List<NetworkLog> logs = networkLogDao.findByStudentId(student.getUserId());
+            if (!logs.isEmpty()) {
+                logArea.append("============ 历史聊天记录 ============\n");
+                for (NetworkLog log : logs) {
+                    String timestamp = log.getCreateTime().format(timeFormatter);
+                    logArea.append("[" + timestamp + "] " + log.getMessageContent() + "\n");
+                }
+                logArea.append("============ 当前会话 ============\n");
+                logArea.setCaretPosition(logArea.getDocument().getLength());
+            }
+        } catch (Exception e) {
+            System.err.println("加载历史聊天记录失败: " + e.getMessage());
+        }
     }
     
     /**

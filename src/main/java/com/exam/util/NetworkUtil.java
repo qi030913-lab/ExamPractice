@@ -233,85 +233,22 @@ public class NetworkUtil {
                 throw new IllegalStateException("已经连接到服务器");
             }
             
-            System.out.println("[DEBUG] 客户端开始连接...");
-            System.out.println("[DEBUG] 目标主机: " + host);
-            System.out.println("[DEBUG] 目标端口: " + port);
-            
             try {
-                // 尝试解析主机地址
-                System.out.println("[DEBUG] 步骤1: 解析主机名...");
-                InetAddress addr = InetAddress.getByName(host);
-                System.out.println("[DEBUG] 解析后的IP地址: " + addr.getHostAddress());
-                System.out.println("[DEBUG] 主机名: " + addr.getHostName());
-                
-                // 测试主机可达性
-                System.out.println("[DEBUG] 步骤2: 测试主机可达性 (ping测试, 5秒超时)...");
-                boolean reachable = false;
-                try {
-                    reachable = addr.isReachable(5000);
-                    System.out.println("[DEBUG] Ping结果: " + (reachable ? "可达" : "不可达"));
-                } catch (Exception e) {
-                    System.out.println("[DEBUG] Ping测试失败: " + e.getMessage());
-                }
-                
-                if (!reachable) {
-                    System.out.println("[WARNING] 主机ping不通，但仍尝试TCP连接...");
-                }
-                
-                // 获取本地网络信息
-                System.out.println("[DEBUG] 步骤3: 获取本地网络信息...");
-                try {
-                    InetAddress localAddr = InetAddress.getLocalHost();
-                    System.out.println("[DEBUG] 本地主机名: " + localAddr.getHostName());
-                    System.out.println("[DEBUG] 本地IP地址: " + localAddr.getHostAddress());
-                } catch (Exception e) {
-                    System.out.println("[DEBUG] 获取本地信息失败: " + e.getMessage());
-                }
-                
-                // 创建Socket连接
-                System.out.println("[DEBUG] 步骤4: 创建Socket连接...");
-                System.out.println("[DEBUG] 连接超时设置: 10000ms (10秒)");
+                // 直接创建Socket连接，跳过ping测试和本地信息获取，提升连接速度
                 socket = new Socket();
-                
-                long startTime = System.currentTimeMillis();
-                socket.connect(new InetSocketAddress(host, port), 10000);
-                long endTime = System.currentTimeMillis();
-                
-                System.out.println("[DEBUG] Socket连接成功! 耗时: " + (endTime - startTime) + "ms");
-                System.out.println("[DEBUG] 本地地址: " + socket.getLocalAddress() + ":" + socket.getLocalPort());
-                System.out.println("[DEBUG] 远程地址: " + socket.getRemoteSocketAddress());
-                System.out.println("[DEBUG] 连接状态: connected=" + socket.isConnected() + ", closed=" + socket.isClosed());
+                // 将连接超时从10秒减少到5秒，更快反馈连接结果
+                socket.connect(new InetSocketAddress(host, port), 5000);
                 
             } catch (UnknownHostException e) {
-                System.err.println("[ERROR] 无法解析主机名: " + host);
-                System.err.println("[ERROR] 异常类型: UnknownHostException");
-                System.err.println("[ERROR] 错误详情: " + e.getMessage());
-                e.printStackTrace();
                 throw new IOException("无法解析主机名 '" + host + "': " + e.getMessage(), e);
             } catch (SocketTimeoutException e) {
-                System.err.println("[ERROR] 连接超时");
-                System.err.println("[ERROR] 异常类型: SocketTimeoutException");
-                System.err.println("[ERROR] 超时时间: 10秒");
-                e.printStackTrace();
-                throw new IOException("连接超时 (10秒)，服务器可能不可达", e);
+                throw new IOException("连接超时 (5秒)，服务器可能不可达", e);
             } catch (ConnectException e) {
-                System.err.println("[ERROR] 连接被拒绝");
-                System.err.println("[ERROR] 异常类型: ConnectException");
-                System.err.println("[ERROR] 目标: " + host + ":" + port);
-                System.err.println("[ERROR] 原因分析:");
-                System.err.println("[ERROR]   1. 服务器端未在该端口监听 (最可能)");
-                System.err.println("[ERROR]   2. 防火墙阻止了连接");
-                System.err.println("[ERROR]   3. 服务器只监听localhost，未绑定0.0.0.0");
-                System.err.println("[ERROR] 错误详情: " + e.getMessage());
-                e.printStackTrace();
                 throw new IOException("连接被拒绝，请确认服务器已启动并监听 " + port + " 端口", e);
             } catch (IOException e) {
-                System.err.println("[ERROR] IO异常");
-                System.err.println("[ERROR] 异常类型: " + e.getClass().getName());
-                System.err.println("[ERROR] 错误详情: " + e.getMessage());
-                e.printStackTrace();
                 throw e;
             }
+            
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
             writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8"), true);
             isConnected = true;
@@ -356,12 +293,26 @@ public class NetworkUtil {
         public void disconnect() {
             isConnected = false;
             
+            // 中断接收线程，确保快速退出
+            if (receiveThread != null && receiveThread.isAlive()) {
+                receiveThread.interrupt();
+            }
+            
             try {
-                if (reader != null) reader.close();
-                if (writer != null) writer.close();
-                if (socket != null && !socket.isClosed()) socket.close();
+                // 关键：先关闭socket，这会导致阻塞的readLine()立即抛出异常
+                if (socket != null && !socket.isClosed()) {
+                    socket.close();
+                }
+                
+                // 再关闭reader和writer，此时不会阻塞
+                if (reader != null) {
+                    reader.close();
+                }
+                if (writer != null) {
+                    writer.close();
+                }
             } catch (IOException e) {
-                e.printStackTrace();
+                // 断开连接时的异常可以忽略
             }
             
             if (listener != null) {
