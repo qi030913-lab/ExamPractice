@@ -445,7 +445,7 @@ public class QuestionManager {
         formPanel.add(nameField);
 
         JLabel subjectLabel = new JLabel("科目：");
-        String[] subjects = {"Java", "Vue", "数据结构", "马克思主义", "计算机网络", "操作系统", "数据库", "英语", "其他"};
+        String[] subjects = {"Java", "Vue", "数据结构", "马克思主义", "计算机网络", "操作系统", "数据库", "英语", "品牌与营销", "其他"};
         JComboBox<String> subjectBox = new JComboBox<>(subjects);
         formPanel.add(subjectLabel);
         formPanel.add(subjectBox);

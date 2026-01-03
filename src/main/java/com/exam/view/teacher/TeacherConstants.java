@@ -9,7 +9,7 @@ public class TeacherConstants {
      */
     public static final String[] SUBJECTS = {
         "全部", "Java", "Vue", "数据结构", 
-        "马克思主义", "计算机网络", "操作系统", "数据库", "英语"
+        "马克思主义", "计算机网络", "操作系统", "数据库", "英语", "品牌与营销"
     };
     
     /**

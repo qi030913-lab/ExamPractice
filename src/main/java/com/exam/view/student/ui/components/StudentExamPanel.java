@@ -36,7 +36,7 @@ public class StudentExamPanel extends JPanel {
     private String currentSubject = "全部";
     private StudentMainFrame mainFrame; // 添加主框架引用
     private JLabel currentSubjectLabel; // 添加对科目标签的引用
-    private static final String[] SUBJECTS = {"全部", "Java", "Vue", "数据结构", "马克思主义", "计算机网络", "操作系统", "数据库", "英语"};
+    private static final String[] SUBJECTS = {"全部", "Java", "Vue", "数据结构", "马克思主义", "计算机网络", "操作系统", "数据库", "英语", "品牌与营销"};
     
     // 保存关键组件的引用，避免组件层次结构被破坏后无法恢复
     private JScrollPane tableScrollPane;
