@@ -38,6 +38,44 @@ public class QuestionDao {
     }
 
     /**
+     * 批量查询题目（性能优化版本）
+     * @param questionIds 题目ID列表
+     * @return 题目ID到题目对象的映射
+     */
+    public java.util.Map<Integer, Question> findByIds(java.util.Collection<Integer> questionIds) {
+        java.util.Map<Integer, Question> resultMap = new java.util.HashMap<>();
+        
+        if (questionIds == null || questionIds.isEmpty()) {
+            return resultMap;
+        }
+        
+        // 构建IN查询的占位符
+        String placeholders = String.join(",", java.util.Collections.nCopies(questionIds.size(), "?"));
+        String sql = "SELECT * FROM question WHERE question_id IN (" + placeholders + ")";
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            // 设置参数
+            int index = 1;
+            for (Integer questionId : questionIds) {
+                pstmt.setInt(index++, questionId);
+            }
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Question question = extractQuestion(rs);
+                    resultMap.put(question.getQuestionId(), question);
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("批量查询题目失败", e);
+        }
+        
+        return resultMap;
+    }
+
+    /**
      * 查询所有题目
      */
     public List<Question> findAll() {
@@ -289,5 +327,56 @@ public class QuestionDao {
         }
         
         return questions;
+    }
+    
+    /**
+     * 统计符合条件的题目总数（性能优化版本）
+     * @param content 题目内容关键词
+     * @param subject 科目
+     * @param type 题目类型
+     * @param difficulty 难度
+     * @return 题目总数
+     */
+    public int countQuestions(String content, String subject, com.exam.model.enums.QuestionType type, com.exam.model.enums.Difficulty difficulty) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM question WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+        
+        if (content != null && !content.trim().isEmpty()) {
+            sql.append(" AND content LIKE ?");
+            params.add("%" + content + "%");
+        }
+        
+        if (subject != null && !subject.trim().isEmpty()) {
+            sql.append(" AND subject = ?");
+            params.add(subject);
+        }
+        
+        if (type != null) {
+            sql.append(" AND question_type = ?");
+            params.add(type.name());
+        }
+        
+        if (difficulty != null) {
+            sql.append(" AND difficulty = ?");
+            params.add(difficulty.name());
+        }
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+            
+            for (int i = 0; i < params.size(); i++) {
+                pstmt.setObject(i + 1, params.get(i));
+            }
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("统计题目总数失败", e);
+        }
+        
+        return 0;
     }
 }

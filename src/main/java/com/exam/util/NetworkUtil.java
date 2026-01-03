@@ -71,19 +71,9 @@ public class NetworkUtil {
             }
             
             // 绑定到所有网络接口（0.0.0.0），允许外部连接
-            System.out.println("[DEBUG] 正在启动服务器...");
-            System.out.println("[DEBUG] 端口: " + port);
-            
             try {
                 InetAddress bindAddr = InetAddress.getByName("0.0.0.0");
-                System.out.println("[DEBUG] 绑定地址: " + bindAddr.getHostAddress());
-                
                 serverSocket = new ServerSocket(port, 50, bindAddr);
-                
-                System.out.println("[DEBUG] ServerSocket创建成功");
-                System.out.println("[DEBUG] 本地地址: " + serverSocket.getInetAddress());
-                System.out.println("[DEBUG] 本地端口: " + serverSocket.getLocalPort());
-                System.out.println("[DEBUG] 等待客户端连接...");
                 
             } catch (IOException e) {
                 System.err.println("[ERROR] 服务器启动失败: " + e.getMessage());
@@ -95,15 +85,10 @@ public class NetworkUtil {
             
             // 创建接受连接的线程
             acceptThread = new Thread(() -> {
-                System.out.println("[DEBUG] 接受连接线程已启动");
                 while (isRunning) {
                     try {
-                        System.out.println("[DEBUG] 等待客户端连接... (阻塞中)");
                         Socket clientSocket = serverSocket.accept();
                         String clientInfo = clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort();
-                        
-                        System.out.println("[DEBUG] 接受到客户端连接: " + clientInfo);
-                        System.out.println("[DEBUG] 客户端远程地址: " + clientSocket.getRemoteSocketAddress());
                         
                         // 为每个客户端创建处理线程
                         ClientHandler handler = new ClientHandler(clientSocket, clientInfo);
@@ -121,7 +106,6 @@ public class NetworkUtil {
                         }
                     }
                 }
-                System.out.println("[DEBUG] 接受连接线程已退出");
             }, "Server-Accept-Thread");
             
             acceptThread.start();

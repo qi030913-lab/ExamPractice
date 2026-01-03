@@ -95,6 +95,44 @@ public class PaperDao {
     }
 
     /**
+     * 查询所有已发布的试卷及题型统计（性能优化版本）
+     * 使用单条SQL查询试卷和题型统计，避免N+1问题
+     * @return 试卷列表，每个试卷包含题型统计信息
+     */
+    public List<Paper> findAllPublishedWithQuestionStats() {
+        String sql = "SELECT p.*, " +
+                     "COUNT(CASE WHEN q.question_type = 'SINGLE' THEN 1 END) AS single_count, " +
+                     "COUNT(CASE WHEN q.question_type = 'MULTIPLE' THEN 1 END) AS multiple_count, " +
+                     "COUNT(CASE WHEN q.question_type = 'JUDGE' THEN 1 END) AS judge_count, " +
+                     "COUNT(CASE WHEN q.question_type = 'BLANK' THEN 1 END) AS blank_count " +
+                     "FROM paper p " +
+                     "LEFT JOIN paper_question pq ON p.paper_id = pq.paper_id " +
+                     "LEFT JOIN question q ON pq.question_id = q.question_id " +
+                     "WHERE p.is_published = TRUE " +
+                     "GROUP BY p.paper_id " +
+                     "ORDER BY p.paper_id DESC";
+        List<Paper> papers = new ArrayList<>();
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            
+            while (rs.next()) {
+                Paper paper = extractPaper(rs);
+                // 存储题型统计到临时属性
+                paper.setSingleCount(rs.getInt("single_count"));
+                paper.setMultipleCount(rs.getInt("multiple_count"));
+                paper.setJudgeCount(rs.getInt("judge_count"));
+                paper.setBlankCount(rs.getInt("blank_count"));
+                papers.add(paper);
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("查询已发布试卷列表失败", e);
+        }
+        return papers;
+    }
+
+    /**
      * 添加试卷
      */
     public int insert(Paper paper) {
@@ -166,6 +204,33 @@ public class PaperDao {
         } catch (SQLException e) {
             throw new DatabaseException("删除试卷题目失败", e);
         }
+    }
+
+    /**
+     * 查询使用了指定题目的试卷列表（性能优化版本）
+     * @param questionId 题目 ID
+     * @return 使用了该题目的试卷列表
+     */
+    public List<Paper> findPapersUsingQuestion(Integer questionId) {
+        String sql = "SELECT DISTINCT p.* FROM paper p " +
+                     "INNER JOIN paper_question pq ON p.paper_id = pq.paper_id " +
+                     "WHERE pq.question_id = ?";
+        List<Paper> papers = new ArrayList<>();
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, questionId);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    papers.add(extractPaper(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("查询使用题目的试卷列表失败", e);
+        }
+        return papers;
     }
 
     /**

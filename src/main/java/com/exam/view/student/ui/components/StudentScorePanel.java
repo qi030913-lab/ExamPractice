@@ -35,6 +35,8 @@ public class StudentScorePanel extends JPanel {
     private JTable scoreTable;
     private JScrollPane scrollPane;
     private JPanel tablePanel;
+    // 缓存考试记录，避免点击按钮时重复查询
+    private List<ExamRecord> cachedRecords = new java.util.ArrayList<>();
 
     public StudentScorePanel(User student) {
         this.student = student;
@@ -105,9 +107,9 @@ public class StudentScorePanel extends JPanel {
         scoreTable.getColumn("详情").setCellRenderer(new StudentTableButtonRenderer());
         scoreTable.getColumn("详情").setCellEditor(new StudentTableButtonEditor(new JCheckBox(), row -> {
             try {
-                List<ExamRecord> records = examService.getStudentExamRecords(student.getUserId());
-                if (row < records.size()) {
-                    showExamDetail(records.get(row).getRecordId());
+                // 使用缓存的考试记录，避免重复查询
+                if (row < cachedRecords.size()) {
+                    showExamDetail(cachedRecords.get(row).getRecordId());
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -136,9 +138,27 @@ public class StudentScorePanel extends JPanel {
     private void loadScores() {
         // 清空现有数据
         scoreTableModel.setRowCount(0);
-        scoreManager.loadScores(scoreTableModel, this);
-        // 检查是否有数据，如果没有则显示提示
-        updateTableHeaderVisibility();
+        // 显示加载中提示
+        showLoadingMessage();
+        // 加载数据并缓存考试记录，完成后更新界面
+        scoreManager.loadScores(scoreTableModel, this, cachedRecords, () -> {
+            // 数据加载完成后检查是否有数据
+            updateTableHeaderVisibility();
+        });
+    }
+    
+    /**
+     * 显示加载中提示
+     */
+    private void showLoadingMessage() {
+        JLabel loadingLabel = new JLabel("加载中...", SwingConstants.CENTER);
+        loadingLabel.setFont(new Font("微软雅黑", Font.PLAIN, 16));
+        loadingLabel.setForeground(new Color(100, 100, 100));
+        
+        tablePanel.removeAll();
+        tablePanel.add(loadingLabel, BorderLayout.CENTER);
+        tablePanel.revalidate();
+        tablePanel.repaint();
     }
     
     private void updateTableHeaderVisibility() {
@@ -154,29 +174,14 @@ public class StudentScorePanel extends JPanel {
     }
     
     private void showNoDataMessage() {
-        // 隐藏表格组件
-        scoreTable.setVisible(false);
-        
         // 创建"暂无考试记录"提示标签
         JLabel noDataLabel = new JLabel("暂无考试记录", SwingConstants.CENTER);
         noDataLabel.setFont(new Font("微软雅黑", Font.PLAIN, 18));
         noDataLabel.setForeground(new Color(150, 150, 150));
         noDataLabel.setVerticalAlignment(SwingConstants.CENTER);
         
-        // 获取表格所在的面板并替换为提示标签
-        Container viewport = scoreTable.getParent();
-        if (viewport == null) return;
-        
-        Container scrollPane = viewport.getParent();
-        if (scrollPane == null) return;
-        
-        JPanel tablePanel = (JPanel) scrollPane.getParent();
-        if (tablePanel == null) return;
-
         tablePanel.removeAll();
-        tablePanel.setLayout(new BorderLayout(0, 15));
         tablePanel.add(noDataLabel, BorderLayout.CENTER);
-        
         tablePanel.revalidate();
         tablePanel.repaint();
     }
@@ -185,22 +190,8 @@ public class StudentScorePanel extends JPanel {
         // 确保表格可见
         scoreTable.setVisible(true);
         
-        // 恢复表格显示
-        Container viewport = scoreTable.getParent();
-        if (viewport == null) return;
-        
-        Container scrollPane = viewport.getParent();
-        if (scrollPane == null) return;
-        
-        JPanel tablePanel = (JPanel) scrollPane.getParent();
-        if (tablePanel == null) return;
-        
-        // 检查当前是否显示的是提示标签，如果是则需要重新设置
-        if (tablePanel.getComponentCount() == 0 || !(tablePanel.getComponent(0) instanceof JLabel)) {
-            tablePanel.removeAll();
-            tablePanel.setLayout(new BorderLayout(0, 15));
-            tablePanel.add(scrollPane, BorderLayout.CENTER);
-        }
+        tablePanel.removeAll();
+        tablePanel.add(scrollPane, BorderLayout.CENTER);
         
         // 强制重新验证和重绘
         tablePanel.revalidate();

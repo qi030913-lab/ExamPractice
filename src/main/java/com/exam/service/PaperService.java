@@ -137,6 +137,15 @@ public class PaperService {
         }
         return papers;
     }
+    
+    /**
+     * 查询所有已发布的试卷及题型统计（性能优化版本）
+     * 使用单条SQL查询，避免N+1问题
+     * @return 试卷列表，每个试卷包含题型统计信息
+     */
+    public List<Paper> getAllPublishedPapersOptimized() {
+        return paperDao.findAllPublishedWithQuestionStats();
+    }
 
     /**
      * 发布试卷
@@ -177,5 +186,12 @@ public class PaperService {
         if (paper.getPassScore() == null || paper.getPassScore() < 0) {
             throw new BusinessException("及格分数不能为负数");
         }
+    }
+    
+    /**
+     * 获取PaperDao实例（用于性能优化查询）
+     */
+    public PaperDao getPaperDao() {
+        return paperDao;
     }
 }

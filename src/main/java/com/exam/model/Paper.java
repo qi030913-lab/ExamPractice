@@ -23,6 +23,12 @@ public class Paper {
     
     // 试卷包含的题目列表（体现组合关系）
     private List<Question> questions;
+    
+    // 题型统计临时属性（用于性能优化，避免重复遍历questions列表）
+    private transient int singleCount;    // 单选题数量
+    private transient int multipleCount;  // 多选题数量
+    private transient int judgeCount;     // 判断题数量
+    private transient int blankCount;     // 填空题数量
 
     public Paper() {
         this.questions = new ArrayList<>();
@@ -150,6 +156,39 @@ public class Paper {
 
     public void setQuestions(List<Question> questions) {
         this.questions = questions;
+    }
+    
+    // 题型统计getter/setter（用于性能优化）
+    public int getSingleCount() {
+        return singleCount;
+    }
+
+    public void setSingleCount(int singleCount) {
+        this.singleCount = singleCount;
+    }
+
+    public int getMultipleCount() {
+        return multipleCount;
+    }
+
+    public void setMultipleCount(int multipleCount) {
+        this.multipleCount = multipleCount;
+    }
+
+    public int getJudgeCount() {
+        return judgeCount;
+    }
+
+    public void setJudgeCount(int judgeCount) {
+        this.judgeCount = judgeCount;
+    }
+
+    public int getBlankCount() {
+        return blankCount;
+    }
+
+    public void setBlankCount(int blankCount) {
+        this.blankCount = blankCount;
     }
 
     @Override

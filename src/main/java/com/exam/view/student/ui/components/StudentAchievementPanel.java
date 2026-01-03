@@ -19,6 +19,8 @@ import java.util.List;
  * 2. 成绩趋势图（折线图）
  * 3. 题型准确率图（柱状图）
  * 
+ * 性能优化版本：使用缓存和异步加载
+ * 
  * @author 系统管理员
  * @version 1.0
  */
@@ -26,6 +28,16 @@ public class StudentAchievementPanel extends JPanel {
     private final User student;
     private final ExamService examService;
     private final StudentAchievementManager achievementManager;
+    
+    // 缓存绘图所需数据，避免paintComponent重复查询
+    private volatile double[] cachedStats;
+    private volatile List<ExamRecord> cachedRecords;
+    private volatile int[] cachedAccuracyData;
+    private volatile boolean dataLoaded = false;
+    
+    // UI组件引用
+    private JPanel statsPanel;
+    private JPanel chartsPanel;
 
     public StudentAchievementPanel(User student) {
         this.student = student;
@@ -43,9 +55,55 @@ public class StudentAchievementPanel extends JPanel {
         JPanel titlePanel = createTitlePanel();
         add(titlePanel, BorderLayout.NORTH);
 
-        // 主内容区域
-        JPanel contentPanel = createContentPanel();
+        // 主内容区域（初始显示加载中）
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.setBackground(Color.WHITE);
+        
+        JLabel loadingLabel = new JLabel("加载中...", SwingConstants.CENTER);
+        loadingLabel.setFont(new Font("微软雅黑", Font.PLAIN, 16));
+        loadingLabel.setForeground(new Color(100, 100, 100));
+        contentPanel.add(loadingLabel, BorderLayout.CENTER);
+        
         add(contentPanel, BorderLayout.CENTER);
+        
+        // 异步加载数据
+        loadDataAsync(contentPanel);
+    }
+    
+    /**
+     * 异步加载数据
+     */
+    private void loadDataAsync(JPanel contentPanel) {
+        SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() {
+                // 在后台线程加载数据
+                cachedStats = achievementManager.getStatistics();
+                cachedRecords = achievementManager.getExamRecords();
+                cachedAccuracyData = achievementManager.getQuestionTypeAccuracy();
+                dataLoaded = true;
+                return null;
+            }
+            
+            @Override
+            protected void done() {
+                // 在EDT线程更新UI
+                contentPanel.removeAll();
+                contentPanel.setLayout(new BorderLayout(0, 20));
+                
+                // 统计卡片区域
+                statsPanel = createStatsPanel();
+                contentPanel.add(statsPanel, BorderLayout.NORTH);
+
+                // 图表区域
+                chartsPanel = createChartsPanel();
+                contentPanel.add(chartsPanel, BorderLayout.CENTER);
+                
+                contentPanel.revalidate();
+                contentPanel.repaint();
+            }
+        };
+        worker.execute();
     }
 
     /**
@@ -83,15 +141,15 @@ public class StudentAchievementPanel extends JPanel {
     }
 
     /**
-     * 创建统计卡片面板
+     * 创建统计卡片面板（性能优化版本 - 使用缓存数据）
      */
     private JPanel createStatsPanel() {
         JPanel statsPanel = new JPanel(new GridLayout(1, 4, 20, 0));
         statsPanel.setBackground(Color.WHITE);
         statsPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 30, 0));
 
-        // 统计数据
-        double[] stats = achievementManager.getStatistics();
+        // 使用缓存的统计数据
+        double[] stats = cachedStats != null ? cachedStats : new double[]{0, 0, 0, 0};
         int totalExams = (int) stats[0];
         double avgScore = stats[1];
         long totalCorrect = (long) stats[2];
@@ -165,7 +223,7 @@ public class StudentAchievementPanel extends JPanel {
     }
 
     /**
-     * 创建成绩趋势图
+     * 创建成绩趋势图（性能优化版本 - 使用缓存数据）
      */
     private JPanel createScoreTrendChart() {
         JPanel chartPanel = new JPanel(new BorderLayout());
@@ -180,7 +238,9 @@ public class StudentAchievementPanel extends JPanel {
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
         chartPanel.add(titleLabel, BorderLayout.NORTH);
 
-        // 绘制区域
+        // 绘制区域 - 使用缓存数据
+        final List<ExamRecord> records = cachedRecords;
+        
         JPanel drawPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -192,8 +252,8 @@ public class StudentAchievementPanel extends JPanel {
                 int height = getHeight();
                 int padding = 40;
 
-                List<ExamRecord> records = achievementManager.getExamRecords();
-                if (records.isEmpty()) {
+                // 直接使用缓存的数据，不再调用achievementManager
+                if (records == null || records.isEmpty()) {
                     g2d.setFont(new Font("微软雅黑", Font.PLAIN, 14));
                     g2d.setColor(new Color(150, 150, 150));
                     String msg = "暂无考试记录";
@@ -215,48 +275,46 @@ public class StudentAchievementPanel extends JPanel {
                     g2d.drawLine(padding, y, width - padding, y);
                 }
 
-                if (records.size() > 0) {
-                    int maxScore = 100;
-                    int chartWidth = width - 2 * padding;
-                    int chartHeight = height - 2 * padding;
-                    int pointGap = chartWidth / Math.max(records.size() - 1, 1);
+                int maxScore = 100;
+                int chartWidth = width - 2 * padding;
+                int chartHeight = height - 2 * padding;
+                int pointGap = chartWidth / Math.max(records.size() - 1, 1);
 
-                    // 绘制数据点和线条
-                    g2d.setStroke(new BasicStroke(2));
+                // 绘制数据点和线条
+                g2d.setStroke(new BasicStroke(2));
+                g2d.setColor(new Color(52, 152, 219));
+
+                int prevX = padding;
+                int firstScore = records.get(0).getScore() != null ? records.get(0).getScore().intValue() : 0;
+                int prevY = height - padding - (firstScore * chartHeight / maxScore);
+
+                for (int i = 0; i < records.size(); i++) {
+                    ExamRecord record = records.get(i);
+                    int x = padding + (records.size() > 1 ? i * pointGap : chartWidth / 2);
+                    int score = record.getScore() != null ? record.getScore().intValue() : 0;
+                    int y = height - padding - (score * chartHeight / maxScore);
+
+                    if (i > 0) {
+                        g2d.drawLine(prevX, prevY, x, y);
+                    }
+
+                    // 绘制数据点
+                    g2d.fillOval(x - 4, y - 4, 8, 8);
+
+                    // 显示分数
+                    g2d.setFont(new Font("微软雅黑", Font.PLAIN, 11));
+                    String scoreStr = String.valueOf(score);
+                    FontMetrics fm = g2d.getFontMetrics();
+                    g2d.drawString(scoreStr, x - fm.stringWidth(scoreStr) / 2, y - 10);
+
+                    // 显示考试序号
+                    g2d.setColor(new Color(120, 120, 120));
+                    String label = "#" + (i + 1);
+                    g2d.drawString(label, x - fm.stringWidth(label) / 2, height - padding + 20);
                     g2d.setColor(new Color(52, 152, 219));
 
-                    int prevX = padding;
-                    int firstScore = records.get(0).getScore() != null ? records.get(0).getScore().intValue() : 0;
-                    int prevY = height - padding - (firstScore * chartHeight / maxScore);
-
-                    for (int i = 0; i < records.size(); i++) {
-                        ExamRecord record = records.get(i);
-                        int x = padding + (records.size() > 1 ? i * pointGap : chartWidth / 2);
-                        int score = record.getScore() != null ? record.getScore().intValue() : 0;
-                        int y = height - padding - (score * chartHeight / maxScore);
-
-                        if (i > 0) {
-                            g2d.drawLine(prevX, prevY, x, y);
-                        }
-
-                        // 绘制数据点
-                        g2d.fillOval(x - 4, y - 4, 8, 8);
-
-                        // 显示分数
-                        g2d.setFont(new Font("微软雅黑", Font.PLAIN, 11));
-                        String scoreStr = String.valueOf(score);
-                        FontMetrics fm = g2d.getFontMetrics();
-                        g2d.drawString(scoreStr, x - fm.stringWidth(scoreStr) / 2, y - 10);
-
-                        // 显示考试序号
-                        g2d.setColor(new Color(120, 120, 120));
-                        String label = "#" + (i + 1);
-                        g2d.drawString(label, x - fm.stringWidth(label) / 2, height - padding + 20);
-                        g2d.setColor(new Color(52, 152, 219));
-
-                        prevX = x;
-                        prevY = y;
-                    }
+                    prevX = x;
+                    prevY = y;
                 }
 
                 // Y轴刻度
@@ -276,7 +334,7 @@ public class StudentAchievementPanel extends JPanel {
     }
 
     /**
-     * 创建题型准确率图
+     * 创建题型准确率图（性能优化版本 - 使用缓存数据）
      */
     private JPanel createAccuracyChart() {
         JPanel chartPanel = new JPanel(new BorderLayout());
@@ -291,6 +349,9 @@ public class StudentAchievementPanel extends JPanel {
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
         chartPanel.add(titleLabel, BorderLayout.NORTH);
 
+        // 使用缓存的数据
+        final int[] data = cachedAccuracyData != null ? cachedAccuracyData : new int[8];
+        
         JPanel drawPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -302,7 +363,7 @@ public class StudentAchievementPanel extends JPanel {
                 int height = getHeight();
                 int padding = 40;
 
-                int[] data = achievementManager.getQuestionTypeAccuracy();
+                // 直接使用缓存的数据
                 int[] correctCounts = {data[0], data[2], data[4], data[6]};
                 int[] totalCounts = {data[1], data[3], data[5], data[7]};
 

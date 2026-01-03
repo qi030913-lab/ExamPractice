@@ -40,6 +40,9 @@ public class StudentMainFrame extends JFrame {
     // 添加考试面板的引用，用于刷新
     private StudentExamPanel examPanel;
     
+    // 保持网络通信面板的引用，避免切换页面时断开连接
+    private StudentNetworkPanel networkPanel;
+    
     // 添加定时器用于定期刷新试卷列表
     private javax.swing.Timer refreshTimer;
     
@@ -67,6 +70,10 @@ public class StudentMainFrame extends JFrame {
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
                 stopAutoRefreshTimer();
+                // 关闭程序时断开网络连接
+                if (networkPanel != null) {
+                    networkPanel.disconnect();
+                }
                 dispose();
             }
         });
@@ -439,7 +446,11 @@ public class StudentMainFrame extends JFrame {
                 mainContentPanel.add(new StudentAchievementPanel(student), BorderLayout.CENTER);
                 break;
             case "network":
-                mainContentPanel.add(new StudentNetworkPanel(student), BorderLayout.CENTER);
+                // 复用网络通信面板实例，避免切换页面时断开连接
+                if (networkPanel == null) {
+                    networkPanel = new StudentNetworkPanel(student);
+                }
+                mainContentPanel.add(networkPanel, BorderLayout.CENTER);
                 break;
             default:
                 mainContentPanel.add(createHomePanel(), BorderLayout.CENTER);
@@ -565,6 +576,10 @@ public class StudentMainFrame extends JFrame {
     
     private void logout() {
         if (UIUtil.showConfirm(this, "确定要退出登录吗?")) {
+            // 退出登录时断开网络连接
+            if (networkPanel != null) {
+                networkPanel.disconnect();
+            }
             dispose();
             new StudentLoginFrame().setVisible(true);
         }

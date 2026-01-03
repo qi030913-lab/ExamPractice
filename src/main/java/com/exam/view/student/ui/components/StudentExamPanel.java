@@ -64,7 +64,8 @@ public class StudentExamPanel extends JPanel {
      * 刷新试卷列表
      */
     public void refreshExamList() {
-        System.out.println("DEBUG [StudentExamPanel]: refreshExamList() 被调用, 当前科目=" + currentSubject);
+        // 清除缓存以确保获取最新数据
+        StudentExamManager.clearCache();
         loadPapersBySubject(currentSubject);
     }
     
@@ -210,7 +211,7 @@ public class StudentExamPanel extends JPanel {
         tableScrollPane.getViewport().setBackground(Color.WHITE);
         
         // 创建"暂无数据"提示标签
-        noDataLabel = new JLabel("暂无考试记录", SwingConstants.CENTER);
+        noDataLabel = new JLabel("暂无该科目考试", SwingConstants.CENTER);
         noDataLabel.setFont(new Font("微软雅黑", Font.PLAIN, 18));
         noDataLabel.setForeground(new Color(150, 150, 150));
         noDataLabel.setVerticalAlignment(SwingConstants.CENTER);
@@ -226,28 +227,42 @@ public class StudentExamPanel extends JPanel {
      * 根据科目加载试卷
      */
     private void loadPapersBySubject(String subject) {
-        System.out.println("DEBUG [StudentExamPanel]: loadPapersBySubject() 被调用, 科目=" + subject);
-        System.out.println("DEBUG [StudentExamPanel]: tableModel=" + tableModel + ", paperTable=" + paperTable);
-        
-        // 清空现有数据
+        // 清空现有数据并显示加载提示
         tableModel.setRowCount(0);
+        showLoadingMessage();
+        
+        // 异步加载数据
         examManager.loadPapersBySubject(subject, tableModel, this);
         
-        System.out.println("DEBUG [StudentExamPanel]: 加载后表格行数=" + tableModel.getRowCount());
+        // 延迟检查表格状态（等待异步加载完成）
+        javax.swing.Timer timer = new javax.swing.Timer(100, e -> {
+            updateTableHeaderVisibility();
+        });
+        timer.setRepeats(false);
+        timer.start();
+    }
+    
+    /**
+     * 显示加载中提示
+     */
+    private void showLoadingMessage() {
+        if (tableContainerPanel == null) return;
         
-        // 检查是否有数据，如果没有则添加提示行并隐藏表头
-        updateTableHeaderVisibility();
+        JLabel loadingLabel = new JLabel("加载中...", SwingConstants.CENTER);
+        loadingLabel.setFont(new Font("微软雅黑", Font.PLAIN, 16));
+        loadingLabel.setForeground(new Color(100, 100, 100));
+        
+        tableContainerPanel.removeAll();
+        tableContainerPanel.add(loadingLabel, BorderLayout.CENTER);
+        tableContainerPanel.revalidate();
+        tableContainerPanel.repaint();
     }
     
     private void updateTableHeaderVisibility() {
-        System.out.println("DEBUG [StudentExamPanel]: updateTableHeaderVisibility() 被调用, 行数=" + tableModel.getRowCount());
-        
         // 如果表格没有数据，显示"暂无考试记录"提示
         if (tableModel.getRowCount() == 0) {
-            System.out.println("DEBUG [StudentExamPanel]: 表格无数据，调用showNoDataMessage()");
             showNoDataMessage();
         } else {
-            System.out.println("DEBUG [StudentExamPanel]: 表格有数据，调用showTable()");
             // 显示表头
             paperTable.getTableHeader().setVisible(true);
             // 确保显示表格
@@ -256,11 +271,7 @@ public class StudentExamPanel extends JPanel {
     }
     
     private void showNoDataMessage() {
-        System.out.println("DEBUG [StudentExamPanel]: showNoDataMessage() 被调用");
-        System.out.println("DEBUG [StudentExamPanel]: tableContainerPanel=" + tableContainerPanel + ", tableScrollPane=" + tableScrollPane + ", noDataLabel=" + noDataLabel);
-        
         if (tableContainerPanel == null || noDataLabel == null) {
-            System.out.println("DEBUG [StudentExamPanel]: 组件引用为null，无法显示无数据提示");
             return;
         }
         
@@ -270,16 +281,10 @@ public class StudentExamPanel extends JPanel {
         
         tableContainerPanel.revalidate();
         tableContainerPanel.repaint();
-        
-        System.out.println("DEBUG [StudentExamPanel]: showNoDataMessage() 完成");
     }
     
     private void showTable() {
-        System.out.println("DEBUG [StudentExamPanel]: showTable() 被调用");
-        System.out.println("DEBUG [StudentExamPanel]: tableContainerPanel=" + tableContainerPanel + ", tableScrollPane=" + tableScrollPane);
-        
         if (tableContainerPanel == null || tableScrollPane == null) {
-            System.out.println("DEBUG [StudentExamPanel]: 组件引用为null，无法显示表格");
             return;
         }
         
@@ -297,8 +302,6 @@ public class StudentExamPanel extends JPanel {
         // 同时对表格组件进行重绘以确保显示更新
         paperTable.revalidate();
         paperTable.repaint();
-        
-        System.out.println("DEBUG [StudentExamPanel]: showTable() 完成，表格行数=" + tableModel.getRowCount());
     }
 
     /**

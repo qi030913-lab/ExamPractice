@@ -150,4 +150,16 @@ public class QuestionService {
     public List<Question> searchQuestions(String content, String subject, com.exam.model.enums.QuestionType type, com.exam.model.enums.Difficulty difficulty, int offset, int limit) {
         return questionDao.search(content, subject, type, difficulty, offset, limit);
     }
+    
+    /**
+     * 统计符合条件的题目总数
+     * @param content 题目内容关键词
+     * @param subject 科目
+     * @param type 题目类型
+     * @param difficulty 难度
+     * @return 题目总数
+     */
+    public int countQuestions(String content, String subject, com.exam.model.enums.QuestionType type, com.exam.model.enums.Difficulty difficulty) {
+        return questionDao.countQuestions(content, subject, type, difficulty);
+    }
 }

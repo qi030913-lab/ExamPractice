@@ -8,13 +8,20 @@ import com.exam.util.UIUtil;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 学生端考试管理器 - 处理所有与考试相关的操作
+ * 性能优化版本：添加缓存和异步加载
  */
 public class StudentExamManager {
     private final User student;
     private final PaperService paperService;
+    
+    // 缓存已发布的试卷列表，避免重复查询
+    private static volatile List<Paper> cachedPapers = null;
+    private static volatile long lastCacheTime = 0;
+    private static final long CACHE_EXPIRE_MS = 60000; // 缓存过期时间：1分钟
 
     public StudentExamManager(User student) {
         this.student = student;
@@ -22,94 +29,100 @@ public class StudentExamManager {
     }
 
     /**
-     * 根据科目加载试卷
+     * 根据科目加载试卷（性能优化版本）
+     * 使用缓存和异步加载，避免界面卡顿
      * @param subject 科目名称，"全部"表示所有科目
      * @param tableModel 表格模型
      * @param parentComponent 父组件，用于显示消息框
      */
     public void loadPapersBySubject(String subject, DefaultTableModel tableModel, JComponent parentComponent) {
-        System.out.println("DEBUG [StudentExamManager]: loadPapersBySubject() 被调用, 科目=" + subject);
-        
         if (tableModel == null) {
-            System.out.println("DEBUG [StudentExamManager]: tableModel为null，直接返回");
             return;
         }
         tableModel.setRowCount(0);
-        try {
-            List<Paper> allPapers = paperService.getAllPublishedPapers();
-            System.out.println("DEBUG [StudentExamManager]: 从数据库获取到 " + allPapers.size() + " 个已发布试卷");
-            
-            // 打印所有试卷的科目信息
-            for (Paper p : allPapers) {
-                System.out.println("DEBUG [StudentExamManager]: 试卷='" + p.getPaperName() + "', 科目='" + p.getSubject() + "', 发布状态=" + p.getIsPublished());
+        
+        // 使用SwingWorker异步加载，避免UI卡顿
+        SwingWorker<List<Paper>, Void> worker = new SwingWorker<List<Paper>, Void>() {
+            @Override
+            protected List<Paper> doInBackground() {
+                return loadPapersFromCacheOrDB();
             }
             
-            List<Paper> filteredPapers;
-            
-            if ("全部".equals(subject)) {
-                filteredPapers = allPapers;
-                System.out.println("DEBUG [StudentExamManager]: 选择'全部'，不过滤，共 " + filteredPapers.size() + " 个试卷");
-            } else {
-                filteredPapers = new java.util.ArrayList<>();
-                for (Paper p : allPapers) {
-                    // 优化科目匹配逻辑，处理可能的空格和大小写问题
-                    String paperSubject = p.getSubject() != null ? p.getSubject().trim() : "";
-                    String filterSubject = subject != null ? subject.trim() : "";
-                    boolean match = isSubjectMatch(paperSubject, filterSubject);
-                    System.out.println("DEBUG [StudentExamManager]: 比较 试卷科目='" + paperSubject + "' vs 筛选科目='" + filterSubject + "', 匹配=" + match);
-                    if (match) {
-                        filteredPapers.add(p);
-                    }
+            @Override
+            protected void done() {
+                try {
+                    List<Paper> allPapers = get();
+                    populateTable(allPapers, subject, tableModel);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    UIUtil.showError(parentComponent, "加载试卷失败：" + e.getMessage());
                 }
-                System.out.println("DEBUG [StudentExamManager]: 过滤后共 " + filteredPapers.size() + " 个试卷");
             }
-
-            for (Paper p : filteredPapers) {
-                // 统计各类型题目数量
-                long singleCount = 0;
-                long multipleCount = 0;
-                long judgeCount = 0;
-                long blankCount = 0;
-
-                if (p.getQuestions() != null && !p.getQuestions().isEmpty()) {
-                    singleCount = p.getQuestions().stream()
-                            .filter(q -> q.getQuestionType() == com.exam.model.enums.QuestionType.SINGLE)
-                            .count();
-                    multipleCount = p.getQuestions().stream()
-                            .filter(q -> q.getQuestionType() == com.exam.model.enums.QuestionType.MULTIPLE)
-                            .count();
-                    judgeCount = p.getQuestions().stream()
-                            .filter(q -> q.getQuestionType() == com.exam.model.enums.QuestionType.JUDGE)
-                            .count();
-                    blankCount = p.getQuestions().stream()
-                            .filter(q -> q.getQuestionType() == com.exam.model.enums.QuestionType.BLANK)
-                            .count();
-                }
-
-                Object[] row = {
-                        p.getPaperName(),
-                        singleCount > 0 ? String.valueOf(singleCount) : "无",
-                        multipleCount > 0 ? String.valueOf(multipleCount) : "无",
-                        judgeCount > 0 ? String.valueOf(judgeCount) : "无",
-                        blankCount > 0 ? String.valueOf(blankCount) : "无",
-                        "开始考试"
-                };
-                tableModel.addRow(row);
-                System.out.println("DEBUG [StudentExamManager]: 添加行到表格: " + p.getPaperName());
-            }
-            
-            System.out.println("DEBUG [StudentExamManager]: 表格最终行数=" + tableModel.getRowCount());
-
-            if (filteredPapers.isEmpty()) {
-                System.out.println("DEBUG [StudentExamManager]: 没有匹配的试卷");
-                // 当没有试卷时，不弹窗提示，只在表格中显示相应信息
-                // 表格行将由UI层处理，此处不添加任何行
-            }
-        } catch (Exception e) {
-            System.out.println("DEBUG [StudentExamManager]: 加载试卷失败: " + e.getMessage());
-            e.printStackTrace();
-            UIUtil.showError(parentComponent, "加载试卷失败：" + e.getMessage());
+        };
+        worker.execute();
+    }
+    
+    /**
+     * 从缓存或数据库加载试卷
+     */
+    private List<Paper> loadPapersFromCacheOrDB() {
+        long now = System.currentTimeMillis();
+        // 检查缓存是否有效
+        if (cachedPapers != null && (now - lastCacheTime) < CACHE_EXPIRE_MS) {
+            return cachedPapers;
         }
+        
+        // 缓存无效，从数据库加载（使用优化后的方法）
+        List<Paper> papers = paperService.getAllPublishedPapersOptimized();
+        cachedPapers = new CopyOnWriteArrayList<>(papers);
+        lastCacheTime = now;
+        return cachedPapers;
+    }
+    
+    /**
+     * 填充表格数据
+     */
+    private void populateTable(List<Paper> allPapers, String subject, DefaultTableModel tableModel) {
+        List<Paper> filteredPapers;
+        
+        if ("全部".equals(subject)) {
+            filteredPapers = allPapers;
+        } else {
+            filteredPapers = new java.util.ArrayList<>();
+            for (Paper p : allPapers) {
+                String paperSubject = p.getSubject() != null ? p.getSubject().trim() : "";
+                String filterSubject = subject != null ? subject.trim() : "";
+                if (isSubjectMatch(paperSubject, filterSubject)) {
+                    filteredPapers.add(p);
+                }
+            }
+        }
+
+        for (Paper p : filteredPapers) {
+            // 直接使用预计算的题型统计，避免重复Stream操作
+            int singleCount = p.getSingleCount();
+            int multipleCount = p.getMultipleCount();
+            int judgeCount = p.getJudgeCount();
+            int blankCount = p.getBlankCount();
+
+            Object[] row = {
+                    p.getPaperName(),
+                    singleCount > 0 ? String.valueOf(singleCount) : "无",
+                    multipleCount > 0 ? String.valueOf(multipleCount) : "无",
+                    judgeCount > 0 ? String.valueOf(judgeCount) : "无",
+                    blankCount > 0 ? String.valueOf(blankCount) : "无",
+                    "开始考试"
+            };
+            tableModel.addRow(row);
+        }
+    }
+    
+    /**
+     * 清除缓存（用于刷新操作）
+     */
+    public static void clearCache() {
+        cachedPapers = null;
+        lastCacheTime = 0;
     }
 
     /**

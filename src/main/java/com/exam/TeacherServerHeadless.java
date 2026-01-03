@@ -171,7 +171,7 @@ public class TeacherServerHeadless {
                     if (parts.length > 1) {
                         broadcast(parts[1]);
                     } else {
-                        System.out.println("用法: broadcast <消息内容>");
+                        log("用法: broadcast <消息内容>", "WARN");
                     }
                     break;
                     
@@ -204,8 +204,8 @@ public class TeacherServerHeadless {
                     break;
                     
                 default:
-                    System.out.println("未知命令: " + command);
-                    System.out.println("输入 'help' 查看可用命令");
+                    log("未知命令: " + command, "WARN");
+                    log("输入 'help' 查看可用命令", "INFO");
             }
         }
     }

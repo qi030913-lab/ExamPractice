@@ -28,6 +28,12 @@ public class TeacherQuestionPanel extends JPanel {
     private JScrollPane scrollPane;
     private JPanel tablePanel;
     
+    // 分页组件
+    private int currentPage = 1;
+    private int pageSize = 50; // 每页显示50条
+    private int totalQuestions = 0;
+    private JLabel pageInfoLabel;
+    
     // 回调接口
     public interface TeacherQuestionCallback {
         void onAddQuestion();
@@ -70,25 +76,40 @@ public class TeacherQuestionPanel extends JPanel {
         titlePanel.add(addQuestionButton, BorderLayout.EAST);
 
         contentPanel.add(titlePanel, BorderLayout.NORTH);
+        
+        // 表格和分页面板
+        JPanel mainPanel = createMainPanel();
+        contentPanel.add(mainPanel, BorderLayout.CENTER);
 
+        add(contentPanel, BorderLayout.CENTER);
+
+        // 加载数据
+        loadQuestionsData();
+    }
+    
+    /**
+     * 创建主面板（包含表格和分页）
+     */
+    private JPanel createMainPanel() {
+        JPanel mainPanel = new JPanel(new BorderLayout(0, 15));
+        mainPanel.setBackground(Color.WHITE);
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(0, 30, 20, 30));
+        
         // 表格面板
-        tablePanel = new JPanel(new BorderLayout(0, 15));
+        tablePanel = new JPanel(new BorderLayout(0, 10));
         tablePanel.setBackground(Color.WHITE);
-        tablePanel.setBorder(BorderFactory.createEmptyBorder(0, 30, 20, 30));
 
         // 表格
         String[] columns = {"题目内容", "类型", "难度", "分值", "操作"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                // 操作列可编辑
-                return column == 4;
+                return column == 4; // 操作列可编辑
             }
         };
         questionTable = new JTable(tableModel) {
             @Override
             public Class<?> getColumnClass(int column) {
-                // 操作列使用JPanel类型
                 if (column == 4) {
                     return JPanel.class;
                 }
@@ -120,7 +141,6 @@ public class TeacherQuestionPanel extends JPanel {
                 }
             }
         }));
-        // 设置操作列宽度
         questionTable.getColumnModel().getColumn(4).setPreferredWidth(120);
         questionTable.getColumnModel().getColumn(4).setMinWidth(120);
 
@@ -136,52 +156,126 @@ public class TeacherQuestionPanel extends JPanel {
         scrollPane.getViewport().setBackground(Color.WHITE);
 
         tablePanel.add(scrollPane, BorderLayout.CENTER);
-        contentPanel.add(tablePanel, BorderLayout.CENTER);
-
-        add(contentPanel, BorderLayout.CENTER);
-
-        // 加载数据
-        loadQuestionsData();
+        
+        // 分页面板
+        JPanel paginationPanel = createPaginationPanel();
+        tablePanel.add(paginationPanel, BorderLayout.SOUTH);
+        
+        mainPanel.add(tablePanel, BorderLayout.CENTER);
+        
+        return mainPanel;
+    }
+    
+    /**
+     * 创建分页面板
+     */
+    private JPanel createPaginationPanel() {
+        JPanel paginationPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        paginationPanel.setBackground(Color.WHITE);
+        
+        JButton firstPageBtn = new JButton("首页");
+        firstPageBtn.addActionListener(e -> {
+            currentPage = 1;
+            loadQuestionsData();
+        });
+        paginationPanel.add(firstPageBtn);
+        
+        JButton prevPageBtn = new JButton("上一页");
+        prevPageBtn.addActionListener(e -> {
+            if (currentPage > 1) {
+                currentPage--;
+                loadQuestionsData();
+            }
+        });
+        paginationPanel.add(prevPageBtn);
+        
+        pageInfoLabel = new JLabel("第 1 页 / 共 1 页 (共 0 条)");
+        pageInfoLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        paginationPanel.add(pageInfoLabel);
+        
+        JButton nextPageBtn = new JButton("下一页");
+        nextPageBtn.addActionListener(e -> {
+            int totalPages = (int) Math.ceil((double) totalQuestions / pageSize);
+            if (currentPage < totalPages) {
+                currentPage++;
+                loadQuestionsData();
+            }
+        });
+        paginationPanel.add(nextPageBtn);
+        
+        JButton lastPageBtn = new JButton("末页");
+        lastPageBtn.addActionListener(e -> {
+            int totalPages = (int) Math.ceil((double) totalQuestions / pageSize);
+            if (totalPages > 0) {
+                currentPage = totalPages;
+                loadQuestionsData();
+            }
+        });
+        paginationPanel.add(lastPageBtn);
+        
+        return paginationPanel;
     }
     
     /**
      * 加载题目数据
      */
     private void loadQuestionsData() {
-        System.out.println("DEBUG: TeacherQuestionPanel.loadQuestionsData() called");
         tableModel.setRowCount(0);
         try {
-            List<Question> questions = questionService.getAllQuestions();
-            System.out.println("DEBUG: Loaded " + questions.size() + " questions from service");
+            // 计算分页参数
+            int offset = (currentPage - 1) * pageSize;
+            
+            // 使用COUNT查询获取总数（性能优化）
+            totalQuestions = questionService.countQuestions(null, null, null, null);
+            
+            // 分页查询数据
+            List<Question> questions = questionService.searchQuestions(
+                null,
+                null,
+                null,
+                null,
+                offset,
+                pageSize
+            );
+            
+            // 填充表格
             for (Question q : questions) {
                 Object[] row = {
-                        TeacherUIHelper.truncate(q.getContent(), 50), // 截断长内容
-                        q.getQuestionType().getDescription(),
-                        q.getDifficulty().getDescription(),
-                        q.getScore(),
-                        "" // 操作列，由渲染器处理
+                    TeacherUIHelper.truncate(q.getContent(), 50),
+                    q.getQuestionType().getDescription(),
+                    q.getDifficulty().getDescription(),
+                    q.getScore(),
+                    "" // 操作列
                 };
                 tableModel.addRow(row);
             }
             
-            // 检查是否有数据，如果没有则显示提示
+            // 更新分页信息
+            updatePaginationInfo();
+            
+            // 检查是否有数据
             updateTableDisplay();
-            System.out.println("DEBUG: After updateTableDisplay, row count: " + tableModel.getRowCount());
         } catch (Exception e) {
-            System.out.println("DEBUG: Error in loadQuestionsData: " + e.getMessage());
             UIUtil.showError(this, "加载题目失败：" + e.getMessage());
             e.printStackTrace();
         }
     }
     
+    /**
+     * 更新分页信息
+     */
+    private void updatePaginationInfo() {
+        int totalPages = totalQuestions == 0 ? 1 : (int) Math.ceil((double) totalQuestions / pageSize);
+        if (pageInfoLabel != null) {
+            pageInfoLabel.setText("第 " + currentPage + " 页 / 共 " + totalPages + " 页 (共 " + totalQuestions + " 条)");
+        }
+    }
+    
     private void updateTableDisplay() {
-        System.out.println("DEBUG: TeacherQuestionPanel.updateTableDisplay() called, row count: " + tableModel.getRowCount());
-        // 如果表格没有数据，显示"暂无题库"提示
+        // 如果表格没有数据，显示“暂无题库”提示
         if (tableModel.getRowCount() == 0) {
-            System.out.println("DEBUG: No questions found, showing '暂无题库' message");
             showNoDataMessage();
         } else {
-            System.out.println("DEBUG: Questions found, showing table with " + tableModel.getRowCount() + " rows");
             // 显示表头
             questionTable.getTableHeader().setVisible(true);
             // 确保显示表格
@@ -190,7 +284,6 @@ public class TeacherQuestionPanel extends JPanel {
     }
     
     private void showNoDataMessage() {
-        System.out.println("DEBUG: TeacherQuestionPanel.showNoDataMessage() called");
         // 隐藏表格组件
         questionTable.setVisible(false);
         
@@ -203,19 +296,16 @@ public class TeacherQuestionPanel extends JPanel {
         // 获取表格所在的面板并替换为提示标签
         Container viewport = questionTable.getParent();
         if (viewport == null) {
-            System.out.println("DEBUG: viewport is null in showNoDataMessage");
             return;
         }
         
         Container scrollPane = viewport.getParent();
         if (scrollPane == null) {
-            System.out.println("DEBUG: scrollPane is null in showNoDataMessage");
             return;
         }
         
         JPanel tablePanel = (JPanel) scrollPane.getParent();
         if (tablePanel == null) {
-            System.out.println("DEBUG: tablePanel is null in showNoDataMessage");
             return;
         }
 
@@ -225,41 +315,33 @@ public class TeacherQuestionPanel extends JPanel {
         
         tablePanel.revalidate();
         tablePanel.repaint();
-        System.out.println("DEBUG: Added noDataLabel to tablePanel and called revalidate/repaint");
     }
     
     private void showTable() {
-        System.out.println("DEBUG: TeacherQuestionPanel.showTable() called");
         // 确保表格可见
         questionTable.setVisible(true);
         
         // 恢复表格显示
         Container viewport = questionTable.getParent();
         if (viewport == null) {
-            System.out.println("DEBUG: viewport is null in showTable");
             return;
         }
         
         Container scrollPane = viewport.getParent();
         if (scrollPane == null) {
-            System.out.println("DEBUG: scrollPane is null in showTable");
             return;
         }
         
         JPanel tablePanel = (JPanel) scrollPane.getParent();
         if (tablePanel == null) {
-            System.out.println("DEBUG: tablePanel is null in showTable");
             return;
         }
         
         // 检查当前是否显示的是提示标签，如果是则需要重新设置
         if (tablePanel.getComponentCount() == 0 || !(tablePanel.getComponent(0) instanceof JLabel)) {
-            System.out.println("DEBUG: Setting up table in tablePanel");
             tablePanel.removeAll();
             tablePanel.setLayout(new BorderLayout(0, 15));
             tablePanel.add(scrollPane, BorderLayout.CENTER);
-        } else {
-            System.out.println("DEBUG: tablePanel already contains table, not replacing");
         }
         
         // 强制重新验证和重绘
@@ -269,14 +351,12 @@ public class TeacherQuestionPanel extends JPanel {
         // 同时对表格组件进行重绘以确保显示更新
         questionTable.revalidate();
         questionTable.repaint();
-        System.out.println("DEBUG: Called revalidate/repaint on tablePanel and questionTable");
     }
     
     /**
      * 刷新数据
      */
     public void refreshData() {
-        System.out.println("DEBUG: TeacherQuestionPanel.refreshData() called");
         loadQuestionsData();
     }
     

@@ -153,6 +153,18 @@ public class ExamService {
     }
     
     /**
+     * 查询学生的考试记录（性能优化版本）
+     * 使用JOIN查询，避免N+1问题
+     */
+    public List<ExamRecord> getStudentExamRecordsOptimized(Integer studentId) {
+        if (studentId == null) {
+            throw new BusinessException("学生ID不能为空");
+        }
+        // 使用优化后的方法，一次性查询考试记录和试卷信息
+        return examRecordDao.findByStudentIdWithPaper(studentId);
+    }
+    
+    /**
      * 根据ID查询考试记录
      */
     public ExamRecord getExamRecordById(Integer recordId) {
@@ -169,19 +181,68 @@ public class ExamService {
     }
     
     /**
-     * 查询答题记录
+     * 查询答题记录（性能优化版本）
+     * 使用批量查询避免N+1问题
      */
     public List<AnswerRecord> getAnswerRecords(Integer recordId) {
         if (recordId == null) {
             throw new BusinessException("考试记录ID不能为空");
         }
         List<AnswerRecord> answerRecords = examRecordDao.findAnswerRecords(recordId);
-        // 为每个答题记录加载题目信息
-        for (AnswerRecord ar : answerRecords) {
-            Question question = questionDao.findById(ar.getQuestionId());
-            ar.setQuestion(question);
+        
+        if (answerRecords.isEmpty()) {
+            return answerRecords;
         }
+        
+        // 收集所有需要查询的题目ID
+        java.util.Set<Integer> questionIds = new java.util.HashSet<>();
+        for (AnswerRecord ar : answerRecords) {
+            questionIds.add(ar.getQuestionId());
+        }
+        
+        // 批量查询题目信息
+        java.util.Map<Integer, Question> questionMap = questionDao.findByIds(questionIds);
+        
+        // 为每个答题记录设置题目信息
+        for (AnswerRecord ar : answerRecords) {
+            ar.setQuestion(questionMap.get(ar.getQuestionId()));
+        }
+        
         return answerRecords;
+    }
+
+    /**
+     * 批量查询答题记录（性能优化版本）
+     * @param recordIds 考试记录ID列表
+     * @return 按record_id分组的答题记录Map
+     */
+    public java.util.Map<Integer, List<AnswerRecord>> getAnswerRecordsBatch(List<Integer> recordIds) {
+        if (recordIds == null || recordIds.isEmpty()) {
+            return new java.util.HashMap<>();
+        }
+        
+        // 批量查询答题记录
+        java.util.Map<Integer, List<AnswerRecord>> answerRecordsMap = examRecordDao.findAnswerRecordsByRecordIds(recordIds);
+        
+        // 收集所有需要查询的题目ID
+        java.util.Set<Integer> questionIds = new java.util.HashSet<>();
+        for (List<AnswerRecord> records : answerRecordsMap.values()) {
+            for (AnswerRecord ar : records) {
+                questionIds.add(ar.getQuestionId());
+            }
+        }
+        
+        // 批量查询题目信息（使用优化后的批量查询方法）
+        java.util.Map<Integer, Question> questionMap = questionDao.findByIds(questionIds);
+        
+        // 为答题记录设置题目信息
+        for (List<AnswerRecord> records : answerRecordsMap.values()) {
+            for (AnswerRecord ar : records) {
+                ar.setQuestion(questionMap.get(ar.getQuestionId()));
+            }
+        }
+        
+        return answerRecordsMap;
     }
 
     /**

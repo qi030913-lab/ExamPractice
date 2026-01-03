@@ -397,11 +397,8 @@ public class QuestionManager {
         }
 
         try {
-            // 检查题目是否被试卷使用
-            List<Paper> papers = mainFrame.getPaperService().getAllPapers();
-            List<Paper> usedPapers = papers.stream()
-                    .filter(p -> p.getQuestions() != null && p.getQuestions().contains(question))
-                    .collect(Collectors.toList());
+            // 检查题目是否被试卷使用（性能优化版本）
+            List<Paper> usedPapers = mainFrame.getPaperService().getPaperDao().findPapersUsingQuestion(question.getQuestionId());
 
             if (!usedPapers.isEmpty()) {
                 StringBuilder msg = new StringBuilder("该题目已被以下试卷使用，删除将影响这些试卷：\n\n");
