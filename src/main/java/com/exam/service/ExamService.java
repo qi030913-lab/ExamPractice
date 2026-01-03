@@ -8,6 +8,7 @@ import com.exam.model.*;
 import com.exam.model.enums.ExamStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -54,7 +55,8 @@ public class ExamService {
     }
 
     /**
-     * 提交考试并自动判分
+     * 提交考试并自动判分 - 性能优化版本
+     * 使用批量插入提升性能
      */
     public BigDecimal submitExam(Integer recordId, Map<Integer, String> answers) {
         if (recordId == null) {
@@ -77,8 +79,9 @@ public class ExamService {
             throw new BusinessException("试卷没有题目");
         }
 
-        // 自动判分
+        // 自动判分 - 收集所有答题记录
         BigDecimal totalScore = BigDecimal.ZERO;
+        List<AnswerRecord> answerRecords = new ArrayList<>();
         
         for (Question question : questions) {
             String studentAnswer = answers.get(question.getQuestionId());
@@ -90,12 +93,15 @@ public class ExamService {
                 totalScore = totalScore.add(score);
             }
 
-            // 保存答题记录
+            // 收集答题记录，稍后批量插入
             AnswerRecord answerRecord = new AnswerRecord(recordId, question.getQuestionId(), studentAnswer);
             answerRecord.setIsCorrect(isCorrect);
             answerRecord.setScore(score);
-            examRecordDao.insertAnswerRecord(answerRecord);
+            answerRecords.add(answerRecord);
         }
+
+        // 批量插入答题记录（性能优化）
+        examRecordDao.insertAnswerRecordsBatch(answerRecords);
 
         // 更新考试记录
         record.submitExam();

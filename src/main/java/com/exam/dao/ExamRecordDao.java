@@ -248,6 +248,52 @@ public class ExamRecordDao {
     }
 
     /**
+     * 批量添加答题记录 - 性能优化版本
+     * 使用批量插入提升性能，减少数据库往返次数
+     */
+    public void insertAnswerRecordsBatch(List<AnswerRecord> answerRecords) {
+        if (answerRecords == null || answerRecords.isEmpty()) {
+            return;
+        }
+        
+        String sql = "INSERT INTO answer_record (record_id, question_id, student_answer, is_correct, score) VALUES (?, ?, ?, ?, ?)";
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            // 设置为非自动提交，提升批量插入性能
+            conn.setAutoCommit(false);
+            
+            for (AnswerRecord answerRecord : answerRecords) {
+                pstmt.setInt(1, answerRecord.getRecordId());
+                pstmt.setInt(2, answerRecord.getQuestionId());
+                pstmt.setString(3, answerRecord.getStudentAnswer());
+                
+                if (answerRecord.getIsCorrect() != null) {
+                    pstmt.setBoolean(4, answerRecord.getIsCorrect());
+                } else {
+                    pstmt.setNull(4, Types.BOOLEAN);
+                }
+                
+                if (answerRecord.getScore() != null) {
+                    pstmt.setBigDecimal(5, answerRecord.getScore());
+                } else {
+                    pstmt.setNull(5, Types.DECIMAL);
+                }
+                
+                pstmt.addBatch();
+            }
+            
+            // 执行批量插入
+            pstmt.executeBatch();
+            conn.commit();
+            
+        } catch (SQLException e) {
+            throw new DatabaseException("批量添加答题记录失败", e);
+        }
+    }
+
+    /**
      * 查询答题记录
      */
     public List<AnswerRecord> findAnswerRecords(Integer recordId) {
