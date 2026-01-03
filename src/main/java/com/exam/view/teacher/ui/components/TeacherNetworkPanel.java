@@ -247,6 +247,10 @@ public class TeacherNetworkPanel extends JPanel {
         try {
             int port = Integer.parseInt(portField.getText());
             
+            appendLog("============ 启动服务器 ============");
+            appendLog("监听端口: " + port);
+            appendLog("绑定地址: 0.0.0.0 (允许外部连接)");
+            
             server = new NetworkUtil.TcpServer(new NetworkUtil.MessageListener() {
                 @Override
                 public void onMessageReceived(String message, String clientInfo) {
@@ -275,11 +279,15 @@ public class TeacherNetworkPanel extends JPanel {
                 public void onError(String error) {
                     SwingUtilities.invokeLater(() -> {
                         appendLog("错误: " + error);
+                        System.err.println("服务器错误: " + error);
                     });
                 }
             });
             
+            appendLog("正在启动服务器...");
             server.start(port);
+            appendLog("服务器启动成功！");
+            
             isServerRunning = true;
             
             // 更新UI状态
@@ -292,11 +300,30 @@ public class TeacherNetworkPanel extends JPanel {
             statusLabel.setForeground(UIUtil.SUCCESS_COLOR);
             
             appendLog("服务器启动成功，监听端口: " + port);
+            appendLog("等待客户端连接...");
+            appendLog("提示: 确保防火墙允许 " + port + " 端口通信");
             
         } catch (NumberFormatException e) {
+            String msg = "端口号格式错误: " + e.getMessage();
+            appendLog(msg);
+            System.err.println(msg);
             JOptionPane.showMessageDialog(this, "端口号格式错误", "错误", JOptionPane.ERROR_MESSAGE);
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "启动服务器失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            String msg = "启动服务器失败: " + e.getMessage() + " (" + e.getClass().getSimpleName() + ")";
+            appendLog(msg);
+            appendLog("可能原因:");
+            appendLog("1. 端口已被占用");
+            appendLog("2. 没有权限绑定该端口");
+            appendLog("3. 网络配置错误");
+            System.err.println(msg);
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, msg, "启动失败", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception e) {
+            String msg = "未知错误: " + e.getMessage();
+            appendLog(msg);
+            System.err.println(msg);
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, msg, "错误", JOptionPane.ERROR_MESSAGE);
         }
     }
     

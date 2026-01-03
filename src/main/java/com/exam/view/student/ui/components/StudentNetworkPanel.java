@@ -266,6 +266,10 @@ public class StudentNetworkPanel extends JPanel {
             String host = hostField.getText().trim();
             int port = Integer.parseInt(portField.getText());
             
+            appendLog("============ 开始连接 ============");
+            appendLog("目标服务器: " + host + ":" + port);
+            appendLog("当前用户: " + student.getRealName() + " (" + student.getStudentNumber() + ")");
+            
             client = new NetworkUtil.TcpClient(new NetworkUtil.ClientMessageListener() {
                 @Override
                 public void onMessageReceived(String message) {
@@ -314,17 +318,37 @@ public class StudentNetworkPanel extends JPanel {
                 public void onError(String error) {
                     SwingUtilities.invokeLater(() -> {
                         appendLog("错误: " + error);
+                        System.err.println("客户端错误: " + error);
                     });
                 }
             });
             
+            appendLog("正在尝试连接...");
             client.connect(host, port);
+            appendLog("连接请求已发送");
             
         } catch (NumberFormatException e) {
+            String msg = "端口号格式错误: " + e.getMessage();
+            appendLog(msg);
+            System.err.println(msg);
             JOptionPane.showMessageDialog(this, "端口号格式错误", "错误", JOptionPane.ERROR_MESSAGE);
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "连接服务器失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-            appendLog("连接失败: " + e.getMessage());
+            String msg = "连接服务器失败: " + e.getMessage() + " (" + e.getClass().getSimpleName() + ")";
+            appendLog(msg);
+            appendLog("可能原因:");
+            appendLog("1. 服务器未启动");
+            appendLog("2. 服务器防火墙阻止了连接");
+            appendLog("3. 网络不可达");
+            appendLog("4. IP地址或端口错误");
+            System.err.println(msg);
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, msg, "连接失败", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception e) {
+            String msg = "未知错误: " + e.getMessage();
+            appendLog(msg);
+            System.err.println(msg);
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, msg, "错误", JOptionPane.ERROR_MESSAGE);
         }
     }
     
