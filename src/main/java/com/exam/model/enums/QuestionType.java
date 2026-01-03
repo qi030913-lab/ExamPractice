@@ -13,7 +13,12 @@ public enum QuestionType {
     SHORT_ANSWER("简答题"),
     COMPREHENSIVE("综合题"),
     ESSAY("论述题"),
-    MATERIAL_ANALYSIS("材料分析题");
+    MATERIAL_ANALYSIS("材料分析题"),
+    CLOZE("选词填空"),
+    READING_ANALYSIS("阅读分析"),
+    ENGLISH_TO_CHINESE("英译汉"),
+    CHINESE_TO_ENGLISH("汉译英"),
+    WRITING("写作");
 
     private final String description;
 

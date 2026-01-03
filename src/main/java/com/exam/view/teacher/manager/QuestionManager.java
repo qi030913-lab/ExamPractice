@@ -9,6 +9,8 @@ import com.exam.util.UIUtil;
 import com.exam.view.teacher.TeacherMainFrame;
 import com.exam.view.teacher.TeacherUIHelper;
 
+import com.exam.view.teacher.TeacherConstants;
+
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
@@ -60,15 +62,23 @@ public class QuestionManager {
         gbc.gridx = 1;
         formPanel.add(typeBox, gbc);
 
-        // 难度
+        // 科目
         gbc.gridx = 0; gbc.gridy = 1;
+        formPanel.add(new JLabel("科目："), gbc);
+        JComboBox<String> subjectBox = new JComboBox<>(TeacherConstants.getSubjectsWithoutAll());
+        subjectBox.setEditable(true);
+        gbc.gridx = 1;
+        formPanel.add(subjectBox, gbc);
+
+        // 难度
+        gbc.gridx = 0; gbc.gridy = 2;
         formPanel.add(new JLabel("难度："), gbc);
         JComboBox<Difficulty> difficultyBox = new JComboBox<>(Difficulty.values());
         gbc.gridx = 1;
         formPanel.add(difficultyBox, gbc);
 
         // 题目内容
-        gbc.gridx = 0; gbc.gridy = 2;
+        gbc.gridx = 0; gbc.gridy = 3;
         formPanel.add(new JLabel("题目内容："), gbc);
         JTextArea contentArea = new JTextArea(2, 30);
         contentArea.setLineWrap(true);
@@ -78,42 +88,42 @@ public class QuestionManager {
         formPanel.add(contentScroll, gbc);
 
         // 选项A
-        gbc.gridx = 0; gbc.gridy = 3;
+        gbc.gridx = 0; gbc.gridy = 4;
         formPanel.add(new JLabel("选项A："), gbc);
         JTextField optionAField = new JTextField(20);
         gbc.gridx = 1;
         formPanel.add(optionAField, gbc);
 
         // 选项B
-        gbc.gridx = 0; gbc.gridy = 4;
+        gbc.gridx = 0; gbc.gridy = 5;
         formPanel.add(new JLabel("选项B："), gbc);
         JTextField optionBField = new JTextField(20);
         gbc.gridx = 1;
         formPanel.add(optionBField, gbc);
 
         // 选项C
-        gbc.gridx = 0; gbc.gridy = 5;
+        gbc.gridx = 0; gbc.gridy = 6;
         formPanel.add(new JLabel("选项C："), gbc);
         JTextField optionCField = new JTextField(20);
         gbc.gridx = 1;
         formPanel.add(optionCField, gbc);
 
         // 选项D
-        gbc.gridx = 0; gbc.gridy = 6;
+        gbc.gridx = 0; gbc.gridy = 7;
         formPanel.add(new JLabel("选项D："), gbc);
         JTextField optionDField = new JTextField(20);
         gbc.gridx = 1;
         formPanel.add(optionDField, gbc);
 
         // 正确答案
-        gbc.gridx = 0; gbc.gridy = 7;
+        gbc.gridx = 0; gbc.gridy = 8;
         formPanel.add(new JLabel("正确答案："), gbc);
         JTextField answerField = new JTextField(20);
         gbc.gridx = 1;
         formPanel.add(answerField, gbc);
 
         // 分值
-        gbc.gridx = 0; gbc.gridy = 8;
+        gbc.gridx = 0; gbc.gridy = 9;
         formPanel.add(new JLabel("分值："), gbc);
         JSpinner scoreSpinner = new JSpinner(new javax.swing.SpinnerNumberModel((int)5, (int)1, (int)100, (int)1));
         gbc.gridx = 1;
@@ -132,6 +142,7 @@ public class QuestionManager {
         confirmButton.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));
         confirmButton.addActionListener(e -> {
             QuestionType type = (QuestionType) typeBox.getSelectedItem();
+            String subject = (String) subjectBox.getSelectedItem();
             Difficulty difficulty = (Difficulty) difficultyBox.getSelectedItem();
             String content = contentArea.getText().trim();
             String optionA = optionAField.getText().trim();
@@ -145,6 +156,10 @@ public class QuestionManager {
                 UIUtil.showWarning(dialog, "题目内容不能为空");
                 return;
             }
+            if (subject == null || subject.trim().isEmpty()) {
+                UIUtil.showWarning(dialog, "科目不能为空");
+                return;
+            }
             if (answer.isEmpty()) {
                 UIUtil.showWarning(dialog, "正确答案不能为空");
                 return;
@@ -153,6 +168,7 @@ public class QuestionManager {
             try {
                 Question question = new Question();
                 question.setQuestionType(type);
+                question.setSubject(subject.trim());
                 question.setDifficulty(difficulty);
                 question.setContent(content);
                 question.setOptionA(optionA.isEmpty() ? null : optionA);
@@ -226,8 +242,17 @@ public class QuestionManager {
         gbc.gridx = 1;
         formPanel.add(typeBox, gbc);
 
-        // 难度
+        // 科目
         gbc.gridx = 0; gbc.gridy = 1;
+        formPanel.add(new JLabel("科目："), gbc);
+        JComboBox<String> subjectBox = new JComboBox<>(TeacherConstants.getSubjectsWithoutAll());
+        subjectBox.setEditable(true);
+        subjectBox.setSelectedItem(question.getSubject());
+        gbc.gridx = 1;
+        formPanel.add(subjectBox, gbc);
+
+        // 难度
+        gbc.gridx = 0; gbc.gridy = 2;
         formPanel.add(new JLabel("难度："), gbc);
         JComboBox<Difficulty> difficultyBox = new JComboBox<>(Difficulty.values());
         difficultyBox.setSelectedItem(question.getDifficulty());
@@ -235,7 +260,7 @@ public class QuestionManager {
         formPanel.add(difficultyBox, gbc);
 
         // 题目内容
-        gbc.gridx = 0; gbc.gridy = 2;
+        gbc.gridx = 0; gbc.gridy = 3;
         formPanel.add(new JLabel("题目内容："), gbc);
         JTextArea contentArea = new JTextArea(question.getContent(), 2, 30);
         contentArea.setLineWrap(true);
@@ -245,42 +270,42 @@ public class QuestionManager {
         formPanel.add(contentScroll, gbc);
 
         // 选项A
-        gbc.gridx = 0; gbc.gridy = 3;
+        gbc.gridx = 0; gbc.gridy = 4;
         formPanel.add(new JLabel("选项A："), gbc);
         JTextField optionAField = new JTextField(question.getOptionA());
         gbc.gridx = 1;
         formPanel.add(optionAField, gbc);
 
         // 选项B
-        gbc.gridx = 0; gbc.gridy = 4;
+        gbc.gridx = 0; gbc.gridy = 5;
         formPanel.add(new JLabel("选项B："), gbc);
         JTextField optionBField = new JTextField(question.getOptionB());
         gbc.gridx = 1;
         formPanel.add(optionBField, gbc);
 
         // 选项C
-        gbc.gridx = 0; gbc.gridy = 5;
+        gbc.gridx = 0; gbc.gridy = 6;
         formPanel.add(new JLabel("选项C："), gbc);
         JTextField optionCField = new JTextField(question.getOptionC());
         gbc.gridx = 1;
         formPanel.add(optionCField, gbc);
 
         // 选项D
-        gbc.gridx = 0; gbc.gridy = 6;
+        gbc.gridx = 0; gbc.gridy = 7;
         formPanel.add(new JLabel("选项D："), gbc);
         JTextField optionDField = new JTextField(question.getOptionD());
         gbc.gridx = 1;
         formPanel.add(optionDField, gbc);
 
         // 正确答案
-        gbc.gridx = 0; gbc.gridy = 7;
+        gbc.gridx = 0; gbc.gridy = 8;
         formPanel.add(new JLabel("正确答案："), gbc);
         JTextField answerField = new JTextField(question.getCorrectAnswer());
         gbc.gridx = 1;
         formPanel.add(answerField, gbc);
 
         // 分值
-        gbc.gridx = 0; gbc.gridy = 8;
+        gbc.gridx = 0; gbc.gridy = 9;
         formPanel.add(new JLabel("分值："), gbc);
         JSpinner scoreSpinner = new JSpinner(new javax.swing.SpinnerNumberModel((int)question.getScore().intValue(), (int)1, (int)100, (int)1));
         gbc.gridx = 1;
@@ -299,6 +324,7 @@ public class QuestionManager {
         saveButton.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));
         saveButton.addActionListener(e -> {
             QuestionType type = (QuestionType) typeBox.getSelectedItem();
+            String subject = (String) subjectBox.getSelectedItem();
             Difficulty difficulty = (Difficulty) difficultyBox.getSelectedItem();
             String content = contentArea.getText().trim();
             String optionA = optionAField.getText().trim();
@@ -312,6 +338,10 @@ public class QuestionManager {
                 UIUtil.showWarning(dialog, "题目内容不能为空");
                 return;
             }
+            if (subject == null || subject.trim().isEmpty()) {
+                UIUtil.showWarning(dialog, "科目不能为空");
+                return;
+            }
             if (answer.isEmpty()) {
                 UIUtil.showWarning(dialog, "正确答案不能为空");
                 return;
@@ -319,6 +349,7 @@ public class QuestionManager {
 
             try {
                 question.setQuestionType(type);
+                question.setSubject(subject.trim());
                 question.setDifficulty(difficulty);
                 question.setContent(content);
                 question.setOptionA(optionA.isEmpty() ? null : optionA);
@@ -417,7 +448,7 @@ public class QuestionManager {
         formPanel.add(nameField);
 
         JLabel subjectLabel = new JLabel("科目：");
-        String[] subjects = {"Java", "Vue", "数据结构", "马克思主义", "计算机网络", "操作系统", "数据库", "其他"};
+        String[] subjects = {"Java", "Vue", "数据结构", "马克思主义", "计算机网络", "操作系统", "数据库", "英语", "其他"};
         JComboBox<String> subjectBox = new JComboBox<>(subjects);
         formPanel.add(subjectLabel);
         formPanel.add(subjectBox);

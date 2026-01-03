@@ -30,6 +30,11 @@ public class QuestionImportUtil {
      * COMPREHENSIVE|Java|请设计并实现一个学生管理系统|||||1.架构设计 2.数据库设计|30|HARD|综合考查系统能力
      * ESSAY|马克思主义|请论述马克思主义在中国的传播和发展|||||1.传入背景 2.与实际结合|25|HARD|考查理论分析能力
      * MATERIAL_ANALYSIS|语文|阅读材料并分析修辞手法|||||1.拟人手法 2.营造意境|20|MEDIUM|考查材料分析能力
+     * CLOZE|英语|The weather was so ____ that we decided to stay indoors. 备选词：terrible, terribly|terrible|terribly|||A|10|EASY|考查词汇辨析能力
+     * READING_ANALYSIS|英语|阅读理解：AI is transforming our world. Question: What is the main idea?|AI replacing jobs|AI benefits and concerns|||B|15|MEDIUM|考查阅读理解能力
+     * ENGLISH_TO_CHINESE|英语|请将下列句子翻译成中文：Technology has changed our lives.||||技术已经改变了我们的生活。|15|EASY|考查英译汉能力
+     * CHINESE_TO_ENGLISH|英语|请将下列句子翻译成英文：保护环境是每个人的责任。||||Protecting the environment is everyone's responsibility.|15|EASY|考查汉译英能力
+     * WRITING|英语|写作题：请以"My Hobby"为题，写一篇不少于100词的英语短文。||||参考答案要点：1. Introduction 2. Reasons 3. Experience|20|MEDIUM|考查英语写作能力
      */
     public static List<Question> importFromTextFile(File file, Integer creatorId) throws Exception {
         List<Question> questions = new ArrayList<>();
@@ -81,7 +86,7 @@ public class QuestionImportUtil {
         try {
             question.setQuestionType(QuestionType.valueOf(parts[0].trim().toUpperCase()));
         } catch (IllegalArgumentException e) {
-            throw new Exception("题目类型无效：" + parts[0] + "，应为SINGLE、MULTIPLE、JUDGE、BLANK、APPLICATION、ALGORITHM、SHORT_ANSWER、COMPREHENSIVE、ESSAY或MATERIAL_ANALYSIS");
+            throw new Exception("题目类型无效：" + parts[0] + "，应为SINGLE、MULTIPLE、JUDGE、BLANK、APPLICATION、ALGORITHM、SHORT_ANSWER、COMPREHENSIVE、ESSAY、MATERIAL_ANALYSIS、CLOZE、READING_ANALYSIS、ENGLISH_TO_CHINESE、CHINESE_TO_ENGLISH或WRITING");
         }
         
         // 科目
@@ -145,7 +150,7 @@ public class QuestionImportUtil {
             
             writer.write("# 题目导入模板文件\n");
             writer.write("# 格式说明：题目类型|科目|题目内容|选项A|选项B|选项C|选项D|正确答案|分值|难度|解析\n");
-            writer.write("# 题目类型：SINGLE(单选)、MULTIPLE(多选)、JUDGE(判断)、BLANK(填空)、APPLICATION(应用题)、ALGORITHM(算法设计题)、SHORT_ANSWER(简答题)、COMPREHENSIVE(综合题)、ESSAY(论述题)、MATERIAL_ANALYSIS(材料分析题)\n");
+            writer.write("# 题目类型：SINGLE(单选)、MULTIPLE(多选)、JUDGE(判断)、BLANK(填空)、APPLICATION(应用题)、ALGORITHM(算法设计题)、SHORT_ANSWER(简答题)、COMPREHENSIVE(综合题)、ESSAY(论述题)、MATERIAL_ANALYSIS(材料分析题)、CLOZE(选词填空)、READING_ANALYSIS(阅读分析)、ENGLISH_TO_CHINESE(英译汉)、CHINESE_TO_ENGLISH(汉译英)、WRITING(写作)\n");
             writer.write("# 难度：EASY(简单)、MEDIUM(中等)、HARD(困难)\n");
             writer.write("# 以#开头的行为注释，会被忽略\n");
             writer.write("\n");
@@ -180,6 +185,21 @@ public class QuestionImportUtil {
             writer.write("\n");
             writer.write("# 材料分析题示例（题目内容包含材料，正确答案为分析要点）\n");
             writer.write("MATERIAL_ANALYSIS|语文|阅读下面材料：《荷塘月色》节选，请分析这句话的修辞手法和表达效果。|||||1.拟人修辞手法 2.营造宁静优美的意境|20|MEDIUM|考查文学作品的阅读理解和分析能力。\n");
+            writer.write("\n");
+            writer.write("# 选词填空题示例（英语题型）\n");
+            writer.write("CLOZE|英语|The weather was so ____ that we decided to stay indoors. 备选词：terrible, terribly|terrible|terribly|||A|10|EASY|此处需要形容词修饰weather。\n");
+            writer.write("\n");
+            writer.write("# 阅读分析题示例（英语题型）\n");
+            writer.write("READING_ANALYSIS|英语|阅读理解：AI is transforming our world. Question: What is the main idea?|AI replacing jobs|AI benefits and concerns|||B|15|MEDIUM|文章讨论了AI的发展。\n");
+            writer.write("\n");
+            writer.write("# 英译汉题示例\n");
+            writer.write("ENGLISH_TO_CHINESE|英语|请将下列句子翻译成中文：Technology has changed our lives.||||技术已经改变了我们的生活。|15|EASY|考查基本翻译能力。\n");
+            writer.write("\n");
+            writer.write("# 汉译英题示例\n");
+            writer.write("CHINESE_TO_ENGLISH|英语|请将下列句子翻译成英文：保护环境是每个人的责任。||||Protecting the environment is everyone's responsibility.|15|EASY|考查环保相关表达的翻译。\n");
+            writer.write("\n");
+            writer.write("# 写作题示例（英语题型）\n");
+            writer.write("WRITING|英语|写作题：请以\"My Hobby\"为题，写一篇不少于100词的英语短文。||||参考答案要点：1. Introduction 2. Reasons 3. Experience|20|MEDIUM|考查英语写作能力。\n");
         }
     }
     
