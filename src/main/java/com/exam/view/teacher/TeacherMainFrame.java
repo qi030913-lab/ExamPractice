@@ -235,7 +235,7 @@ public class TeacherMainFrame extends JFrame {
         JPanel sidebar = new JPanel();
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
         sidebar.setBackground(Color.WHITE);
-        sidebar.setPreferredSize(new Dimension(220, 0));
+        sidebar.setPreferredSize(new Dimension(240, 0));
         sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(230, 230, 230)));
 
         // 用户信息区域
@@ -318,7 +318,7 @@ public class TeacherMainFrame extends JFrame {
 
         // 分割线
         JSeparator separator = new JSeparator();
-        separator.setMaximumSize(new Dimension(220, 1));
+        separator.setMaximumSize(new Dimension(240, 1));
         separator.setForeground(new Color(240, 240, 240));
         sidebar.add(separator);
 
@@ -350,9 +350,10 @@ public class TeacherMainFrame extends JFrame {
         JButton button = new JButton(text);
         button.setFont(new Font("微软雅黑", Font.PLAIN, 14));
         button.setHorizontalAlignment(SwingConstants.LEFT);
-        button.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 10));
+        button.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
         button.setFocusPainted(false);
         button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+        button.setPreferredSize(new Dimension(240, 45));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setContentAreaFilled(false);
         button.setOpaque(true);
