@@ -60,6 +60,28 @@ public class ExamRecordDao {
     }
 
     /**
+     * 根据学生ID查询考试记录总数
+     */
+    public int countByStudentId(Integer studentId) {
+        String sql = "SELECT COUNT(*) FROM exam_record WHERE student_id = ?";
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, studentId);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("查询考试记录总数失败", e);
+        }
+        return 0;
+    }
+
+    /**
      * 根据学生ID查询考试记录（包含试卷信息）- 性能优化版本
      * 使用LEFT JOIN一次性查询，避免N+1问题
      */
@@ -112,6 +134,70 @@ public class ExamRecordDao {
             }
         } catch (SQLException e) {
             throw new DatabaseException("查询考试记录失败", e);
+        }
+        return records;
+    }
+
+    /**
+     * 根据学生ID分页查询考试记录（包含试卷信息）- 性能优化版本
+     * @param studentId 学生ID
+     * @param pageNum 页码（从1开始）
+     * @param pageSize 每页大小
+     * @return 考试记录列表
+     */
+    public List<ExamRecord> findByStudentIdWithPaperPaginated(Integer studentId, int pageNum, int pageSize) {
+        int offset = (pageNum - 1) * pageSize;
+        String sql = "SELECT er.*, " +
+                     "p.paper_id as p_paper_id, p.paper_name, p.subject, p.total_score, " +
+                     "p.duration, p.pass_score, p.description, p.is_published, " +
+                     "p.creator_id as p_creator_id, p.create_time as p_create_time, " +
+                     "p.update_time as p_update_time " +
+                     "FROM exam_record er " +
+                     "LEFT JOIN paper p ON er.paper_id = p.paper_id " +
+                     "WHERE er.student_id = ? ORDER BY er.create_time DESC " +
+                     "LIMIT ? OFFSET ?";
+        List<ExamRecord> records = new ArrayList<>();
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, studentId);
+            pstmt.setInt(2, pageSize);
+            pstmt.setInt(3, offset);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    ExamRecord record = extractExamRecord(rs);
+                    // 提取试卷信息
+                    if (rs.getObject("p_paper_id") != null) {
+                        com.exam.model.Paper paper = new com.exam.model.Paper();
+                        paper.setPaperId(rs.getInt("p_paper_id"));
+                        paper.setPaperName(rs.getString("paper_name"));
+                        paper.setSubject(rs.getString("subject"));
+                        paper.setTotalScore(rs.getInt("total_score"));
+                        paper.setDuration(rs.getInt("duration"));
+                        paper.setPassScore(rs.getInt("pass_score"));
+                        paper.setDescription(rs.getString("description"));
+                        paper.setIsPublished(rs.getBoolean("is_published"));
+                        paper.setCreatorId(rs.getInt("p_creator_id"));
+                        
+                        Timestamp pCreateTime = rs.getTimestamp("p_create_time");
+                        if (pCreateTime != null) {
+                            paper.setCreateTime(pCreateTime.toLocalDateTime());
+                        }
+                        
+                        Timestamp pUpdateTime = rs.getTimestamp("p_update_time");
+                        if (pUpdateTime != null) {
+                            paper.setUpdateTime(pUpdateTime.toLocalDateTime());
+                        }
+                        
+                        record.setPaper(paper);
+                    }
+                    records.add(record);
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("分页查询考试记录失败", e);
         }
         return records;
     }

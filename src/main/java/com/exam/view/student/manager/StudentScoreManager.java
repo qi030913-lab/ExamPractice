@@ -18,11 +18,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 学生端成绩管理器 - 处理所有与成绩相关的操作
- * 性能优化版本：添加缓存和异步加载
+ * 性能优化版本：添加缓存和异步加载，支持分页
  */
 public class StudentScoreManager {
     private final User student;
     private final ExamService examService;
+    private static final int PAGE_SIZE = 9; // 每页显示9条记录
     
     // 缓存考试详情，避免重复查询
     private static final Map<Integer, ExamRecord> examDetailCache = new ConcurrentHashMap<>();
@@ -33,6 +34,82 @@ public class StudentScoreManager {
         this.examService = new ExamService();
     }
 
+    /**
+     * 加载成绩数据（性能优化版本 - 异步加载 + 分页）
+     * @param tableModel 表格模型
+     * @param parentComponent 父组件，用于显示消息框
+     * @param cachedRecords 缓存列表，用于存储查询结果
+     * @param onComplete 加载完成回调
+     * @param currentPage 当前页码（从1开始）
+     */
+    public void loadScoresPaginated(DefaultTableModel tableModel, JComponent parentComponent, 
+                                   List<ExamRecord> cachedRecords, Runnable onComplete, int currentPage) {
+        tableModel.setRowCount(0);
+        
+        // 使用SwingWorker异步加载，避免UI卡顿
+        SwingWorker<List<ExamRecord>, Void> worker = new SwingWorker<List<ExamRecord>, Void>() {
+            @Override
+            protected List<ExamRecord> doInBackground() {
+                // 使用分页查询
+                List<ExamRecord> result = examService.getStudentExamRecordsPaginated(
+                    student.getUserId(), currentPage, PAGE_SIZE);
+                
+                if (!result.isEmpty()) {
+                    // 批量查询所有考试记录的答题记录，避免循环查询
+                    List<Integer> recordIds = new ArrayList<>();
+                    for (ExamRecord r : result) {
+                        recordIds.add(r.getRecordId());
+                    }
+                    java.util.Map<Integer, List<AnswerRecord>> answerRecordsMap = 
+                        examService.getAnswerRecordsBatch(recordIds);
+                    
+                    // 缓存答题记录
+                    answerRecordCache.putAll(answerRecordsMap);
+                }
+                
+                return result;
+            }
+            
+            @Override
+            protected void done() {
+                try {
+                    List<ExamRecord> result = get();
+                    // 更新缓存列表
+                    cachedRecords.clear();
+                    cachedRecords.addAll(result);
+                    // 填充表格
+                    populateScoreTable(result, tableModel);
+                    // 调用完成回调
+                    if (onComplete != null) {
+                        onComplete.run();
+                    }
+                } catch (Exception e) {
+                    UIUtil.showError(parentComponent, "加载成绩失败：" + e.getMessage());
+                    // 即使失败也要调用回调
+                    if (onComplete != null) {
+                        onComplete.run();
+                    }
+                }
+            }
+        };
+        worker.execute();
+    }
+    
+    /**
+     * 获取学生考试记录总数
+     */
+    public int getTotalRecordCount() {
+        return examService.getStudentExamRecordCount(student.getUserId());
+    }
+    
+    /**
+     * 获取总页数
+     */
+    public int getTotalPages() {
+        int totalCount = getTotalRecordCount();
+        return (int) Math.ceil((double) totalCount / PAGE_SIZE);
+    }
+    
     /**
      * 加载成绩数据（性能优化版本 - 异步加载）
      * @param tableModel 表格模型

@@ -37,6 +37,15 @@ public class StudentScorePanel extends JPanel {
     private JPanel tablePanel;
     // 缓存考试记录，避免点击按钮时重复查询
     private List<ExamRecord> cachedRecords = new java.util.ArrayList<>();
+    
+    // 分页相关
+    private int currentPage = 1;
+    private int totalPages = 0;
+    private JButton firstPageBtn;
+    private JButton prevPageBtn;
+    private JButton nextPageBtn;
+    private JButton lastPageBtn;
+    private JLabel pageInfoLabel;
 
     public StudentScorePanel(User student) {
         this.student = student;
@@ -46,7 +55,7 @@ public class StudentScorePanel extends JPanel {
     }
 
     private void initComponents() {
-        setLayout(new BorderLayout(0, 20));
+        setLayout(new BorderLayout(0, 0));
         setBackground(Color.WHITE);
         setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 
@@ -54,9 +63,13 @@ public class StudentScorePanel extends JPanel {
         JPanel titlePanel = createTitlePanel();
         add(titlePanel, BorderLayout.NORTH);
 
-        // 成绩记录表格区域
+        // 成绩记录表格区域 - 放在CENTER使其自动填充剩余空间
         tablePanel = createTablePanel();
         add(tablePanel, BorderLayout.CENTER);
+        
+        // 分页控件区域 - 固定在底部
+        JPanel paginationPanel = createPaginationPanel();
+        add(paginationPanel, BorderLayout.SOUTH);
         
         // 加载成绩数据
         loadScores();
@@ -82,9 +95,9 @@ public class StudentScorePanel extends JPanel {
      * 创建表格面板
      */
     private JPanel createTablePanel() {
-        JPanel tablePanel = new JPanel(new BorderLayout(0, 15));
+        JPanel tablePanel = new JPanel(new BorderLayout(0, 0));
         tablePanel.setBackground(Color.WHITE);
-        tablePanel.setBorder(BorderFactory.createEmptyBorder(0, 30, 20, 30));
+        tablePanel.setBorder(BorderFactory.createEmptyBorder(0, 30, 0, 30));
         
         // 成绩表格
         String[] columns = {"试卷名称", "总分", "得分", "正确题数", "错误题数", "考试时间", "耗时", "详情"};
@@ -96,7 +109,7 @@ public class StudentScorePanel extends JPanel {
         };
         scoreTable = new JTable(scoreTableModel);
         scoreTable.setFont(new Font("微软雅黑", Font.PLAIN, 14));
-        scoreTable.setRowHeight(45);
+        scoreTable.setRowHeight(43);
         scoreTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         scoreTable.setGridColor(new Color(230, 230, 230));
         scoreTable.setShowGrid(true);
@@ -120,7 +133,7 @@ public class StudentScorePanel extends JPanel {
         scoreTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 13));
         scoreTable.getTableHeader().setBackground(new Color(245, 247, 250));
         scoreTable.getTableHeader().setForeground(UIUtil.TEXT_COLOR);
-        scoreTable.getTableHeader().setPreferredSize(new Dimension(0, 40));
+        scoreTable.getTableHeader().setPreferredSize(new Dimension(0, 35));
         scoreTable.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(220, 220, 220)));
         
         scrollPane = new JScrollPane(scoreTable);
@@ -131,6 +144,79 @@ public class StudentScorePanel extends JPanel {
         
         return tablePanel;
     }
+    
+    /**
+     * 创建分页控件面板
+     */
+    private JPanel createPaginationPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createEmptyBorder(5, 30, 10, 30));
+        
+        // 首页按钮
+        firstPageBtn = new JButton("首页");
+        firstPageBtn.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        firstPageBtn.setFocusPainted(false);
+        firstPageBtn.addActionListener(e -> goToPage(1));
+        
+        // 上一页按钮
+        prevPageBtn = new JButton("上一页");
+        prevPageBtn.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        prevPageBtn.setFocusPainted(false);
+        prevPageBtn.addActionListener(e -> goToPage(currentPage - 1));
+        
+        // 页码信息标签
+        pageInfoLabel = new JLabel("第 1 页 / 共 1 页");
+        pageInfoLabel.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        pageInfoLabel.setForeground(UIUtil.TEXT_COLOR);
+        
+        // 下一页按钮
+        nextPageBtn = new JButton("下一页");
+        nextPageBtn.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        nextPageBtn.setFocusPainted(false);
+        nextPageBtn.addActionListener(e -> goToPage(currentPage + 1));
+        
+        // 末页按钮
+        lastPageBtn = new JButton("末页");
+        lastPageBtn.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        lastPageBtn.setFocusPainted(false);
+        lastPageBtn.addActionListener(e -> goToPage(totalPages));
+        
+        panel.add(firstPageBtn);
+        panel.add(prevPageBtn);
+        panel.add(pageInfoLabel);
+        panel.add(nextPageBtn);
+        panel.add(lastPageBtn);
+        
+        return panel;
+    }
+    
+    /**
+     * 跳转到指定页
+     */
+    private void goToPage(int page) {
+        if (page < 1 || page > totalPages || page == currentPage) {
+            return;
+        }
+        currentPage = page;
+        loadScores();
+    }
+    
+    /**
+     * 更新分页按钮状态
+     */
+    private void updatePaginationButtons() {
+        firstPageBtn.setEnabled(currentPage > 1);
+        prevPageBtn.setEnabled(currentPage > 1);
+        nextPageBtn.setEnabled(currentPage < totalPages);
+        lastPageBtn.setEnabled(currentPage < totalPages);
+        
+        if (totalPages > 0) {
+            pageInfoLabel.setText("第 " + currentPage + " 页 / 共 " + totalPages + " 页");
+        } else {
+            pageInfoLabel.setText("暂无数据");
+        }
+    }
 
     /**
      * 加载成绩数据
@@ -140,11 +226,30 @@ public class StudentScorePanel extends JPanel {
         scoreTableModel.setRowCount(0);
         // 显示加载中提示
         showLoadingMessage();
+        
+        // 先获取总页数
+        totalPages = scoreManager.getTotalPages();
+        
+        // 如果没有数据，直接显示无数据提示
+        if (totalPages == 0) {
+            currentPage = 1;
+            updatePaginationButtons();
+            showNoDataMessage();
+            return;
+        }
+        
+        // 确保当前页码在有效范围内
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+        }
+        
         // 加载数据并缓存考试记录，完成后更新界面
-        scoreManager.loadScores(scoreTableModel, this, cachedRecords, () -> {
+        scoreManager.loadScoresPaginated(scoreTableModel, this, cachedRecords, () -> {
             // 数据加载完成后检查是否有数据
             updateTableHeaderVisibility();
-        });
+            // 更新分页按钮状态
+            updatePaginationButtons();
+        }, currentPage);
     }
     
     /**

@@ -171,6 +171,33 @@ public class ExamService {
     }
     
     /**
+     * 分页查询学生的考试记录（性能优化版本）
+     * @param studentId 学生ID
+     * @param pageNum 页码（从1开始）
+     * @param pageSize 每页大小
+     * @return 考试记录列表
+     */
+    public List<ExamRecord> getStudentExamRecordsPaginated(Integer studentId, int pageNum, int pageSize) {
+        if (studentId == null) {
+            throw new BusinessException("学生ID不能为空");
+        }
+        // 使用优化后的分页方法
+        return examRecordDao.findByStudentIdWithPaperPaginated(studentId, pageNum, pageSize);
+    }
+    
+    /**
+     * 查询学生的考试记录总数
+     * @param studentId 学生ID
+     * @return 考试记录总数
+     */
+    public int getStudentExamRecordCount(Integer studentId) {
+        if (studentId == null) {
+            throw new BusinessException("学生ID不能为空");
+        }
+        return examRecordDao.countByStudentId(studentId);
+    }
+    
+    /**
      * 根据ID查询考试记录
      */
     public ExamRecord getExamRecordById(Integer recordId) {
