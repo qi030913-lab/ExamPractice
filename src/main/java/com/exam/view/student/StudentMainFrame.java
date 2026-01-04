@@ -130,22 +130,36 @@ public class StudentMainFrame extends JFrame {
     
     /**
      * 检查试卷列表是否有更新，如有则刷新
+     * 性能优化：使用后台线程执行数据库查询，避免UI卡顿
      */
     private void checkAndRefreshExamList() {
-        try {
-            com.exam.service.PaperService paperService = new com.exam.service.PaperService();
-            java.util.List<com.exam.model.Paper> publishedPapers = paperService.getAllPublishedPapers();
-            int currentPaperCount = publishedPapers.size();
-            
-            // 如果试卷数量发生变化，则刷新列表
-            if (currentPaperCount != lastPublishedPaperCount) {
-                lastPublishedPaperCount = currentPaperCount;
-                refreshExamList();
+        // 使用SwingWorker在后台线程执行数据库查询
+        new javax.swing.SwingWorker<Integer, Void>() {
+            @Override
+            protected Integer doInBackground() {
+                try {
+                    com.exam.service.PaperService paperService = new com.exam.service.PaperService();
+                    // 使用优化版本的查询，避免N+1问题
+                    java.util.List<com.exam.model.Paper> publishedPapers = paperService.getAllPublishedPapersOptimized();
+                    return publishedPapers.size();
+                } catch (Exception e) {
+                    return -1; // 返回-1表示查询失败
+                }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            // 即使检查失败也不影响正常功能，继续运行
-        }
+            
+            @Override
+            protected void done() {
+                try {
+                    int currentPaperCount = get();
+                    if (currentPaperCount >= 0 && currentPaperCount != lastPublishedPaperCount) {
+                        lastPublishedPaperCount = currentPaperCount;
+                        refreshExamList();
+                    }
+                } catch (Exception e) {
+                    // 忽略异常，不影响正常功能
+                }
+            }
+        }.execute();
     }
 
     private void initComponents() {
@@ -435,9 +449,7 @@ public class StudentMainFrame extends JFrame {
                 // 传递当前考试科目和主框架给考试面板
                 examPanel = new StudentExamPanel(student, currentExamSubject, this);
                 mainContentPanel.add(examPanel, BorderLayout.CENTER);
-                
-                // 当切换到考试页面时，立即检查是否有新发布的试卷
-                SwingUtilities.invokeLater(() -> checkAndRefreshExamList());
+                // 注意：StudentExamPanel已在初始化时异步加载数据，无需再次检查
                 break;
             case "score":
                 mainContentPanel.add(new StudentScorePanel(student), BorderLayout.CENTER);

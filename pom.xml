@@ -145,6 +145,7 @@
                 <artifactId>launch4j-maven-plugin</artifactId>
                 <version>2.5.0</version>
                 <executions>
+                    <!-- 学生端 exe -->
                     <execution>
                         <id>student-exe</id>
                         <phase>package</phase>
@@ -156,6 +157,8 @@
                             <outfile>${project.build.directory}/在线考试系统-学生端.exe</outfile>
                             <!-- 源jar文件 -->
                             <jar>${project.build.directory}/exam-student.jar</jar>
+                            <!-- exe文件图标 -->
+                            <icon>${project.basedir}/src/main/resources/pic/logo.ico</icon>
                             <!-- exe文件配置 -->
                             <headerType>gui</headerType>
                             <dontWrapJar>false</dontWrapJar>
@@ -178,6 +181,45 @@
                                 <productName>在线考试系统</productName>
                                 <internalName>ExamStudent</internalName>
                                 <originalFilename>在线考试系统-学生端.exe</originalFilename>
+                            </versionInfo>
+                        </configuration>
+                    </execution>
+                    <!-- 教师端 exe -->
+                    <execution>
+                        <id>teacher-exe</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>launch4j</goal>
+                        </goals>
+                        <configuration>
+                            <!-- 输出的exe文件名 -->
+                            <outfile>${project.build.directory}/在线考试系统-教师端.exe</outfile>
+                            <!-- 源jar文件 -->
+                            <jar>${project.build.directory}/exam-teacher.jar</jar>
+                            <!-- exe文件图标 -->
+                            <icon>${project.basedir}/src/main/resources/pic/logo.ico</icon>
+                            <!-- exe文件配置 -->
+                            <headerType>gui</headerType>
+                            <dontWrapJar>false</dontWrapJar>
+                            <!-- JRE配置 -->
+                            <jre>
+                                <minVersion>17.0.0</minVersion>
+                                <path>jre</path>
+                                <opts>
+                                    <opt>-Dfile.encoding=UTF-8</opt>
+                                </opts>
+                            </jre>
+                            <!-- 版本信息 -->
+                            <versionInfo>
+                                <fileVersion>1.0.0.0</fileVersion>
+                                <txtFileVersion>1.0.0</txtFileVersion>
+                                <fileDescription>在线考试系统 - 教师端</fileDescription>
+                                <copyright>Copyright © 2026</copyright>
+                                <productVersion>1.0.0.0</productVersion>
+                                <txtProductVersion>1.0.0</txtProductVersion>
+                                <productName>在线考试系统</productName>
+                                <internalName>ExamTeacher</internalName>
+                                <originalFilename>在线考试系统-教师端.exe</originalFilename>
                             </versionInfo>
                         </configuration>
                     </execution>
