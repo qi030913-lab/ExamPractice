@@ -9,6 +9,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import javax.swing.SwingUtilities;
 
 /**
  * 学生端考试管理器 - 处理所有与考试相关的操作
@@ -36,6 +37,18 @@ public class StudentExamManager {
      * @param parentComponent 父组件，用于显示消息框
      */
     public void loadPapersBySubject(String subject, DefaultTableModel tableModel, JComponent parentComponent) {
+        loadPapersBySubject(subject, tableModel, parentComponent, null);
+    }
+    
+    /**
+     * 根据科目加载试卷（带回调版本）
+     * 使用缓存和异步加载，避免界面卡顿
+     * @param subject 科目名称，"全部"表示所有科目
+     * @param tableModel 表格模型
+     * @param parentComponent 父组件，用于显示消息框
+     * @param onComplete 加载完成后的回调，可为null
+     */
+    public void loadPapersBySubject(String subject, DefaultTableModel tableModel, JComponent parentComponent, Runnable onComplete) {
         if (tableModel == null) {
             return;
         }
@@ -56,6 +69,11 @@ public class StudentExamManager {
                 } catch (Exception e) {
                     e.printStackTrace();
                     UIUtil.showError(parentComponent, "加载试卷失败：" + e.getMessage());
+                } finally {
+                    // 数据加载完成后执行回调，通知UI更新显示状态
+                    if (onComplete != null) {
+                        SwingUtilities.invokeLater(onComplete);
+                    }
                 }
             }
         };

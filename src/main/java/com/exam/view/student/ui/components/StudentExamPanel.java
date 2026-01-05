@@ -231,15 +231,11 @@ public class StudentExamPanel extends JPanel {
         tableModel.setRowCount(0);
         showLoadingMessage();
         
-        // 异步加载数据
-        examManager.loadPapersBySubject(subject, tableModel, this);
-        
-        // 延迟检查表格状态（等待异步加载完成）
-        javax.swing.Timer timer = new javax.swing.Timer(100, e -> {
+        // 异步加载数据，并在完成后通过回调更新UI
+        examManager.loadPapersBySubject(subject, tableModel, this, () -> {
+            // 数据加载完成后更新表格显示状态
             updateTableHeaderVisibility();
         });
-        timer.setRepeats(false);
-        timer.start();
     }
     
     /**
