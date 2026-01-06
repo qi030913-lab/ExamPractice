@@ -113,6 +113,16 @@ public class PaperService {
     }
 
     /**
+     * 查询所有试卷（性能优化版本，用于教师端试卷列表展示）
+     * 使用单条SQL查询试卷和题目数量，避免N+1问题
+     * 题目数量存储在 singleCount 字段中
+     * @return 试卷列表
+     */
+    public List<Paper> getAllPapersOptimized() {
+        return paperDao.findAllWithQuestionCount();
+    }
+
+    /**
      * 查询所有试卷
      */
     public List<Paper> getAllPapers() {

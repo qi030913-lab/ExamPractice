@@ -165,40 +165,54 @@ public class TeacherPaperPanel extends JPanel {
     }
     
     /**
-     * 加载试卷数据
+     * 加载试卷数据（使用优化查询，避免N+1问题）
      */
     private void loadPapersData() {
         System.out.println("DEBUG: TeacherPaperPanel.loadPapersData() called");
         paperTableModel.setRowCount(0);
-        try {
-            List<Paper> papers = paperService.getAllPapers();
-            System.out.println("DEBUG: Loaded " + papers.size() + " papers from service");
-            for (Paper paper : papers) {
-                int questionCount = paper.getQuestions() != null ? paper.getQuestions().size() : 0;
-                String status = paper.getIsPublished() != null && paper.getIsPublished() ? "已发布" : "未发布";
-                Color statusColor = paper.getIsPublished() != null && paper.getIsPublished() ? new Color(46, 125, 50) : new Color(211, 47, 47); // 绿色表示已发布，红色表示未发布
-                String statusDisplay = "<html><span style='color: rgb(" + statusColor.getRed() + "," + statusColor.getGreen() + "," + statusColor.getBlue() + "); font-weight: bold;'>" + status + "</span></html>";
-                Object[] row = {
-                        paper.getPaperName(),
-                        paper.getSubject(),
-                        questionCount,
-                        paper.getTotalScore(),
-                        paper.getDuration(),
-                        statusDisplay,
-                        "", // 操作列，由渲染器处理
-                        "" // 发布列，由渲染器处理
-                };
-                paperTableModel.addRow(row);
+        
+        // 使用SwingWorker在后台线程加载数据，避免UI线程阻塞
+        new javax.swing.SwingWorker<List<Paper>, Void>() {
+            @Override
+            protected List<Paper> doInBackground() throws Exception {
+                // 使用优化版本的查询（单条SQL，避免N+1问题）
+                return paperService.getAllPapersOptimized();
             }
             
-            // 检查是否有数据，如果没有则显示提示
-            updateTableDisplay();
-            System.out.println("DEBUG: After updateTableDisplay, row count: " + paperTableModel.getRowCount());
-        } catch (Exception e) {
-            System.out.println("DEBUG: Error in loadPapersData: " + e.getMessage());
-            UIUtil.showError(this, "加载试卷失败：" + e.getMessage());
-            e.printStackTrace();
-        }
+            @Override
+            protected void done() {
+                try {
+                    List<Paper> papers = get();
+                    System.out.println("DEBUG: Loaded " + papers.size() + " papers from service (optimized)");
+                    
+                    for (Paper paper : papers) {
+                        // 使用优化查询结果中的题目数量（存储在singleCount字段）
+                        int questionCount = paper.getSingleCount();
+                        String status = paper.getIsPublished() != null && paper.getIsPublished() ? "已发布" : "未发布";
+                        Color statusColor = paper.getIsPublished() != null && paper.getIsPublished() ? new Color(46, 125, 50) : new Color(211, 47, 47);
+                        String statusDisplay = "<html><span style='color: rgb(" + statusColor.getRed() + "," + statusColor.getGreen() + "," + statusColor.getBlue() + "); font-weight: bold;'>" + status + "</span></html>";
+                        Object[] row = {
+                                paper.getPaperName(),
+                                paper.getSubject(),
+                                questionCount,
+                                paper.getTotalScore(),
+                                paper.getDuration(),
+                                statusDisplay,
+                                "", // 操作列，由渲染器处理
+                                "" // 发布列，由渲染器处理
+                        };
+                        paperTableModel.addRow(row);
+                    }
+                    
+                    updateTableDisplay();
+                    System.out.println("DEBUG: After updateTableDisplay, row count: " + paperTableModel.getRowCount());
+                } catch (Exception e) {
+                    System.out.println("DEBUG: Error in loadPapersData: " + e.getMessage());
+                    UIUtil.showError(TeacherPaperPanel.this, "加载试卷失败：" + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        }.execute();
     }
     
     private void updateTableDisplay() {

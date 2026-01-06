@@ -291,6 +291,35 @@ public class PaperDao {
     }
 
     /**
+     * 查询所有试卷及题目数量（性能优化版本，用于教师端试卷管理）
+     * 使用单条SQL查询，避免N+1问题
+     * @return 试卷列表，每个试卷包含题目数量
+     */
+    public List<Paper> findAllWithQuestionCount() {
+        String sql = "SELECT p.*, COUNT(pq.question_id) AS question_count " +
+                     "FROM paper p " +
+                     "LEFT JOIN paper_question pq ON p.paper_id = pq.paper_id " +
+                     "GROUP BY p.paper_id " +
+                     "ORDER BY p.paper_id DESC";
+        List<Paper> papers = new ArrayList<>();
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            
+            while (rs.next()) {
+                Paper paper = extractPaper(rs);
+                // 使用 singleCount 临时存储题目总数（复用现有字段）
+                paper.setSingleCount(rs.getInt("question_count"));
+                papers.add(paper);
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("查询试卷列表失败", e);
+        }
+        return papers;
+    }
+
+    /**
      * 从ResultSet提取Paper对象
      */
     private Paper extractPaper(ResultSet rs) throws SQLException {
