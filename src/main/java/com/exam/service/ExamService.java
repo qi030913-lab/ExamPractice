@@ -144,18 +144,11 @@ public class ExamService {
 
     /**
      * 查询学生的考试记录
+     * 已优化：内部调用JOIN查询版本，避免N+1问题
      */
     public List<ExamRecord> getStudentExamRecords(Integer studentId) {
-        if (studentId == null) {
-            throw new BusinessException("学生ID不能为空");
-        }
-        List<ExamRecord> records = examRecordDao.findByStudentId(studentId);
-        // 为每个记录加载试卷信息
-        for (ExamRecord record : records) {
-            Paper paper = paperDao.findById(record.getPaperId());
-            record.setPaper(paper);
-        }
-        return records;
+        // 直接调用优化版本，避免N+1查询问题
+        return getStudentExamRecordsOptimized(studentId);
     }
     
     /**
