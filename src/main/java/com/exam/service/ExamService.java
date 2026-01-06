@@ -191,19 +191,15 @@ public class ExamService {
     }
     
     /**
-     * 根据ID查询考试记录
+     * 根据ID查询考试记录（性能优化版本）
+     * 使用JOIN一次性查询考试记录和试卷信息
      */
     public ExamRecord getExamRecordById(Integer recordId) {
         if (recordId == null) {
             throw new BusinessException("考试记录ID不能为空");
         }
-        ExamRecord record = examRecordDao.findById(recordId);
-        if (record != null) {
-            // 加载试卷信息
-            Paper paper = paperDao.findById(record.getPaperId());
-            record.setPaper(paper);
-        }
-        return record;
+        // 使用优化的JOIN查询，一次性获取考试记录和试卷信息
+        return examRecordDao.findByIdWithPaper(recordId);
     }
     
     /**
@@ -272,14 +268,16 @@ public class ExamService {
     }
 
     /**
-     * 查询考试详情（包含答题记录）
+     * 查询考试详情（包含试卷信息和答题记录）
+     * 性能优化版本：使用JOIN查询试卷信息
      */
     public ExamRecord getExamDetail(Integer recordId) {
         if (recordId == null) {
             throw new BusinessException("考试记录ID不能为空");
         }
 
-        ExamRecord record = examRecordDao.findById(recordId);
+        // 使用优化的JOIN查询，一次性获取考试记录和试卷信息
+        ExamRecord record = examRecordDao.findByIdWithPaper(recordId);
         if (record == null) {
             throw new BusinessException("考试记录不存在");
         }

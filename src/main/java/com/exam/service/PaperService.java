@@ -20,7 +20,8 @@ public class PaperService {
     }
 
     /**
-     * 创建试卷
+     * 创建试卷（性能优化版本）
+     * 使用批量查询获取题目信息，避免循环中单条查询
      */
     public int createPaper(Paper paper, List<Integer> questionIds) {
         validatePaper(paper);
@@ -29,10 +30,13 @@ public class PaperService {
             throw new BusinessException("试卷必须包含至少一道题目");
         }
 
-        // 计算总分
+        // 批量查询所有题目（性能优化：只查询1次数据库）
+        java.util.Map<Integer, Question> questionMap = questionDao.findByIds(questionIds);
+        
+        // 验证题目是否存在并计算总分
         int totalScore = 0;
         for (Integer questionId : questionIds) {
-            Question question = questionDao.findById(questionId);
+            Question question = questionMap.get(questionId);
             if (question == null) {
                 throw new BusinessException("题目ID " + questionId + " 不存在");
             }
@@ -43,10 +47,8 @@ public class PaperService {
         // 保存试卷
         int paperId = paperDao.insert(paper);
 
-        // 关联题目
-        for (int i = 0; i < questionIds.size(); i++) {
-            paperDao.addPaperQuestion(paperId, questionIds.get(i), i + 1);
-        }
+        // 批量关联题目（性能优化：使用批量插入）
+        paperDao.addPaperQuestionsBatch(paperId, questionIds);
 
         return paperId;
     }
@@ -123,28 +125,58 @@ public class PaperService {
     }
 
     /**
-     * 查询所有试卷
+     * 查询所有试卷（性能优化版本）
+     * 使用批量查询获取所有试卷的题目，避免N+1问题
      */
     public List<Paper> getAllPapers() {
         List<Paper> papers = paperDao.findAll();
-        // 为每个试卷加载题目列表
-        for (Paper paper : papers) {
-            List<Question> questions = questionDao.findByPaperId(paper.getPaperId());
-            paper.setQuestions(questions);
+        
+        if (papers.isEmpty()) {
+            return papers;
         }
+        
+        // 收集所有试卷ID
+        List<Integer> paperIds = new java.util.ArrayList<>();
+        for (Paper paper : papers) {
+            paperIds.add(paper.getPaperId());
+        }
+        
+        // 批量查询所有试卷的题目（性能优化：只查询1次数据库）
+        java.util.Map<Integer, List<Question>> questionsMap = questionDao.findByPaperIds(paperIds);
+        
+        // 为每个试卷设置题目列表
+        for (Paper paper : papers) {
+            paper.setQuestions(questionsMap.getOrDefault(paper.getPaperId(), new java.util.ArrayList<>()));
+        }
+        
         return papers;
     }
 
     /**
      * 查询所有已发布的试卷（学生端使用）
+     * 性能优化版本：使用批量查询获取题目，避免N+1问题
      */
     public List<Paper> getAllPublishedPapers() {
         List<Paper> papers = paperDao.findAllPublished();
-        // 为每个试卷加载题目列表
-        for (Paper paper : papers) {
-            List<Question> questions = questionDao.findByPaperId(paper.getPaperId());
-            paper.setQuestions(questions);
+        
+        if (papers.isEmpty()) {
+            return papers;
         }
+        
+        // 收集所有试卷ID
+        List<Integer> paperIds = new java.util.ArrayList<>();
+        for (Paper paper : papers) {
+            paperIds.add(paper.getPaperId());
+        }
+        
+        // 批量查询所有试卷的题目（性能优化：只查询1次数据库）
+        java.util.Map<Integer, List<Question>> questionsMap = questionDao.findByPaperIds(paperIds);
+        
+        // 为每个试卷设置题目列表
+        for (Paper paper : papers) {
+            paper.setQuestions(questionsMap.getOrDefault(paper.getPaperId(), new java.util.ArrayList<>()));
+        }
+        
         return papers;
     }
     

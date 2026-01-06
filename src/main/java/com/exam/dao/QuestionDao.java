@@ -142,6 +142,52 @@ public class QuestionDao {
         }
         return questions;
     }
+    
+    /**
+     * 批量查询多个试卷的题目列表（性能优化版本）
+     * 使用单次查询获取所有试卷的题目，避免N+1问题
+     * @param paperIds 试卷ID列表
+     * @return 试卷ID到题目列表的映射
+     */
+    public java.util.Map<Integer, List<Question>> findByPaperIds(java.util.Collection<Integer> paperIds) {
+        java.util.Map<Integer, List<Question>> resultMap = new java.util.HashMap<>();
+        
+        if (paperIds == null || paperIds.isEmpty()) {
+            return resultMap;
+        }
+        
+        // 初始化每个试卷的空列表
+        for (Integer paperId : paperIds) {
+            resultMap.put(paperId, new ArrayList<>());
+        }
+        
+        // 构建IN查询
+        String placeholders = String.join(",", java.util.Collections.nCopies(paperIds.size(), "?"));
+        String sql = "SELECT q.*, pq.paper_id FROM question q " +
+                     "INNER JOIN paper_question pq ON q.question_id = pq.question_id " +
+                     "WHERE pq.paper_id IN (" + placeholders + ") " +
+                     "ORDER BY pq.paper_id, pq.question_order";
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            int index = 1;
+            for (Integer paperId : paperIds) {
+                pstmt.setInt(index++, paperId);
+            }
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Question question = extractQuestion(rs);
+                    Integer paperId = rs.getInt("paper_id");
+                    resultMap.get(paperId).add(question);
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("批量查询试卷题目失败", e);
+        }
+        return resultMap;
+    }
 
     /**
      * 添加题目

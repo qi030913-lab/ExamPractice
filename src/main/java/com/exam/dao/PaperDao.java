@@ -189,6 +189,41 @@ public class PaperDao {
             throw new DatabaseException("添加试卷题目失败", e);
         }
     }
+    
+    /**
+     * 批量添加试卷题目关联（性能优化版本）
+     * 使用JDBC批量插入，减少数据库往返次数
+     * @param paperId 试卷ID
+     * @param questionIds 题目ID列表（顺序即为题目顺序）
+     */
+    public void addPaperQuestionsBatch(Integer paperId, java.util.List<Integer> questionIds) {
+        if (questionIds == null || questionIds.isEmpty()) {
+            return;
+        }
+        
+        String sql = "INSERT IGNORE INTO paper_question (paper_id, question_id, question_order) VALUES (?, ?, ?)";
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            // 禁用自动提交，提升批量插入性能
+            conn.setAutoCommit(false);
+            
+            for (int i = 0; i < questionIds.size(); i++) {
+                pstmt.setInt(1, paperId);
+                pstmt.setInt(2, questionIds.get(i));
+                pstmt.setInt(3, i + 1);  // 题目顺序从1开始
+                pstmt.addBatch();
+            }
+            
+            // 执行批量插入
+            pstmt.executeBatch();
+            conn.commit();
+            
+        } catch (SQLException e) {
+            throw new DatabaseException("批量添加试卷题目失败", e);
+        }
+    }
 
     /**
      * 删除试卷的所有题目

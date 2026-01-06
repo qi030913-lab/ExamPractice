@@ -35,6 +35,62 @@ public class ExamRecordDao {
         }
         return null;
     }
+    
+    /**
+     * 根据ID查询考试记录（包含试卷信息）- 性能优化版本
+     * 使用LEFT JOIN一次性查询，避免N+1问题
+     */
+    public ExamRecord findByIdWithPaper(Integer recordId) {
+        String sql = "SELECT er.*, " +
+                     "p.paper_id as p_paper_id, p.paper_name, p.subject, p.total_score, " +
+                     "p.duration, p.pass_score, p.description, p.is_published, " +
+                     "p.creator_id as p_creator_id, p.create_time as p_create_time, " +
+                     "p.update_time as p_update_time " +
+                     "FROM exam_record er " +
+                     "LEFT JOIN paper p ON er.paper_id = p.paper_id " +
+                     "WHERE er.record_id = ?";
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, recordId);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    ExamRecord record = extractExamRecord(rs);
+                    // 提取试卷信息
+                    if (rs.getObject("p_paper_id") != null) {
+                        com.exam.model.Paper paper = new com.exam.model.Paper();
+                        paper.setPaperId(rs.getInt("p_paper_id"));
+                        paper.setPaperName(rs.getString("paper_name"));
+                        paper.setSubject(rs.getString("subject"));
+                        paper.setTotalScore(rs.getInt("total_score"));
+                        paper.setDuration(rs.getInt("duration"));
+                        paper.setPassScore(rs.getInt("pass_score"));
+                        paper.setDescription(rs.getString("description"));
+                        paper.setIsPublished(rs.getBoolean("is_published"));
+                        paper.setCreatorId(rs.getInt("p_creator_id"));
+                        
+                        Timestamp pCreateTime = rs.getTimestamp("p_create_time");
+                        if (pCreateTime != null) {
+                            paper.setCreateTime(pCreateTime.toLocalDateTime());
+                        }
+                        
+                        Timestamp pUpdateTime = rs.getTimestamp("p_update_time");
+                        if (pUpdateTime != null) {
+                            paper.setUpdateTime(pUpdateTime.toLocalDateTime());
+                        }
+                        
+                        record.setPaper(paper);
+                    }
+                    return record;
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("查询考试记录失败", e);
+        }
+        return null;
+    }
 
     /**
      * 根据学生ID查询考试记录
