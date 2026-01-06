@@ -198,8 +198,8 @@ public class TeacherStudentPanel extends JPanel {
         try {
             System.out.println("[TeacherStudentPanel] 正在加载用户ID为 " + userId + " 的考试记录...");
             
-            // 获取该学生的考试记录
-            List<ExamRecord> examRecords = examService.getStudentExamRecords(userId);
+            // 获取该学生的考试记录（使用优化版本，避免N+1查询）
+            List<ExamRecord> examRecords = examService.getStudentExamRecordsOptimized(userId);
             System.out.println("[TeacherStudentPanel] 找到 " + examRecords.size() + " 条考试记录");
 
             // 清空现有数据
