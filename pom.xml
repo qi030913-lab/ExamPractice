@@ -294,4 +294,131 @@
         </resources>
     </build>
 
+    <!-- macOS 打包配置 (需要在 macOS 上运行) -->
+    <profiles>
+        <profile>
+            <id>mac</id>
+            <build>
+                <plugins>
+                    <!-- jpackage 打包 macOS .app 应用 -->
+                    <plugin>
+                        <groupId>org.panteleyev</groupId>
+                        <artifactId>jpackage-maven-plugin</artifactId>
+                        <version>1.6.0</version>
+                        <executions>
+                            <!-- 学生端 macOS 应用 -->
+                            <execution>
+                                <id>student-mac</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jpackage</goal>
+                                </goals>
+                                <configuration>
+                                    <name>在线考试系统-学生端</name>
+                                    <appVersion>1.0.0</appVersion>
+                                    <vendor>Exam System</vendor>
+                                    <destination>${project.build.directory}/mac</destination>
+                                    <input>${project.build.directory}</input>
+                                    <mainJar>exam-student.jar</mainJar>
+                                    <mainClass>com.exam.StudentApplication</mainClass>
+                                    <javaOptions>
+                                        <option>-Dfile.encoding=UTF-8</option>
+                                        <option>-Dapple.awt.application.appearance=system</option>
+                                    </javaOptions>
+                                    <type>APP_IMAGE</type>
+                                    <macPackageIdentifier>com.exam.student</macPackageIdentifier>
+                                    <macPackageName>考试系统学生端</macPackageName>
+                                </configuration>
+                            </execution>
+                            <!-- 教师端 macOS 应用 -->
+                            <execution>
+                                <id>teacher-mac</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jpackage</goal>
+                                </goals>
+                                <configuration>
+                                    <name>在线考试系统-教师端</name>
+                                    <appVersion>1.0.0</appVersion>
+                                    <vendor>Exam System</vendor>
+                                    <destination>${project.build.directory}/mac</destination>
+                                    <input>${project.build.directory}</input>
+                                    <mainJar>exam-teacher.jar</mainJar>
+                                    <mainClass>com.exam.TeacherApplication</mainClass>
+                                    <javaOptions>
+                                        <option>-Dfile.encoding=UTF-8</option>
+                                        <option>-Dapple.awt.application.appearance=system</option>
+                                    </javaOptions>
+                                    <type>APP_IMAGE</type>
+                                    <macPackageIdentifier>com.exam.teacher</macPackageIdentifier>
+                                    <macPackageName>考试系统教师端</macPackageName>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        
+        <!-- macOS DMG 安装包配置 -->
+        <profile>
+            <id>mac-dmg</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.panteleyev</groupId>
+                        <artifactId>jpackage-maven-plugin</artifactId>
+                        <version>1.6.0</version>
+                        <executions>
+                            <execution>
+                                <id>student-dmg</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jpackage</goal>
+                                </goals>
+                                <configuration>
+                                    <name>在线考试系统-学生端</name>
+                                    <appVersion>1.0.0</appVersion>
+                                    <vendor>Exam System</vendor>
+                                    <destination>${project.build.directory}/mac-dmg</destination>
+                                    <input>${project.build.directory}</input>
+                                    <mainJar>exam-student.jar</mainJar>
+                                    <mainClass>com.exam.StudentApplication</mainClass>
+                                    <javaOptions>
+                                        <option>-Dfile.encoding=UTF-8</option>
+                                    </javaOptions>
+                                    <type>DMG</type>
+                                    <macPackageIdentifier>com.exam.student</macPackageIdentifier>
+                                    <macPackageName>考试系统学生端</macPackageName>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>teacher-dmg</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jpackage</goal>
+                                </goals>
+                                <configuration>
+                                    <name>在线考试系统-教师端</name>
+                                    <appVersion>1.0.0</appVersion>
+                                    <vendor>Exam System</vendor>
+                                    <destination>${project.build.directory}/mac-dmg</destination>
+                                    <input>${project.build.directory}</input>
+                                    <mainJar>exam-teacher.jar</mainJar>
+                                    <mainClass>com.exam.TeacherApplication</mainClass>
+                                    <javaOptions>
+                                        <option>-Dfile.encoding=UTF-8</option>
+                                    </javaOptions>
+                                    <type>DMG</type>
+                                    <macPackageIdentifier>com.exam.teacher</macPackageIdentifier>
+                                    <macPackageName>考试系统教师端</macPackageName>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>
