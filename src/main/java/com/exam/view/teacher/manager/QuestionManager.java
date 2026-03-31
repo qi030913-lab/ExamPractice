@@ -187,7 +187,6 @@ public class QuestionManager {
 
             } catch (Exception ex) {
                 UIUtil.showError(dialog, "添加题目失败：" + ex.getMessage());
-                ex.printStackTrace();
             }
         });
         buttonPanel.add(confirmButton);
@@ -368,7 +367,6 @@ public class QuestionManager {
 
             } catch (Exception ex) {
                 UIUtil.showError(dialog, "修改题目失败：" + ex.getMessage());
-                ex.printStackTrace();
             }
         });
         buttonPanel.add(saveButton);
@@ -420,7 +418,6 @@ public class QuestionManager {
             mainFrame.refreshQuestionData();
         } catch (Exception e) {
             UIUtil.showError(mainFrame, "删除失败：" + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -502,7 +499,6 @@ public class QuestionManager {
 
             } catch (Exception ex) {
                 UIUtil.showError(dialog, "生成试卷失败：" + ex.getMessage());
-                ex.printStackTrace();
             }
         });
 

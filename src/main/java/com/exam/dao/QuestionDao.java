@@ -59,6 +59,9 @@ public class QuestionDao {
             // 设置参数
             int index = 1;
             for (Integer questionId : questionIds) {
+                if (questionId == null) {
+                    throw new DatabaseException("题目ID不能为空");
+                }
                 pstmt.setInt(index++, questionId);
             }
             

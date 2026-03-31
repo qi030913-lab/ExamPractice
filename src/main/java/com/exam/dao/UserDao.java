@@ -18,14 +18,12 @@ public class UserDao {
      * 根据姓名、学号和密码查询用户（登录验证）
      */
     public User findByNameNumberAndPassword(String realName, String studentNumber, String password) {
-        String sql = "SELECT * FROM user WHERE real_name = ? AND student_number = ? AND password = ?";
+        String sql = "SELECT * FROM user WHERE real_name = ? AND student_number = ? AND role = 'STUDENT'";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setString(1, realName);
             pstmt.setString(2, studentNumber);
-            pstmt.setString(3, password);
-            
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     return extractUser(rs);
@@ -41,13 +39,11 @@ public class UserDao {
      * 根据姓名和密码查询用户（教师登录）
      */
     public User findByNameAndPassword(String realName, String password) {
-        String sql = "SELECT * FROM user WHERE real_name = ? AND password = ?";
+        String sql = "SELECT * FROM user WHERE real_name = ? AND role = 'TEACHER'";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setString(1, realName);
-            pstmt.setString(2, password);
-            
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     return extractUser(rs);
@@ -176,6 +172,19 @@ public class UserDao {
     /**
      * 删除用户
      */
+    public int updatePassword(Integer userId, String password) {
+        String sql = "UPDATE user SET password = ? WHERE user_id = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, password);
+            pstmt.setInt(2, userId);
+            return pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new DatabaseException("更新用户密码失败", e);
+        }
+    }
+
     public int delete(Integer userId) {
         String sql = "DELETE FROM user WHERE user_id = ?";
         try (Connection conn = DBUtil.getConnection();

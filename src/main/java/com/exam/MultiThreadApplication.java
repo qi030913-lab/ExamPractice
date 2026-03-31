@@ -52,7 +52,6 @@ public class MultiThreadApplication {
             
         } catch (InterruptedException e) {
             System.err.println("线程启动过程中断：" + e.getMessage());
-            e.printStackTrace();
         }
     }
     
@@ -71,7 +70,7 @@ public class MultiThreadApplication {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             System.err.println("设置外观失败：" + e.getMessage());
-            e.printStackTrace();
         }
     }
 }
+

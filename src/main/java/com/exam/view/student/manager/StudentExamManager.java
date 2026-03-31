@@ -67,7 +67,6 @@ public class StudentExamManager {
                     List<Paper> allPapers = get();
                     populateTable(allPapers, subject, tableModel);
                 } catch (Exception e) {
-                    e.printStackTrace();
                     UIUtil.showError(parentComponent, "加载试卷失败：" + e.getMessage());
                 } finally {
                     // 数据加载完成后执行回调，通知UI更新显示状态
@@ -178,7 +177,6 @@ public class StudentExamManager {
 
         } catch (Exception e) {
             UIUtil.showError(table, "开始考试失败：" + e.getMessage());
-            e.printStackTrace();
         }
     }
 

@@ -10,6 +10,8 @@ import com.exam.view.student.ui.components.StudentExamPanel;
 import com.exam.view.student.ui.components.StudentNetworkPanel;
 import com.exam.view.student.ui.components.StudentScorePanel;
 import com.exam.view.student.ui.components.StudentAchievementPanel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import javax.swing.*;
 import java.awt.*;
 
@@ -29,6 +31,7 @@ import java.awt.*;
  * @version 2.0 (重构版本 - 清理重复代码)
  */
 public class StudentMainFrame extends JFrame {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StudentMainFrame.class);
     private final User student;
     private JPanel mainContentPanel;
     private String currentView = "home";
@@ -60,7 +63,7 @@ public class StudentMainFrame extends JFrame {
         try {
             setIconImage(new ImageIcon(getClass().getClassLoader().getResource("pic/logo.png")).getImage());
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.warn("Failed to load student main window icon.", e);
         }
         
         UIUtil.centerWindow(this);
@@ -143,6 +146,7 @@ public class StudentMainFrame extends JFrame {
                     java.util.List<com.exam.model.Paper> publishedPapers = paperService.getAllPublishedPapersOptimized();
                     return publishedPapers.size();
                 } catch (Exception e) {
+                    LOGGER.warn("Failed to query published paper count in background refresh.", e);
                     return -1; // 返回-1表示查询失败
                 }
             }
@@ -156,7 +160,7 @@ public class StudentMainFrame extends JFrame {
                         refreshExamList();
                     }
                 } catch (Exception e) {
-                    // 忽略异常，不影响正常功能
+                    LOGGER.warn("Failed to update exam list on UI thread.", e);
                 }
             }
         }.execute();
@@ -267,6 +271,7 @@ public class StudentMainFrame extends JFrame {
             Image scaledImage = avatarIcon.getImage().getScaledInstance(56, 56, Image.SCALE_SMOOTH);
             userIconLabel.setIcon(new ImageIcon(scaledImage));
         } catch (Exception e) {
+            LOGGER.warn("Failed to load student avatar icon, fallback to emoji.", e);
             // 如果加载图片失败，使用默认emoji
             userIconLabel.setText("👤");
             userIconLabel.setFont(new Font("微软雅黑", Font.PLAIN, 32));
@@ -603,3 +608,4 @@ public class StudentMainFrame extends JFrame {
         super.finalize();
     }
 }
+

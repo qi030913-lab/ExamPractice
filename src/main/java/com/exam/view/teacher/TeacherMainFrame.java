@@ -13,6 +13,8 @@ import com.exam.util.QuestionImportUtil;
 // import com.exam.view.LoginFrame; // 已删除,使用TeacherLoginFrame
 import com.exam.view.teacher.ui.components.*;
 import com.exam.view.teacher.manager.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -26,6 +28,7 @@ import java.util.ArrayList;
  * 教师主界面
  */
 public class TeacherMainFrame extends JFrame {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TeacherMainFrame.class);
     private final User teacher;
     private final QuestionService questionService;
     private final PaperService paperService;
@@ -68,7 +71,7 @@ public class TeacherMainFrame extends JFrame {
         try {
             setIconImage(new ImageIcon(getClass().getClassLoader().getResource("pic/logo.png")).getImage());
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.warn("Failed to load teacher main window icon.", e);
         }
         
         UIUtil.centerWindow(this);
@@ -106,12 +109,9 @@ public class TeacherMainFrame extends JFrame {
      * 刷新题库数据
      */
     public void refreshQuestionData() {
-        System.out.println("DEBUG: TeacherMainFrame.refreshQuestionData() called");
         if (questionPanel != null) {
-            System.out.println("DEBUG: Calling questionPanel.refreshData()");
             questionPanel.refreshData();
         } else {
-            System.out.println("DEBUG: questionPanel is null");
         }
     }
     
@@ -119,12 +119,9 @@ public class TeacherMainFrame extends JFrame {
      * 刷新试卷数据
      */
     public void refreshPaperData() {
-        System.out.println("DEBUG: TeacherMainFrame.refreshPaperData() called");
         if (paperPanel != null) {
-            System.out.println("DEBUG: Calling paperPanel.refreshData()");
             paperPanel.refreshData();
         } else {
-            System.out.println("DEBUG: paperPanel is null, but still need to ensure data is updated");
             // 即使paperPanel未初始化，也要确保试卷数据被更新
             // 如果用户切换到试卷管理面板时，需要显示最新数据
             // 我们可以提前初始化paperPanel或确保数据在需要时被加载
@@ -265,6 +262,7 @@ public class TeacherMainFrame extends JFrame {
             Image scaledImage = avatarIcon.getImage().getScaledInstance(56, 56, Image.SCALE_SMOOTH);
             userIconLabel.setIcon(new ImageIcon(scaledImage));
         } catch (Exception e) {
+            LOGGER.warn("Failed to load teacher avatar icon, fallback to emoji.", e);
             // 如果加载图片失败，使用默认emoji
             userIconLabel.setText("\uD83D\uDC68\u200D\uD83C\uDFEB");
             userIconLabel.setFont(new Font("微软雅黑", Font.PLAIN, 28));
@@ -503,18 +501,14 @@ public class TeacherMainFrame extends JFrame {
                     importPanel = new TeacherImportPanel(questionService, this, teacher.getUserId(), new TeacherImportPanel.TeacherImportCallback() {
                         @Override
                         public void onImportSuccess() {
-                            System.out.println("DEBUG: onImportSuccess called");
                             // 刷新题库管理面板数据
                             if (questionPanel != null) {
-                                System.out.println("DEBUG: Refreshing question panel");
                                 questionPanel.refreshData();
                             }
                             // 刷新试卷管理面板数据（因为导入可能影响试卷）
                             if (paperPanel != null) {
-                                System.out.println("DEBUG: Refreshing paper panel");
                                 paperPanel.refreshData();
                             } else {
-                                System.out.println("DEBUG: paperPanel is null, but still need to ensure data is updated");
                                 // 即使paperPanel未初始化，也要确保试卷数据在需要时被更新
                                 // 我们调用mainFrame的refreshPaperData方法，该方法会处理未初始化的情况
                                 refreshPaperData();
@@ -534,7 +528,6 @@ public class TeacherMainFrame extends JFrame {
                     studentPanel = new TeacherStudentPanel(this);
                 } else {
                     // 每次切换到学生管理时，刷新数据
-                    System.out.println("[TeacherMainFrame] 切换到学生管理，刷新数据");
                     studentPanel.refreshData();
                 }
                 mainContentPanel.add(studentPanel, BorderLayout.CENTER);
@@ -691,7 +684,6 @@ public class TeacherMainFrame extends JFrame {
             paperManager.deletePaper(paper);
         } catch (Exception e) {
             UIUtil.showError(this, "删除试卷失败：" + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -713,7 +705,6 @@ public class TeacherMainFrame extends JFrame {
             paperManager.togglePublishStatus(paper);
         } catch (Exception e) {
             UIUtil.showError(this, "切换发布状态失败：" + e.getMessage());
-            e.printStackTrace();
         }
     }
 }

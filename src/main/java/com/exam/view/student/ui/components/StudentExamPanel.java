@@ -118,7 +118,6 @@ public class StudentExamPanel extends JPanel {
         for (String subject : SUBJECTS) {
             JButton subjectButton = createSubjectButton(subject, subject.equals(currentSubject));
             subjectButton.addActionListener(e -> {
-                System.out.println("DEBUG [StudentExamPanel]: 科目按钮被点击, 科目=" + subject);
                 currentSubject = subject;
                 // 更新全局当前考试科目
                 if (mainFrame != null) {
@@ -218,7 +217,6 @@ public class StudentExamPanel extends JPanel {
         
         tableContainerPanel.add(tableScrollPane, BorderLayout.CENTER);
         
-        System.out.println("DEBUG [StudentExamPanel]: createTablePanel() 完成, tableContainerPanel=" + tableContainerPanel + ", tableScrollPane=" + tableScrollPane);
         
         return tableContainerPanel;
     }

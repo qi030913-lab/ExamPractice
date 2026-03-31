@@ -77,7 +77,6 @@ public class NetworkUtil {
                 
             } catch (IOException e) {
                 System.err.println("[ERROR] 服务器启动失败: " + e.getMessage());
-                e.printStackTrace();
                 throw e;
             }
             
@@ -100,7 +99,6 @@ public class NetworkUtil {
                         }
                     } catch (IOException e) {
                         System.err.println("[ERROR] 接受连接失败: " + e.getMessage());
-                        e.printStackTrace();
                         if (isRunning && listener != null) {
                             listener.onError("接受连接失败: " + e.getMessage());
                         }
@@ -128,7 +126,6 @@ public class NetworkUtil {
                 try {
                     serverSocket.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
                 }
             }
         }
@@ -203,7 +200,6 @@ public class NetworkUtil {
                     if (writer != null) writer.close();
                     if (socket != null && !socket.isClosed()) socket.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
                 }
             }
         }

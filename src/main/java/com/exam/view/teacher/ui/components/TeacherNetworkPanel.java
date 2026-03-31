@@ -316,13 +316,11 @@ public class TeacherNetworkPanel extends JPanel {
             appendLog("2. 没有权限绑定该端口");
             appendLog("3. 网络配置错误");
             System.err.println(msg);
-            e.printStackTrace();
             JOptionPane.showMessageDialog(this, msg, "启动失败", JOptionPane.ERROR_MESSAGE);
         } catch (Exception e) {
             String msg = "未知错误: " + e.getMessage();
             appendLog(msg);
             System.err.println(msg);
-            e.printStackTrace();
             JOptionPane.showMessageDialog(this, msg, "错误", JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -368,3 +366,4 @@ public class TeacherNetworkPanel extends JPanel {
         logArea.setCaretPosition(logArea.getDocument().getLength());
     }
 }
+

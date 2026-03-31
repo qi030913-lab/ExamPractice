@@ -1,6 +1,8 @@
 package com.exam;
 
 import com.exam.view.teacher.TeacherLoginFrame;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import javax.swing.*;
 
 /**
@@ -11,6 +13,7 @@ import javax.swing.*;
  * @version 1.0
  */
 public class TeacherApplication {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TeacherApplication.class);
     
     public static void main(String[] args) {
         // 设置现代化外观 - Nimbus主题
@@ -22,11 +25,12 @@ public class TeacherApplication {
                 }
             }
         } catch (Exception e) {
+            LOGGER.warn("Failed to set Nimbus look and feel, fallback to system look and feel", e);
             // 如果Nimbus不可用，使用系统默认外观
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             } catch (Exception ex) {
-                ex.printStackTrace();
+                LOGGER.error("Failed to set system look and feel", ex);
             }
         }
         
@@ -37,3 +41,4 @@ public class TeacherApplication {
         });
     }
 }
+

@@ -173,6 +173,38 @@ public class PaperDao {
     /**
      * 添加试卷题目关联
      */
+    public int insert(Connection conn, Paper paper) {
+        String sql = "INSERT INTO paper (paper_name, subject, total_score, duration, pass_score, description, creator_id) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            pstmt.setString(1, paper.getPaperName());
+            pstmt.setString(2, paper.getSubject());
+            pstmt.setInt(3, paper.getTotalScore());
+            pstmt.setInt(4, paper.getDuration());
+            pstmt.setInt(5, paper.getPassScore());
+            pstmt.setString(6, paper.getDescription());
+
+            if (paper.getCreatorId() != null) {
+                pstmt.setInt(7, paper.getCreatorId());
+            } else {
+                pstmt.setNull(7, Types.INTEGER);
+            }
+
+            int rows = pstmt.executeUpdate();
+            if (rows > 0) {
+                try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("添加试卷失败", e);
+        }
+        return 0;
+    }
+
     public void addPaperQuestion(Integer paperId, Integer questionId, Integer order) {
         // 使用 INSERT IGNORE 忽略重复的题目
         String sql = "INSERT IGNORE INTO paper_question (paper_id, question_id, question_order) VALUES (?, ?, ?)";
@@ -228,6 +260,28 @@ public class PaperDao {
     /**
      * 删除试卷的所有题目
      */
+    public void addPaperQuestionsBatch(Connection conn, Integer paperId, java.util.List<Integer> questionIds) {
+        if (paperId == null) {
+            throw new DatabaseException("试卷ID不能为空");
+        }
+        if (questionIds == null || questionIds.isEmpty()) {
+            return;
+        }
+
+        String sql = "INSERT IGNORE INTO paper_question (paper_id, question_id, question_order) VALUES (?, ?, ?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            for (int i = 0; i < questionIds.size(); i++) {
+                pstmt.setInt(1, paperId);
+                pstmt.setInt(2, questionIds.get(i));
+                pstmt.setInt(3, i + 1);
+                pstmt.addBatch();
+            }
+            pstmt.executeBatch();
+        } catch (SQLException e) {
+            throw new DatabaseException("批量添加试卷题目失败", e);
+        }
+    }
+
     public void deletePaperQuestions(Integer paperId) {
         String sql = "DELETE FROM paper_question WHERE paper_id = ?";
         

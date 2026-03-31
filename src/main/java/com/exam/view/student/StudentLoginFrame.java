@@ -6,6 +6,8 @@ import com.exam.model.enums.UserRole;
 import com.exam.service.UserService;
 import com.exam.util.UIUtil;
 import com.exam.view.RoleSelectionFrame;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.border.AbstractBorder;
@@ -18,6 +20,7 @@ import java.awt.geom.RoundRectangle2D;
  * 学生登录注册界面
  */
 public class StudentLoginFrame extends JFrame {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StudentLoginFrame.class);
     private final UserService userService;
     private JTextField realNameField;
     private JTextField studentNumberField;
@@ -36,7 +39,7 @@ public class StudentLoginFrame extends JFrame {
         try {
             setIconImage(new ImageIcon(getClass().getClassLoader().getResource("pic/logo.png")).getImage());
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.warn("Failed to load student login window icon.", e);
         }
         
         // 添加窗口关闭监听器
@@ -293,7 +296,6 @@ public class StudentLoginFrame extends JFrame {
             passwordField.requestFocus();
         } catch (Exception ex) {
             UIUtil.showError(this, "登录失败：" + ex.getMessage());
-            ex.printStackTrace();
         }
     }
 
@@ -376,7 +378,6 @@ public class StudentLoginFrame extends JFrame {
                 passwordField.requestFocus();
             } catch (Exception ex) {
                 UIUtil.showError(dialog, "注册失败：" + ex.getMessage());
-                ex.printStackTrace();
             }
         });
 
@@ -453,3 +454,4 @@ public class StudentLoginFrame extends JFrame {
         }
     }
 }
+

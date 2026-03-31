@@ -40,6 +40,21 @@ public class ExamRecordDao {
      * 根据ID查询考试记录（包含试卷信息）- 性能优化版本
      * 使用LEFT JOIN一次性查询，避免N+1问题
      */
+    public ExamRecord findByIdForUpdate(Connection conn, Integer recordId) {
+        String sql = "SELECT * FROM exam_record WHERE record_id = ? FOR UPDATE";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, recordId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return extractExamRecord(rs);
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("查询考试记录失败", e);
+        }
+        return null;
+    }
+
     public ExamRecord findByIdWithPaper(Integer recordId) {
         String sql = "SELECT er.*, " +
                      "p.paper_id as p_paper_id, p.paper_name, p.subject, p.total_score, " +
@@ -361,6 +376,42 @@ public class ExamRecordDao {
     /**
      * 添加答题记录
      */
+    public int update(Connection conn, ExamRecord record) {
+        String sql = "UPDATE exam_record SET start_time = ?, end_time = ?, submit_time = ?, score = ?, status = ? WHERE record_id = ?";
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            if (record.getStartTime() != null) {
+                pstmt.setTimestamp(1, Timestamp.valueOf(record.getStartTime()));
+            } else {
+                pstmt.setNull(1, Types.TIMESTAMP);
+            }
+
+            if (record.getEndTime() != null) {
+                pstmt.setTimestamp(2, Timestamp.valueOf(record.getEndTime()));
+            } else {
+                pstmt.setNull(2, Types.TIMESTAMP);
+            }
+
+            if (record.getSubmitTime() != null) {
+                pstmt.setTimestamp(3, Timestamp.valueOf(record.getSubmitTime()));
+            } else {
+                pstmt.setNull(3, Types.TIMESTAMP);
+            }
+
+            if (record.getScore() != null) {
+                pstmt.setBigDecimal(4, record.getScore());
+            } else {
+                pstmt.setNull(4, Types.DECIMAL);
+            }
+
+            pstmt.setString(5, record.getStatus().name());
+            pstmt.setInt(6, record.getRecordId());
+            return pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new DatabaseException("更新考试记录失败", e);
+        }
+    }
+
     public void insertAnswerRecord(AnswerRecord answerRecord) {
         String sql = "INSERT INTO answer_record (record_id, question_id, student_answer, is_correct, score) VALUES (?, ?, ?, ?, ?)";
         
@@ -438,6 +489,38 @@ public class ExamRecordDao {
     /**
      * 查询答题记录
      */
+    public void insertAnswerRecordsBatch(Connection conn, List<AnswerRecord> answerRecords) {
+        if (answerRecords == null || answerRecords.isEmpty()) {
+            return;
+        }
+
+        String sql = "INSERT INTO answer_record (record_id, question_id, student_answer, is_correct, score) VALUES (?, ?, ?, ?, ?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            for (AnswerRecord answerRecord : answerRecords) {
+                pstmt.setInt(1, answerRecord.getRecordId());
+                pstmt.setInt(2, answerRecord.getQuestionId());
+                pstmt.setString(3, answerRecord.getStudentAnswer());
+
+                if (answerRecord.getIsCorrect() != null) {
+                    pstmt.setBoolean(4, answerRecord.getIsCorrect());
+                } else {
+                    pstmt.setNull(4, Types.BOOLEAN);
+                }
+
+                if (answerRecord.getScore() != null) {
+                    pstmt.setBigDecimal(5, answerRecord.getScore());
+                } else {
+                    pstmt.setNull(5, Types.DECIMAL);
+                }
+
+                pstmt.addBatch();
+            }
+            pstmt.executeBatch();
+        } catch (SQLException e) {
+            throw new DatabaseException("批量添加答题记录失败", e);
+        }
+    }
+
     public List<AnswerRecord> findAnswerRecords(Integer recordId) {
         String sql = "SELECT * FROM answer_record WHERE record_id = ?";
         List<AnswerRecord> answers = new ArrayList<>();

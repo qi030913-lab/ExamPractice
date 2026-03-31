@@ -8,6 +8,8 @@ import com.exam.util.UIUtil;
 import com.exam.view.student.manager.StudentScoreManager;
 import com.exam.view.student.ui.components.StudentTableButtonEditor;
 import com.exam.view.student.ui.components.StudentTableButtonRenderer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -28,6 +30,7 @@ import java.util.List;
  * @version 1.0
  */
 public class StudentScorePanel extends JPanel {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StudentScorePanel.class);
     private final User student;
     private final ExamService examService;
     private final StudentScoreManager scoreManager;
@@ -125,7 +128,7 @@ public class StudentScorePanel extends JPanel {
                     showExamDetail(cachedRecords.get(row).getRecordId());
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                LOGGER.warn("Failed to show exam detail for row: {}", row, e);
             }
         }));
         

@@ -4,6 +4,8 @@ import com.exam.model.*;
 import com.exam.model.enums.QuestionType;
 import com.exam.service.ExamService;
 import com.exam.util.UIUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import javax.swing.*;
 import java.awt.*;
 import java.math.BigDecimal;
@@ -16,6 +18,7 @@ import java.util.Map;
  * 使用多线程实现倒计时功能
  */
 public class ExamFrame extends JFrame {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExamFrame.class);
     private final User student;
     private final Paper paper;
     private final ExamService examService;
@@ -57,7 +60,7 @@ public class ExamFrame extends JFrame {
         try {
             setIconImage(new ImageIcon(getClass().getClassLoader().getResource("pic/logo.png")).getImage());
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.warn("Failed to load exam window icon.", e);
         }
         
         addWindowListener(new java.awt.event.WindowAdapter() {
@@ -368,7 +371,6 @@ public class ExamFrame extends JFrame {
             
         } catch (Exception e) {
             UIUtil.showError(this, "提交失败：" + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -390,3 +392,4 @@ public class ExamFrame extends JFrame {
         return String.format("%02d:%02d", minutes, secs);
     }
 }
+

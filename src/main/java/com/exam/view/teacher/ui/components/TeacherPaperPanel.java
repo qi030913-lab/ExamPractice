@@ -160,7 +160,6 @@ public class TeacherPaperPanel extends JPanel {
      * 刷新数据
      */
     public void refreshData() {
-        System.out.println("DEBUG: TeacherPaperPanel.refreshData() called");
         loadPapersData();
     }
     
@@ -168,7 +167,6 @@ public class TeacherPaperPanel extends JPanel {
      * 加载试卷数据（使用优化查询，避免N+1问题）
      */
     private void loadPapersData() {
-        System.out.println("DEBUG: TeacherPaperPanel.loadPapersData() called");
         paperTableModel.setRowCount(0);
         
         // 使用SwingWorker在后台线程加载数据，避免UI线程阻塞
@@ -183,7 +181,6 @@ public class TeacherPaperPanel extends JPanel {
             protected void done() {
                 try {
                     List<Paper> papers = get();
-                    System.out.println("DEBUG: Loaded " + papers.size() + " papers from service (optimized)");
                     
                     for (Paper paper : papers) {
                         // 使用优化查询结果中的题目数量（存储在singleCount字段）
@@ -205,24 +202,18 @@ public class TeacherPaperPanel extends JPanel {
                     }
                     
                     updateTableDisplay();
-                    System.out.println("DEBUG: After updateTableDisplay, row count: " + paperTableModel.getRowCount());
                 } catch (Exception e) {
-                    System.out.println("DEBUG: Error in loadPapersData: " + e.getMessage());
                     UIUtil.showError(TeacherPaperPanel.this, "加载试卷失败：" + e.getMessage());
-                    e.printStackTrace();
                 }
             }
         }.execute();
     }
     
     private void updateTableDisplay() {
-        System.out.println("DEBUG: TeacherPaperPanel.updateTableDisplay() called, row count: " + paperTableModel.getRowCount());
         // 如果表格没有数据，显示"暂无试卷"提示
         if (paperTableModel.getRowCount() == 0) {
-            System.out.println("DEBUG: No papers found, showing '暂无试卷' message");
             showNoDataMessage();
         } else {
-            System.out.println("DEBUG: Papers found, showing table with " + paperTableModel.getRowCount() + " rows");
             // 显示表头
             paperManagementTable.getTableHeader().setVisible(true);
             // 确保显示表格
@@ -231,7 +222,6 @@ public class TeacherPaperPanel extends JPanel {
     }
     
     private void showTable() {
-        System.out.println("DEBUG: TeacherPaperPanel.showTable() called");
         // 确保表格可见
         paperManagementTable.setVisible(true);
         
@@ -255,11 +245,9 @@ public class TeacherPaperPanel extends JPanel {
         // 同时对表格组件进行重绘以确保显示更新
         paperManagementTable.revalidate();
         paperManagementTable.repaint();
-        System.out.println("DEBUG: Called revalidate/repaint on tablePanel and paperManagementTable");
     }
     
     private void showNoDataMessage() {
-        System.out.println("DEBUG: TeacherPaperPanel.showNoDataMessage() called");
         // 隐藏表格组件
         paperManagementTable.setVisible(false);
         
@@ -280,7 +268,6 @@ public class TeacherPaperPanel extends JPanel {
             tablePanel.repaint();
         }
         
-        System.out.println("DEBUG: Added noDataLabel to tablePanel and called revalidate/repaint");
     }
     
     /**

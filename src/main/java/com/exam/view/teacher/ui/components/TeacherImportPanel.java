@@ -394,7 +394,6 @@ public class TeacherImportPanel extends JPanel {
 
         } catch (Exception e) {
             UIUtil.showError(this, "导入失败：" + e.getMessage());
-            e.printStackTrace();
         }
     }
     
@@ -419,7 +418,6 @@ public class TeacherImportPanel extends JPanel {
             }
         } catch (Exception e) {
             UIUtil.showError(this, "导入失败：" + e.getMessage());
-            e.printStackTrace();
         }
     }
 }

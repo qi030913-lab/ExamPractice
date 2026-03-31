@@ -4,18 +4,24 @@ import com.exam.dao.ExamRecordDao;
 import com.exam.dao.PaperDao;
 import com.exam.dao.QuestionDao;
 import com.exam.exception.BusinessException;
-import com.exam.model.*;
+import com.exam.model.AnswerRecord;
+import com.exam.model.ExamRecord;
+import com.exam.model.Paper;
+import com.exam.model.Question;
 import com.exam.model.enums.ExamStatus;
+import com.exam.util.DBUtil;
+
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-/**
- * 考试服务类
- * 处理考试相关的业务逻辑，包括自动判分
- */
 public class ExamService {
     private final ExamRecordDao examRecordDao;
     private final PaperDao paperDao;
@@ -27,9 +33,6 @@ public class ExamService {
         this.questionDao = new QuestionDao();
     }
 
-    /**
-     * 开始考试
-     */
     public ExamRecord startExam(Integer studentId, Integer paperId) {
         if (studentId == null) {
             throw new BusinessException("学生ID不能为空");
@@ -38,83 +41,82 @@ public class ExamService {
             throw new BusinessException("试卷ID不能为空");
         }
 
-        // 检查试卷是否存在
         Paper paper = paperDao.findById(paperId);
         if (paper == null) {
             throw new BusinessException("试卷不存在");
         }
 
-        // 创建考试记录
         ExamRecord record = new ExamRecord(studentId, paperId);
         record.startExam();
-        
+
         int recordId = examRecordDao.insert(record);
         record.setRecordId(recordId);
 
         return record;
     }
 
-    /**
-     * 提交考试并自动判分 - 性能优化版本
-     * 使用批量插入提升性能
-     */
     public BigDecimal submitExam(Integer recordId, Map<Integer, String> answers) {
         if (recordId == null) {
             throw new BusinessException("考试记录ID不能为空");
         }
 
-        // 查询考试记录
-        ExamRecord record = examRecordDao.findById(recordId);
-        if (record == null) {
-            throw new BusinessException("考试记录不存在");
-        }
+        Map<Integer, String> answerMap = answers == null ? Collections.emptyMap() : answers;
 
-        if (record.getStatus() == ExamStatus.SUBMITTED) {
-            throw new BusinessException("考试已提交，不能重复提交");
-        }
+        try (Connection conn = DBUtil.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                ExamRecord record = examRecordDao.findByIdForUpdate(conn, recordId);
+                if (record == null) {
+                    throw new BusinessException("考试记录不存在");
+                }
+                if (record.getStatus() == ExamStatus.SUBMITTED) {
+                    throw new BusinessException("考试已提交，不能重复提交");
+                }
 
-        // 获取试卷题目
-        List<Question> questions = questionDao.findByPaperId(record.getPaperId());
-        if (questions.isEmpty()) {
-            throw new BusinessException("试卷没有题目");
-        }
+                List<Question> questions = questionDao.findByPaperId(record.getPaperId());
+                if (questions.isEmpty()) {
+                    throw new BusinessException("试卷没有题目");
+                }
 
-        // 自动判分 - 收集所有答题记录
-        BigDecimal totalScore = BigDecimal.ZERO;
-        List<AnswerRecord> answerRecords = new ArrayList<>();
-        
-        for (Question question : questions) {
-            String studentAnswer = answers.get(question.getQuestionId());
-            boolean isCorrect = checkAnswer(question, studentAnswer);
-            
-            BigDecimal score = BigDecimal.ZERO;
-            if (isCorrect) {
-                score = BigDecimal.valueOf(question.getScore());
-                totalScore = totalScore.add(score);
+                BigDecimal totalScore = BigDecimal.ZERO;
+                List<AnswerRecord> answerRecords = new ArrayList<>();
+
+                for (Question question : questions) {
+                    String studentAnswer = answerMap.get(question.getQuestionId());
+                    boolean isCorrect = checkAnswer(question, studentAnswer);
+
+                    BigDecimal score = BigDecimal.ZERO;
+                    if (isCorrect) {
+                        score = BigDecimal.valueOf(question.getScore());
+                        totalScore = totalScore.add(score);
+                    }
+
+                    AnswerRecord answerRecord = new AnswerRecord(recordId, question.getQuestionId(), studentAnswer);
+                    answerRecord.setIsCorrect(isCorrect);
+                    answerRecord.setScore(score);
+                    answerRecords.add(answerRecord);
+                }
+
+                examRecordDao.insertAnswerRecordsBatch(conn, answerRecords);
+
+                record.submitExam();
+                record.setScore(totalScore);
+                record.setEndTime(LocalDateTime.now());
+                examRecordDao.update(conn, record);
+
+                conn.commit();
+                return totalScore;
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
             }
-
-            // 收集答题记录，稍后批量插入
-            AnswerRecord answerRecord = new AnswerRecord(recordId, question.getQuestionId(), studentAnswer);
-            answerRecord.setIsCorrect(isCorrect);
-            answerRecord.setScore(score);
-            answerRecords.add(answerRecord);
+        } catch (SQLException e) {
+            throw new BusinessException("提交考试失败: " + e.getMessage());
         }
-
-        // 批量插入答题记录（性能优化）
-        examRecordDao.insertAnswerRecordsBatch(answerRecords);
-
-        // 更新考试记录
-        record.submitExam();
-        record.setScore(totalScore);
-        record.setEndTime(LocalDateTime.now());
-        examRecordDao.update(record);
-
-        return totalScore;
     }
 
-    /**
-     * 检查答案是否正确
-     */
     private boolean checkAnswer(Question question, String studentAnswer) {
         if (studentAnswer == null || studentAnswer.trim().isEmpty()) {
             return false;
@@ -126,166 +128,112 @@ public class ExamService {
         switch (question.getQuestionType()) {
             case SINGLE:
             case JUDGE:
-                // 单选题和判断题：答案必须完全一致
                 return correctAnswer.equals(answer);
-                
             case MULTIPLE:
-                // 多选题：排序后比较
                 char[] correctChars = correctAnswer.toCharArray();
                 char[] answerChars = answer.toCharArray();
                 java.util.Arrays.sort(correctChars);
                 java.util.Arrays.sort(answerChars);
                 return java.util.Arrays.equals(correctChars, answerChars);
-                
             default:
                 return false;
         }
     }
 
-    /**
-     * 查询学生的考试记录
-     * 已优化：内部调用JOIN查询版本，避免N+1问题
-     */
     public List<ExamRecord> getStudentExamRecords(Integer studentId) {
-        // 直接调用优化版本，避免N+1查询问题
         return getStudentExamRecordsOptimized(studentId);
     }
-    
-    /**
-     * 查询学生的考试记录（性能优化版本）
-     * 使用JOIN查询，避免N+1问题
-     */
+
     public List<ExamRecord> getStudentExamRecordsOptimized(Integer studentId) {
         if (studentId == null) {
             throw new BusinessException("学生ID不能为空");
         }
-        // 使用优化后的方法，一次性查询考试记录和试卷信息
         return examRecordDao.findByStudentIdWithPaper(studentId);
     }
-    
-    /**
-     * 分页查询学生的考试记录（性能优化版本）
-     * @param studentId 学生ID
-     * @param pageNum 页码（从1开始）
-     * @param pageSize 每页大小
-     * @return 考试记录列表
-     */
+
     public List<ExamRecord> getStudentExamRecordsPaginated(Integer studentId, int pageNum, int pageSize) {
         if (studentId == null) {
             throw new BusinessException("学生ID不能为空");
         }
-        // 使用优化后的分页方法
+        if (pageNum <= 0) {
+            throw new BusinessException("页码必须从1开始");
+        }
+        if (pageSize <= 0 || pageSize > 200) {
+            throw new BusinessException("每页大小必须在1-200之间");
+        }
         return examRecordDao.findByStudentIdWithPaperPaginated(studentId, pageNum, pageSize);
     }
-    
-    /**
-     * 查询学生的考试记录总数
-     * @param studentId 学生ID
-     * @return 考试记录总数
-     */
+
     public int getStudentExamRecordCount(Integer studentId) {
         if (studentId == null) {
             throw new BusinessException("学生ID不能为空");
         }
         return examRecordDao.countByStudentId(studentId);
     }
-    
-    /**
-     * 根据ID查询考试记录（性能优化版本）
-     * 使用JOIN一次性查询考试记录和试卷信息
-     */
+
     public ExamRecord getExamRecordById(Integer recordId) {
         if (recordId == null) {
             throw new BusinessException("考试记录ID不能为空");
         }
-        // 使用优化的JOIN查询，一次性获取考试记录和试卷信息
         return examRecordDao.findByIdWithPaper(recordId);
     }
-    
-    /**
-     * 查询答题记录（性能优化版本）
-     * 使用批量查询避免N+1问题
-     */
+
     public List<AnswerRecord> getAnswerRecords(Integer recordId) {
         if (recordId == null) {
             throw new BusinessException("考试记录ID不能为空");
         }
         List<AnswerRecord> answerRecords = examRecordDao.findAnswerRecords(recordId);
-        
         if (answerRecords.isEmpty()) {
             return answerRecords;
         }
-        
-        // 收集所有需要查询的题目ID
-        java.util.Set<Integer> questionIds = new java.util.HashSet<>();
+
+        Set<Integer> questionIds = new HashSet<>();
         for (AnswerRecord ar : answerRecords) {
             questionIds.add(ar.getQuestionId());
         }
-        
-        // 批量查询题目信息
-        java.util.Map<Integer, Question> questionMap = questionDao.findByIds(questionIds);
-        
-        // 为每个答题记录设置题目信息
+
+        Map<Integer, Question> questionMap = questionDao.findByIds(questionIds);
         for (AnswerRecord ar : answerRecords) {
             ar.setQuestion(questionMap.get(ar.getQuestionId()));
         }
-        
         return answerRecords;
     }
 
-    /**
-     * 批量查询答题记录（性能优化版本）
-     * @param recordIds 考试记录ID列表
-     * @return 按record_id分组的答题记录Map
-     */
-    public java.util.Map<Integer, List<AnswerRecord>> getAnswerRecordsBatch(List<Integer> recordIds) {
+    public Map<Integer, List<AnswerRecord>> getAnswerRecordsBatch(List<Integer> recordIds) {
         if (recordIds == null || recordIds.isEmpty()) {
             return new java.util.HashMap<>();
         }
-        
-        // 批量查询答题记录
-        java.util.Map<Integer, List<AnswerRecord>> answerRecordsMap = examRecordDao.findAnswerRecordsByRecordIds(recordIds);
-        
-        // 收集所有需要查询的题目ID
-        java.util.Set<Integer> questionIds = new java.util.HashSet<>();
+
+        Map<Integer, List<AnswerRecord>> answerRecordsMap = examRecordDao.findAnswerRecordsByRecordIds(recordIds);
+
+        Set<Integer> questionIds = new HashSet<>();
         for (List<AnswerRecord> records : answerRecordsMap.values()) {
             for (AnswerRecord ar : records) {
                 questionIds.add(ar.getQuestionId());
             }
         }
-        
-        // 批量查询题目信息（使用优化后的批量查询方法）
-        java.util.Map<Integer, Question> questionMap = questionDao.findByIds(questionIds);
-        
-        // 为答题记录设置题目信息
+
+        Map<Integer, Question> questionMap = questionDao.findByIds(questionIds);
         for (List<AnswerRecord> records : answerRecordsMap.values()) {
             for (AnswerRecord ar : records) {
                 ar.setQuestion(questionMap.get(ar.getQuestionId()));
             }
         }
-        
+
         return answerRecordsMap;
     }
 
-    /**
-     * 查询考试详情（包含试卷信息和答题记录）
-     * 性能优化版本：使用JOIN查询试卷信息
-     */
     public ExamRecord getExamDetail(Integer recordId) {
         if (recordId == null) {
             throw new BusinessException("考试记录ID不能为空");
         }
 
-        // 使用优化的JOIN查询，一次性获取考试记录和试卷信息
         ExamRecord record = examRecordDao.findByIdWithPaper(recordId);
         if (record == null) {
             throw new BusinessException("考试记录不存在");
         }
 
-        // 加载答题记录
         List<AnswerRecord> answerRecords = examRecordDao.findAnswerRecords(recordId);
-        
-        // 将答题记录转换为Map
         for (AnswerRecord answer : answerRecords) {
             record.recordAnswer(answer.getQuestionId(), answer.getStudentAnswer());
         }
@@ -293,9 +241,6 @@ public class ExamService {
         return record;
     }
 
-    /**
-     * 查询试卷的所有考试记录
-     */
     public List<ExamRecord> getPaperExamRecords(Integer paperId) {
         if (paperId == null) {
             throw new BusinessException("试卷ID不能为空");
@@ -303,9 +248,6 @@ public class ExamService {
         return examRecordDao.findByPaperId(paperId);
     }
 
-    /**
-     * 超时自动交卷
-     */
     public void timeoutSubmit(Integer recordId) {
         if (recordId == null) {
             throw new BusinessException("考试记录ID不能为空");
@@ -317,10 +259,9 @@ public class ExamService {
         }
 
         if (record.getStatus() != ExamStatus.IN_PROGRESS) {
-            return; // 已提交或未开始，不处理
+            return;
         }
 
-        // 设置为超时状态
         record.setStatus(ExamStatus.TIMEOUT);
         record.setEndTime(LocalDateTime.now());
         examRecordDao.update(record);

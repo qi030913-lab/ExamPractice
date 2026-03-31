@@ -71,7 +71,6 @@ public class StudentAchievementManager {
             dataCached = true;
             lastCacheTime = now;
         } catch (Exception e) {
-            e.printStackTrace();
             cachedRecords = new CopyOnWriteArrayList<>();
             cachedAnswerRecordsMap = new java.util.concurrent.ConcurrentHashMap<>();
             cachedStats = new double[] {0, 0, 0, 0};

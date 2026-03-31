@@ -119,7 +119,6 @@ public class TeacherServerHeadless {
             log("  1. 端口 " + PORT + " 已被占用", "ERROR");
             log("  2. 没有权限绑定该端口 (尝试使用 sudo 或端口 > 1024)", "ERROR");
             log("  3. 网络配置错误", "ERROR");
-            e.printStackTrace();
             System.exit(1);
         }
     }
@@ -278,7 +277,8 @@ public class TeacherServerHeadless {
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
+            log("重启等待被中断: " + e.getMessage(), "WARN");
         }
         startServer();
     }
@@ -339,3 +339,4 @@ public class TeacherServerHeadless {
         System.out.println("[" + timestamp + "] " + prefix + " " + message);
     }
 }
+

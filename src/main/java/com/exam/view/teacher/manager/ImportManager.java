@@ -101,7 +101,6 @@ public class ImportManager {
                         // 模拟处理时间，让进度条更明显（实际导入很快）
                         Thread.sleep(50);
                     } catch (Exception e) {
-                        e.printStackTrace();
                         // 继续处理其他题目
                     }
                 }
@@ -339,7 +338,6 @@ public class ImportManager {
                         mainFrame.refreshPaperData();
                     } catch (Exception ex) {
                         UIUtil.showError(mainFrame, "生成试卷失败：" + ex.getMessage());
-                        ex.printStackTrace();
                     }
                 }
             };

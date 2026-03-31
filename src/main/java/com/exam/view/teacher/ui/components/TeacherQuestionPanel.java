@@ -257,7 +257,6 @@ public class TeacherQuestionPanel extends JPanel {
             updateTableDisplay();
         } catch (Exception e) {
             UIUtil.showError(this, "加载题目失败：" + e.getMessage());
-            e.printStackTrace();
         }
     }
     

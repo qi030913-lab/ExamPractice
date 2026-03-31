@@ -159,7 +159,6 @@ public class StudentScoreManager {
                     }
                 } catch (Exception e) {
                     UIUtil.showError(parentComponent, "加载成绩失败：" + e.getMessage());
-                    e.printStackTrace();
                     // 即使失败也要调用回调
                     if (onComplete != null) {
                         onComplete.run();

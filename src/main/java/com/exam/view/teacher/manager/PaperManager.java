@@ -131,7 +131,6 @@ public class PaperManager {
 
             } catch (Exception ex) {
                 UIUtil.showError(dialog, "修改试卷失败：" + ex.getMessage());
-                ex.printStackTrace();
             }
         });
         buttonPanel.add(saveButton);
@@ -284,7 +283,6 @@ public class PaperManager {
             mainFrame.refreshPaperData();
         } catch (Exception e) {
             UIUtil.showError(mainFrame, "删除失败：" + e.getMessage());
-            e.printStackTrace();
         }
     }
     
@@ -318,7 +316,6 @@ public class PaperManager {
             }
         } catch (Exception e) {
             UIUtil.showError(mainFrame, action + "失败：" + e.getMessage());
-            e.printStackTrace();
         }
     }
     
