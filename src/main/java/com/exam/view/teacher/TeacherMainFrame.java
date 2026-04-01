@@ -32,13 +32,11 @@ public class TeacherMainFrame extends JFrame {
     private List<JButton> menuButtons = new ArrayList<>();
     
     // 管理器
-    private com.exam.view.teacher.manager.QuestionManager questionManager;
     private com.exam.view.teacher.manager.PaperManager paperManager;
     private com.exam.view.teacher.manager.ImportManager importManager;
     
     // 面板缓存（懒加载）
     private TeacherHomePanel homePanel;
-    private TeacherQuestionPanel questionPanel;
     private TeacherPaperPanel paperPanel;
     private TeacherImportPanel importPanel;
     private TeacherStudentPanel studentPanel;
@@ -48,7 +46,6 @@ public class TeacherMainFrame extends JFrame {
         this.teacher = teacher;
         this.questionService = new QuestionService();
         this.paperService = new PaperService();
-        this.questionManager = new com.exam.view.teacher.manager.QuestionManager(questionService, this);
         this.paperManager = new com.exam.view.teacher.manager.PaperManager(paperService, this);
         this.importManager = new com.exam.view.teacher.manager.ImportManager(questionService, this);
         initComponents();
@@ -98,10 +95,7 @@ public class TeacherMainFrame extends JFrame {
      * 刷新题库数据
      */
     public void refreshQuestionData() {
-        if (questionPanel != null) {
-            questionPanel.refreshData();
-        } else {
-        }
+        // Question management was removed; keep no-op for compatibility.
     }
     
     /**
@@ -119,13 +113,6 @@ public class TeacherMainFrame extends JFrame {
                 switchView("paper");
             }
         }
-    }
-    
-    /**
-     * 获取questionPanel
-     */
-    public TeacherQuestionPanel getQuestionPanel() {
-        return questionPanel;
     }
     
     /**
@@ -312,7 +299,6 @@ public class TeacherMainFrame extends JFrame {
         // 导航菜单
         String[][] menuConfig = {
                 {"home", "我的主页"},
-                {"question", "题库管理"},
                 {"paper", "试卷管理"},
                 {"import", "导入题目"},
                 {"student", "学生管理"},
@@ -376,8 +362,6 @@ public class TeacherMainFrame extends JFrame {
         switch (view) {
             case "home":
                 return IconUtil.createHomeIcon(color, size);
-            case "question":
-                return IconUtil.createDocumentIcon(color, size);
             case "paper":
                 return IconUtil.createChartIcon(color, size);
             case "import":
@@ -422,7 +406,7 @@ public class TeacherMainFrame extends JFrame {
         currentView = view;
 
         // 更新所有按钮的状态
-        String[] views = {"home", "question", "paper", "import", "student"};
+        String[] views = {"home", "paper", "import", "student"};
         for (int i = 0; i < menuButtons.size(); i++) {
             JButton button = menuButtons.get(i);
             boolean isActive = i == getViewIndex(view);
@@ -439,25 +423,6 @@ public class TeacherMainFrame extends JFrame {
                     homePanel = new TeacherHomePanel(this, teacher);
                 }
                 mainContentPanel.add(homePanel, BorderLayout.CENTER);
-                break;
-            case "question":
-                if (questionPanel == null) {
-                    questionPanel = new TeacherQuestionPanel(questionService, new TeacherQuestionPanel.TeacherQuestionCallback() {
-                        @Override
-                        public void onAddQuestion() {
-                            questionManager.showAddQuestionDialog();
-                        }
-                        @Override
-                        public void onEditQuestion(int row) {
-                            editQuestionAtRow(row);
-                        }
-                        @Override
-                        public void onDeleteQuestion(int row) {
-                            deleteQuestionAtRow(row);
-                        }
-                    });
-                }
-                mainContentPanel.add(questionPanel, BorderLayout.CENTER);
                 break;
             case "paper":
                 if (paperPanel == null) {
@@ -487,10 +452,6 @@ public class TeacherMainFrame extends JFrame {
                     importPanel = new TeacherImportPanel(questionService, this, teacher.getUserId(), new TeacherImportPanel.TeacherImportCallback() {
                         @Override
                         public void onImportSuccess() {
-                            // 刷新题库管理面板数据
-                            if (questionPanel != null) {
-                                questionPanel.refreshData();
-                            }
                             // 刷新试卷管理面板数据（因为导入可能影响试卷）
                             if (paperPanel != null) {
                                 paperPanel.refreshData();
@@ -532,37 +493,12 @@ public class TeacherMainFrame extends JFrame {
     private int getViewIndex(String view) {
         switch (view) {
             case "home": return 0;
-            case "question": return 1;
-            case "paper": return 2;
-            case "import": return 3;
-            case "student": return 4;
+            case "paper": return 1;
+            case "import": return 2;
+            case "student": return 3;
             default: return -1;
         }
     }
-
-
-
-
-
-    /**
-     * 编辑指定行的题目
-     */
-    private void editQuestionAtRow(int row) {
-        try {
-            List<Question> questions = questionService.getAllQuestions();
-            if (row >= 0 && row < questions.size()) {
-                Question question = questions.get(row);
-                questionManager.showEditQuestionDialog(question);
-            }
-        } catch (Exception e) {
-            UIUtil.showError(this, "编辑题目失败：" + e.getMessage());
-        }
-    }
-
-
-
-
-
 
 
 
@@ -575,25 +511,6 @@ public class TeacherMainFrame extends JFrame {
         }
     }
 
-
-
-
-    /**
-     * 删除指定行的题目
-     */
-    private void deleteQuestionAtRow(int row) {
-        try {
-            List<Question> questions = questionService.getAllQuestions();
-            if (row >= 0 && row < questions.size()) {
-                Question question = questions.get(row);
-                questionManager.deleteQuestion(question);
-            } else {
-                UIUtil.showError(this, "无法找到对应的题目");
-            }
-        } catch (Exception e) {
-            UIUtil.showError(this, "删除题目失败：" + e.getMessage());
-        }
-    }
 
 
 

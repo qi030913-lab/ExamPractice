@@ -1,8 +1,6 @@
 package com.exam.view.teacher.ui.components;
 
 import com.exam.model.User;
-import com.exam.service.QuestionService;
-import com.exam.service.PaperService;
 import com.exam.util.UIUtil;
 
 import javax.swing.*;
@@ -12,15 +10,11 @@ import java.awt.*;
  * 教师端 - 首页面板
  */
 public class TeacherHomePanel extends JPanel {
-    private final QuestionService questionService;
-    private final PaperService paperService;
     private final User teacher;
     private final com.exam.view.teacher.TeacherMainFrame mainFrame;
 
     public TeacherHomePanel(com.exam.view.teacher.TeacherMainFrame mainFrame, User teacher) {
         this.mainFrame = mainFrame;
-        this.questionService = new QuestionService();
-        this.paperService = new PaperService();
         this.teacher = teacher;
         initComponents();
     }
@@ -78,15 +72,12 @@ public class TeacherHomePanel extends JPanel {
         // 创建功能卡片
         gbc.gridx = 0; gbc.gridy = 0;
         gbc.weightx = 1.0; gbc.weighty = 1.0;
-        functionPanel.add(createFunctionCard("题库管理", "管理所有考试题目", new Color(52, 152, 219), "question"), gbc);
-
-        gbc.gridx = 1;
         functionPanel.add(createFunctionCard("试卷管理", "创建和管理考试试卷", new Color(46, 204, 113), "paper"), gbc);
 
-        gbc.gridx = 0; gbc.gridy = 1;
+        gbc.gridx = 1; gbc.gridy = 0;
         functionPanel.add(createFunctionCard("导入题目", "从文件导入题目", new Color(155, 89, 182), "import"), gbc);
 
-        gbc.gridx = 1;
+        gbc.gridx = 0; gbc.gridy = 1;
         functionPanel.add(createFunctionCard("学生管理", "管理注册学生及考试记录", new Color(231, 76, 60), "student"), gbc);
 
         return functionPanel;
