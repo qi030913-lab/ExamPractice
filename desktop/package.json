@@ -1,0 +1,14 @@
+{
+  "name": "exampractice-electron-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Electron migration shell for the legacy Java exam system",
+  "main": "src/main/main.js",
+  "scripts": {
+    "dev": "node ./scripts/run-electron.js",
+    "start": "node ./scripts/run-electron.js"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0"
+  }
+}

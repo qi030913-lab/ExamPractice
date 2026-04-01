@@ -34,5 +34,10 @@ build/
 ### VS Code ###
 .vscode/
 
+### Node / Electron ###
+node_modules/
+desktop/dist/
+desktop/out/
+
 ### Mac OS ###
 .DS_Store
