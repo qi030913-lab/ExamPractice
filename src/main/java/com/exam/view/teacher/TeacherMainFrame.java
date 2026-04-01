@@ -3,24 +3,18 @@ package com.exam.view.teacher;
 import com.exam.model.User;
 import com.exam.model.Question;
 import com.exam.model.Paper;
-import com.exam.model.enums.QuestionType;
-import com.exam.model.enums.Difficulty;
 import com.exam.service.QuestionService;
 import com.exam.service.PaperService;
 import com.exam.util.UIUtil;
 import com.exam.util.IconUtil;
-import com.exam.util.QuestionImportUtil;
 // import com.exam.view.LoginFrame; // 已删除,使用TeacherLoginFrame
 import com.exam.view.teacher.ui.components.*;
-import com.exam.view.teacher.manager.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.io.File;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -48,12 +42,7 @@ public class TeacherMainFrame extends JFrame {
     private TeacherPaperPanel paperPanel;
     private TeacherImportPanel importPanel;
     private TeacherStudentPanel studentPanel;
-    private TeacherNetworkPanel networkPanel;
-    
-    // 题库管理相关变量（废弃，已迁移到TeacherQuestionPanel）
-    private JTable questionTable;
-    private DefaultTableModel tableModel;
-    private String currentSubject = "全部";
+  
 
     public TeacherMainFrame(User teacher) {
         this.teacher = teacher;
@@ -327,7 +316,6 @@ public class TeacherMainFrame extends JFrame {
                 {"paper", "试卷管理"},
                 {"import", "导入题目"},
                 {"student", "学生管理"},
-                {"network", "网络通信"}
         };
 
         for (int i = 0; i < menuConfig.length; i++) {
@@ -396,8 +384,6 @@ public class TeacherMainFrame extends JFrame {
                 return IconUtil.createUploadIcon(color, size);
             case "student":
                 return IconUtil.createUserIcon(color, size);
-            case "network":
-                return IconUtil.createNetworkIcon(color, size);
             default:
                 return IconUtil.createCircleIcon(color, size);
         }
@@ -436,7 +422,7 @@ public class TeacherMainFrame extends JFrame {
         currentView = view;
 
         // 更新所有按钮的状态
-        String[] views = {"home", "question", "paper", "import", "student", "network"};
+        String[] views = {"home", "question", "paper", "import", "student"};
         for (int i = 0; i < menuButtons.size(); i++) {
             JButton button = menuButtons.get(i);
             boolean isActive = i == getViewIndex(view);
@@ -532,12 +518,6 @@ public class TeacherMainFrame extends JFrame {
                 }
                 mainContentPanel.add(studentPanel, BorderLayout.CENTER);
                 break;
-            case "network":
-                if (networkPanel == null) {
-                    networkPanel = new TeacherNetworkPanel();
-                }
-                mainContentPanel.add(networkPanel, BorderLayout.CENTER);
-                break;
             default:
                 if (homePanel == null) {
                     homePanel = new TeacherHomePanel(this, teacher);
@@ -556,7 +536,6 @@ public class TeacherMainFrame extends JFrame {
             case "paper": return 2;
             case "import": return 3;
             case "student": return 4;
-            case "network": return 5;
             default: return -1;
         }
     }

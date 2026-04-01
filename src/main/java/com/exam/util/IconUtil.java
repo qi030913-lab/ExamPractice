@@ -2,15 +2,14 @@ package com.exam.util;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.geom.*;
 
 /**
- * 图标工具类 - 提供美观的矢量图标
+ * 鍥炬爣宸ュ叿绫?- 鎻愪緵缇庤鐨勭煝閲忓浘鏍?
  */
 public class IconUtil {
     
     /**
-     * 创建主页图标
+     * 鍒涘缓涓婚〉鍥炬爣
      */
     public static Icon createHomeIcon(Color color, int size) {
         return new Icon() {
@@ -20,12 +19,12 @@ public class IconUtil {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(color);
                 
-                // 绘制房子
+                // 缁樺埗鎴垮瓙
                 int[] xPoints = {x + size/2, x + size, x + size, x, x};
                 int[] yPoints = {y + 2, y + size/3, y + size, y + size, y + size/3};
                 g2d.fillPolygon(xPoints, yPoints, 5);
                 
-                // 绘制门
+                // 缁樺埗闂?
                 g2d.setColor(Color.WHITE);
                 g2d.fillRect(x + size/3, y + size*2/3, size/3, size/3);
                 
@@ -41,7 +40,7 @@ public class IconUtil {
     }
     
     /**
-     * 创建文档/试卷图标
+     * 鍒涘缓鏂囨。/璇曞嵎鍥炬爣
      */
     public static Icon createDocumentIcon(Color color, int size) {
         return new Icon() {
@@ -51,10 +50,10 @@ public class IconUtil {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(color);
                 
-                // 绘制文档外框
+                // 缁樺埗鏂囨。澶栨
                 g2d.fillRoundRect(x + 2, y, size - 4, size, 3, 3);
                 
-                // 绘制文档线条
+                // 缁樺埗鏂囨。绾挎潯
                 g2d.setColor(Color.WHITE);
                 g2d.setStroke(new BasicStroke(1.5f));
                 for (int i = 1; i <= 3; i++) {
@@ -74,7 +73,7 @@ public class IconUtil {
     }
     
     /**
-     * 创建图表/成绩图标
+     * 鍒涘缓鍥捐〃/鎴愮哗鍥炬爣
      */
     public static Icon createChartIcon(Color color, int size) {
         return new Icon() {
@@ -84,7 +83,7 @@ public class IconUtil {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(color);
                 
-                // 绘制柱状图
+                // 缁樺埗鏌辩姸鍥?
                 int barWidth = size / 5;
                 int[] heights = {size*2/3, size*4/5, size/2, size};
                 for (int i = 0; i < 4; i++) {
@@ -105,7 +104,7 @@ public class IconUtil {
     }
     
     /**
-     * 创建奖杯/成就图标
+     * 鍒涘缓濂栨澂/鎴愬氨鍥炬爣
      */
     public static Icon createTrophyIcon(Color color, int size) {
         return new Icon() {
@@ -115,21 +114,21 @@ public class IconUtil {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(color);
                 
-                // 绘制奖杯杯身
+                // 缁樺埗濂栨澂鏉韩
                 int cupWidth = size * 2 / 3;
                 int cupHeight = size * 2 / 3;
                 int cupX = x + (size - cupWidth) / 2;
                 int cupY = y + 2;
                 g2d.fillRoundRect(cupX, cupY, cupWidth, cupHeight, 5, 5);
                 
-                // 绘制奖杯把手（左）
+                // 缁樺埗濂栨澂鎶婃墜锛堝乏锛?
                 g2d.setStroke(new BasicStroke(2f));
                 g2d.drawArc(x, cupY + 5, size/4, size/3, 270, 180);
                 
-                // 绘制奖杯把手（右）
+                // 缁樺埗濂栨澂鎶婃墜锛堝彸锛?
                 g2d.drawArc(x + size*3/4, cupY + 5, size/4, size/3, 90, 180);
                 
-                // 绘制奖杯底座
+                // 缁樺埗濂栨澂搴曞骇
                 int baseWidth = size * 3 / 4;
                 int baseHeight = size / 5;
                 g2d.fillRect(x + (size - baseWidth) / 2, y + size - baseHeight, baseWidth, baseHeight);
@@ -146,7 +145,7 @@ public class IconUtil {
     }
     
     /**
-     * 创建圆形图标（用于统计卡片）
+     * 鍒涘缓鍦嗗舰鍥炬爣锛堢敤浜庣粺璁″崱鐗囷級
      */
     public static Icon createCircleIcon(Color color, int size) {
         return new Icon() {
@@ -168,7 +167,7 @@ public class IconUtil {
     }
     
     /**
-     * 创建勾选图标
+     * 鍒涘缓鍕鹃€夊浘鏍?
      */
     public static Icon createCheckIcon(Color color, int size) {
         return new Icon() {
@@ -179,7 +178,7 @@ public class IconUtil {
                 g2d.setColor(color);
                 g2d.setStroke(new BasicStroke(2f));
                 
-                // 绘制勾
+                // 缁樺埗鍕?
                 g2d.drawLine(x + 2, y + size/2, x + size/3, y + size - 3);
                 g2d.drawLine(x + size/3, y + size - 3, x + size - 2, y + 2);
                 
@@ -195,7 +194,7 @@ public class IconUtil {
     }
     
     /**
-     * 创建目标/靶心图标
+     * 鍒涘缓鐩爣/闈跺績鍥炬爣
      */
     public static Icon createTargetIcon(Color color, int size) {
         return new Icon() {
@@ -205,7 +204,7 @@ public class IconUtil {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(color);
                 
-                // 绘制三层圆环
+                // 缁樺埗涓夊眰鍦嗙幆
                 g2d.setStroke(new BasicStroke(1.5f));
                 g2d.drawOval(x + 2, y + 2, size - 4, size - 4);
                 g2d.drawOval(x + size/4, y + size/4, size/2, size/2);
@@ -223,7 +222,7 @@ public class IconUtil {
     }
     
     /**
-     * 创建上传/导入图标
+     * 鍒涘缓涓婁紶/瀵煎叆鍥炬爣
      */
     public static Icon createUploadIcon(Color color, int size) {
         return new Icon() {
@@ -234,22 +233,22 @@ public class IconUtil {
                 g2d.setColor(color);
                 g2d.setStroke(new BasicStroke(2f));
                 
-                // 绘制上箭头
+                // 缁樺埗涓婄澶?
                 int arrowWidth = size / 2;
                 int arrowHeight = size * 2 / 3;
                 int centerX = x + size / 2;
                 int arrowY = y + 2;
                 
-                // 箭头竖线
+                // 绠ご绔栫嚎
                 g2d.drawLine(centerX, arrowY, centerX, arrowY + arrowHeight);
                 
-                // 箭头左侧
+                // 绠ご宸︿晶
                 g2d.drawLine(centerX, arrowY, centerX - arrowWidth/2, arrowY + arrowWidth/2);
                 
-                // 箭头右侧
+                // 绠ご鍙充晶
                 g2d.drawLine(centerX, arrowY, centerX + arrowWidth/2, arrowY + arrowWidth/2);
                 
-                // 绘制底部横线
+                // 缁樺埗搴曢儴妯嚎
                 g2d.drawLine(x + 2, y + size - 2, x + size - 2, y + size - 2);
                 
                 g2d.dispose();
@@ -264,7 +263,7 @@ public class IconUtil {
     }
     
     /**
-     * 创建上升趋势图标
+     * 鍒涘缓涓婂崌瓒嬪娍鍥炬爣
      */
     public static Icon createTrendUpIcon(Color color, int size) {
         return new Icon() {
@@ -275,12 +274,12 @@ public class IconUtil {
                 g2d.setColor(color);
                 g2d.setStroke(new BasicStroke(2f));
                 
-                // 绘制上升折线
+                // 缁樺埗涓婂崌鎶樼嚎
                 g2d.drawLine(x + 2, y + size - 2, x + size/3, y + size*2/3);
                 g2d.drawLine(x + size/3, y + size*2/3, x + size*2/3, y + size/3);
                 g2d.drawLine(x + size*2/3, y + size/3, x + size - 2, y + 2);
                 
-                // 绘制箭头
+                // 缁樺埗绠ご
                 g2d.drawLine(x + size - 2, y + 2, x + size - 6, y + 2);
                 g2d.drawLine(x + size - 2, y + 2, x + size - 2, y + 6);
                 
@@ -296,7 +295,7 @@ public class IconUtil {
     }
     
     /**
-     * 创建用户图标
+     * 鍒涘缓鐢ㄦ埛鍥炬爣
      */
     public static Icon createUserIcon(Color color, int size) {
         return new Icon() {
@@ -306,63 +305,18 @@ public class IconUtil {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(color);
                 
-                // 绘制用户头像（圆形）
+                // 缁樺埗鐢ㄦ埛澶村儚锛堝渾褰級
                 int headSize = size / 2;
                 int headX = x + (size - headSize) / 2;
                 int headY = y + 2;
                 g2d.fillOval(headX, headY, headSize, headSize);
                 
-                // 绘制用户身体（矩形）- 调整位置使头像和身体之间距离更小
+                // 缁樺埗鐢ㄦ埛韬綋锛堢煩褰級- 璋冩暣浣嶇疆浣垮ご鍍忓拰韬綋涔嬮棿璺濈鏇村皬
                 int bodyWidth = size * 2 / 3;
                 int bodyHeight = size / 2;
                 int bodyX = x + (size - bodyWidth) / 2;
-                int bodyY = y + headY + headSize - 10; // 减小头像和身体之间的间距
+                int bodyY = y + headY + headSize - 10; // 鍑忓皬澶村儚鍜岃韩浣撲箣闂寸殑闂磋窛
                 g2d.fillRect(bodyX, bodyY, bodyWidth, bodyHeight);
-                
-                g2d.dispose();
-            }
-            
-            @Override
-            public int getIconWidth() { return size; }
-            
-            @Override
-            public int getIconHeight() { return size; }
-        };
-    }
-    
-    /**
-     * 创建网络图标
-     */
-    public static Icon createNetworkIcon(Color color, int size) {
-        return new Icon() {
-            @Override
-            public void paintIcon(Component c, Graphics g, int x, int y) {
-                Graphics2D g2d = (Graphics2D) g.create();
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(color);
-                g2d.setStroke(new BasicStroke(2f));
-                
-                // 绘制中心节点
-                int centerX = x + size / 2;
-                int centerY = y + size / 2;
-                int nodeSize = size / 5;
-                g2d.fillOval(centerX - nodeSize/2, centerY - nodeSize/2, nodeSize, nodeSize);
-                
-                // 绘制四个周边节点及连线
-                int radius = size / 3;
-                int[][] positions = {
-                    {centerX, centerY - radius},           // 上
-                    {centerX + radius, centerY},           // 右
-                    {centerX, centerY + radius},           // 下
-                    {centerX - radius, centerY}            // 左
-                };
-                
-                for (int[] pos : positions) {
-                    // 绘制连线
-                    g2d.drawLine(centerX, centerY, pos[0], pos[1]);
-                    // 绘制节点
-                    g2d.fillOval(pos[0] - nodeSize/2, pos[1] - nodeSize/2, nodeSize, nodeSize);
-                }
                 
                 g2d.dispose();
             }

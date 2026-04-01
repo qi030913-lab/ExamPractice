@@ -5,7 +5,6 @@ import com.exam.model.User;
 import com.exam.model.enums.UserRole;
 import com.exam.service.UserService;
 import com.exam.util.UIUtil;
-import com.exam.view.RoleSelectionFrame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +13,6 @@ import javax.swing.border.AbstractBorder;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.geom.RoundRectangle2D;
 
 /**
  * 学生登录注册界面

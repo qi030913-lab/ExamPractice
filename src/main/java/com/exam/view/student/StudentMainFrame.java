@@ -1,13 +1,10 @@
 package com.exam.view.student;
 
 import com.exam.model.User;
-import com.exam.service.ExamService;
-import com.exam.service.PaperService;
 import com.exam.util.UIUtil;
 import com.exam.util.IconUtil;
 // import com.exam.view.LoginFrame; // 已删除,使用StudentLoginFrame
 import com.exam.view.student.ui.components.StudentExamPanel;
-import com.exam.view.student.ui.components.StudentNetworkPanel;
 import com.exam.view.student.ui.components.StudentScorePanel;
 import com.exam.view.student.ui.components.StudentAchievementPanel;
 import org.slf4j.Logger;
@@ -43,9 +40,6 @@ public class StudentMainFrame extends JFrame {
     // 添加考试面板的引用，用于刷新
     private StudentExamPanel examPanel;
     
-    // 保持网络通信面板的引用，避免切换页面时断开连接
-    private StudentNetworkPanel networkPanel;
-    
     // 添加定时器用于定期刷新试卷列表
     private javax.swing.Timer refreshTimer;
     
@@ -73,10 +67,6 @@ public class StudentMainFrame extends JFrame {
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
                 stopAutoRefreshTimer();
-                // 关闭程序时断开网络连接
-                if (networkPanel != null) {
-                    networkPanel.disconnect();
-                }
                 dispose();
             }
         });
@@ -330,8 +320,7 @@ public class StudentMainFrame extends JFrame {
             {"home", "我的主页"},
             {"exam", "考试题库"},
             {"score", "成绩查询"},
-            {"achievement", "我的成就"},
-            {"network", "网络通信"}
+            {"achievement", "我的成就"}
         };
 
         for (int i = 0; i < menuConfig.length; i++) {
@@ -395,8 +384,6 @@ public class StudentMainFrame extends JFrame {
                 return IconUtil.createChartIcon(color, size);
             case "achievement":
                 return IconUtil.createTrophyIcon(color, size);
-            case "network":
-                return IconUtil.createNetworkIcon(color, size);
             default:
                 return IconUtil.createCircleIcon(color, size);
         }
@@ -435,7 +422,7 @@ public class StudentMainFrame extends JFrame {
         currentView = view;
 
         // 更新所有按钮的状态
-        String[] views = {"home", "exam", "score", "achievement", "network"};
+        String[] views = {"home", "exam", "score", "achievement"};
         for (int i = 0; i < menuButtons.size(); i++) {
             JButton button = menuButtons.get(i);
             boolean isActive = i == getViewIndex(view);
@@ -462,13 +449,6 @@ public class StudentMainFrame extends JFrame {
             case "achievement":
                 mainContentPanel.add(new StudentAchievementPanel(student), BorderLayout.CENTER);
                 break;
-            case "network":
-                // 复用网络通信面板实例，避免切换页面时断开连接
-                if (networkPanel == null) {
-                    networkPanel = new StudentNetworkPanel(student);
-                }
-                mainContentPanel.add(networkPanel, BorderLayout.CENTER);
-                break;
             default:
                 mainContentPanel.add(createHomePanel(), BorderLayout.CENTER);
         }
@@ -483,7 +463,6 @@ public class StudentMainFrame extends JFrame {
             case "exam": return 1;
             case "score": return 2;
             case "achievement": return 3;
-            case "network": return 4;
             default: return -1;
         }
     }
@@ -593,10 +572,6 @@ public class StudentMainFrame extends JFrame {
     
     private void logout() {
         if (UIUtil.showConfirm(this, "确定要退出登录吗?")) {
-            // 退出登录时断开网络连接
-            if (networkPanel != null) {
-                networkPanel.disconnect();
-            }
             dispose();
             new StudentLoginFrame().setVisible(true);
         }
