@@ -613,6 +613,39 @@ ipcMain.handle("desktop:bridge-overview", async (_event, payload) => {
   const command = payload.role === "TEACHER" ? "teacher-overview" : "student-overview";
   return runBridgeCommand([command, String(payload.userId)]);
 });
+ipcMain.handle("desktop:bridge-student-papers", async (_event, payload) => {
+  return runBridgeCommand(["student-papers", String(payload.userId)]);
+});
+ipcMain.handle("desktop:bridge-student-records", async (_event, payload) => {
+  return runBridgeCommand(["student-records", String(payload.userId)]);
+});
+ipcMain.handle("desktop:bridge-paper-detail", async (_event, payload) => {
+  return runBridgeCommand(["paper-detail", String(payload.paperId)]);
+});
+ipcMain.handle("desktop:bridge-record-detail", async (_event, payload) => {
+  return runBridgeCommand([
+    "record-detail",
+    String(payload.userId),
+    String(payload.recordId)
+  ]);
+});
+ipcMain.handle("desktop:bridge-start-exam", async (_event, payload) => {
+  return runBridgeCommand([
+    "start-exam",
+    String(payload.userId),
+    String(payload.paperId)
+  ]);
+});
+ipcMain.handle("desktop:bridge-submit-exam", async (_event, payload) => {
+  const args = ["submit-exam", String(payload.recordId)];
+  const answers = payload.answers || {};
+
+  for (const [questionId, answer] of Object.entries(answers)) {
+    args.push(String(questionId), String(answer ?? ""));
+  }
+
+  return runBridgeCommand(args);
+});
 ipcMain.handle("desktop:compile-java", async () => startCompileTask());
 ipcMain.handle("desktop:build-legacy-artifacts", async () => startPackageTask());
 ipcMain.handle("desktop:pick-legacy-artifact", async () => pickLegacyArtifact());

@@ -10,21 +10,21 @@
     <div class="app-shell">
       <header class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">Electron 迁移 / 第 1 阶段</p>
+          <p class="eyebrow">Electron 迁移 / 第 2 阶段</p>
           <h1>在线考试系统桌面工作台</h1>
           <p class="hero-text">
-            这是新的 Electron 桌面入口层。当前 Swing 系统仍然保留在底层，
-            我们会把桌面端职责逐步迁移到 Electron。
+            当前 Electron 已不再只是启动器。我们正在把登录、概览、试卷列表和学生考试流程
+            一步步从 Swing 迁移到桌面端页面。
           </p>
         </div>
         <div class="hero-panel">
           <div class="hero-metric">
             <span class="metric-label">当前模式</span>
-            <strong>Electron 外壳 + 旧版 Java 运行时</strong>
+            <strong>Electron 桌面外壳 + Java 业务桥接层</strong>
           </div>
           <div class="hero-metric">
-            <span class="metric-label">下一目标</span>
-            <strong>用 renderer 页面替换 Swing 界面</strong>
+            <span class="metric-label">本轮目标</span>
+            <strong>在 Electron 中落地学生考试中心</strong>
           </div>
           <button id="refresh-status" class="button button-primary">刷新状态</button>
         </div>
@@ -146,7 +146,7 @@
           <ol class="phase-list">
             <li><strong>现在：</strong>Electron 已成为新的桌面入口和进程管理器。</li>
             <li><strong>下一步：</strong>把 Java 业务能力抽成可调用接口。</li>
-            <li><strong>后续：</strong>把登录、首页和考试流程改写成 renderer 页面。</li>
+            <li><strong>当前推进：</strong>登录、概览、试卷列表和学生考试流程正在迁移到 renderer 页面。</li>
             <li><strong>最终状态：</strong>移除 Swing，打包为单一 Electron 桌面应用。</li>
           </ol>
         </section>
@@ -173,6 +173,56 @@
             <div class="list-panel">
               <h3 id="dashboard-secondary-title">副列表</h3>
               <div id="dashboard-secondary-list" class="empty-state">登录后可加载数据。</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-wide">
+          <div class="panel-head">
+            <h2>学生考试中心</h2>
+            <p>在 Electron 中查看试卷、进入考试并完成交卷。</p>
+          </div>
+          <div class="section-label-row">
+            <div>
+              <h3 class="section-title">考试工作区</h3>
+              <p class="section-copy">登录学生账号后，这里会接管原本由 Swing 打开的考试入口。</p>
+            </div>
+            <button id="reload-student-papers" class="button button-secondary">刷新试卷</button>
+          </div>
+          <div id="student-exam-summary" class="status-grid"></div>
+          <div class="exam-center-grid">
+            <div class="exam-paper-panel">
+              <h3>可考试卷</h3>
+              <div id="student-paper-list" class="empty-state">登录学生账号后可查看试卷列表。</div>
+            </div>
+            <div class="exam-workspace-panel">
+              <h3>考试详情与答题区</h3>
+              <div id="student-exam-workspace" class="empty-state">请选择一张试卷查看详情。</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-wide">
+          <div class="panel-head">
+            <h2>学生成绩中心</h2>
+            <p>在 Electron 中查看历史成绩、答题详情和判分结果。</p>
+          </div>
+          <div class="section-label-row">
+            <div>
+              <h3 class="section-title">成绩工作区</h3>
+              <p class="section-copy">登录学生账号后，这里会逐步替代 Swing 里的成绩查询和详情查看页面。</p>
+            </div>
+            <button id="reload-student-records" class="button button-secondary">刷新成绩</button>
+          </div>
+          <div id="student-record-summary" class="status-grid"></div>
+          <div class="exam-center-grid">
+            <div class="exam-paper-panel">
+              <h3>历史记录</h3>
+              <div id="student-record-list" class="empty-state">登录学生账号后可查看历史成绩记录。</div>
+            </div>
+            <div class="exam-workspace-panel">
+              <h3>成绩详情与答题分析</h3>
+              <div id="student-record-workspace" class="empty-state">请选择一条成绩记录查看详情。</div>
             </div>
           </div>
         </section>
