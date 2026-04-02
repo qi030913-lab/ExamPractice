@@ -4,7 +4,7 @@
       <div class="page-copy">
         <p class="page-tag">在线考试</p>
         <h2>{{ paper?.paperName || "考试作答" }}</h2>
-        <p>这一页接管桌面端在线考试流程，支持倒计时、切题、本地草稿保存和提交试卷。</p>
+        <p>这一页接管桌面端在线考试流程，支持倒计时、断点恢复、本地草稿保存和提交试卷。</p>
       </div>
       <RouterLink class="text-link" to="/student/papers">返回考试中心</RouterLink>
     </div>
@@ -40,7 +40,7 @@
           <div class="section-head">
             <div>
               <h3>考试信息</h3>
-              <p class="section-copy">你可以随时切题，答案会先保存在当前页面和本地草稿中。</p>
+              <p class="section-copy">你可以随时切题。未提交前，答案会先保存在当前页面和本地草稿中。</p>
             </div>
           </div>
           <div class="detail-list">
@@ -175,10 +175,10 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { RouterLink, useRoute, useRouter } from "vue-router";
+import { RouterLink, onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import StatusBanner from "@/components/StatusBanner.vue";
 import { useSessionStore } from "@/stores/session";
-import { getStudentExamSession, startStudentExam, submitStudentExam } from "@/services/student-api";
+import { startStudentExam, submitStudentExam } from "@/services/student-api";
 
 const route = useRoute();
 const router = useRouter();
@@ -195,6 +195,7 @@ const remainingSeconds = ref(0);
 const deadlineTime = ref(null);
 const errorMessage = ref("");
 const successMessage = ref("");
+const examSubmitted = ref(false);
 let countdownTimer = null;
 let beforeUnloadHandler = null;
 
@@ -235,22 +236,23 @@ async function loadExam() {
       throw new Error(startResult?.message || "开始考试失败");
     }
 
-    const sessionResult = await getStudentExamSession(
-      sessionStore.user.userId,
-      startResult.data?.record?.recordId
-    );
-    if (!sessionResult?.success) {
-      throw new Error(sessionResult?.message || "加载考试作答页失败");
-    }
-
-    record.value = sessionResult.data?.record || null;
-    paper.value = sessionResult.data?.paper || null;
-    questions.value = sessionResult.data?.questions || [];
-    remainingSeconds.value = Number(sessionResult.data?.remainingSeconds || 0);
-    deadlineTime.value = sessionResult.data?.deadlineTime || null;
+    record.value = startResult.data?.record || null;
+    paper.value = startResult.data?.paper || null;
+    questions.value = startResult.data?.questions || [];
+    remainingSeconds.value = Number(startResult.data?.remainingSeconds || 0);
+    deadlineTime.value = startResult.data?.deadlineTime || null;
     answers.value = {};
     currentQuestionIndex.value = 0;
-    restoreDraft();
+    examSubmitted.value = false;
+
+    const restoredDraft = restoreDraft();
+    if (startResult.data?.resumed && restoredDraft) {
+      successMessage.value = "已恢复进行中的考试，并载入本地草稿。";
+    } else if (startResult.data?.resumed) {
+      successMessage.value = "已恢复进行中的考试，可以继续作答。";
+    } else if (restoredDraft) {
+      successMessage.value = "已载入上次保存在本机的答题草稿。";
+    }
 
     startCountdown();
     bindBeforeUnload();
@@ -288,13 +290,13 @@ function persistDraft() {
 
 function restoreDraft() {
   if (!draftStorageKey.value) {
-    return;
+    return false;
   }
 
   try {
     const raw = window.localStorage.getItem(draftStorageKey.value);
     if (!raw) {
-      return;
+      return false;
     }
 
     const parsed = JSON.parse(raw);
@@ -302,9 +304,10 @@ function restoreDraft() {
     currentQuestionIndex.value = Number.isInteger(parsed?.currentQuestionIndex)
       ? Math.min(Math.max(parsed.currentQuestionIndex, 0), Math.max(questions.value.length - 1, 0))
       : 0;
-    successMessage.value = "已恢复本地草稿。";
+    return true;
   } catch (_error) {
     window.localStorage.removeItem(draftStorageKey.value);
+    return false;
   }
 }
 
@@ -318,7 +321,7 @@ function clearDraft() {
 function bindBeforeUnload() {
   unbindBeforeUnload();
   beforeUnloadHandler = (event) => {
-    if (!record.value?.recordId || submitting.value) {
+    if (!shouldWarnBeforeLeave()) {
       return;
     }
     event.preventDefault();
@@ -333,6 +336,10 @@ function unbindBeforeUnload() {
   }
   window.removeEventListener("beforeunload", beforeUnloadHandler);
   beforeUnloadHandler = null;
+}
+
+function shouldWarnBeforeLeave() {
+  return Boolean(record.value?.recordId) && !submitting.value && !examSubmitted.value;
 }
 
 function getAnswer(questionId) {
@@ -419,14 +426,26 @@ async function handleSubmit(isAutoSubmit = false) {
     stopCountdown();
     clearDraft();
     unbindBeforeUnload();
-    successMessage.value = result.message || "考试提交成功";
+    examSubmitted.value = true;
+    persistSubmitResult(record.value.recordId, result.data?.result);
     await sessionStore.loadWorkbench();
-    await router.replace(`/student/records/${record.value.recordId}`);
+    await router.replace(`/student/records/${record.value.recordId}/result`);
   } catch (error) {
     errorMessage.value = error?.response?.data?.message || error?.message || "提交试卷失败";
   } finally {
     submitting.value = false;
   }
+}
+
+function persistSubmitResult(recordId, result) {
+  if (!recordId || !result) {
+    return;
+  }
+
+  window.localStorage.setItem(
+    `exampractice.desktop.submit-result.${recordId}`,
+    JSON.stringify(result)
+  );
 }
 
 function formatCountdown(value) {
@@ -471,6 +490,13 @@ function formatQuestionType(type) {
 }
 
 onMounted(loadExam);
+onBeforeRouteLeave(() => {
+  if (!shouldWarnBeforeLeave()) {
+    return true;
+  }
+
+  return window.confirm("考试尚未提交。离开后你仍可稍后继续作答，确认现在离开吗？");
+});
 onBeforeUnmount(() => {
   stopCountdown();
   unbindBeforeUnload();

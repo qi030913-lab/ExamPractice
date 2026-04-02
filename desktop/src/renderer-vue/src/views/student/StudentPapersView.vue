@@ -3,7 +3,7 @@
     <div class="page-copy">
       <p class="page-tag">考试中心</p>
       <h2>可参加试卷</h2>
-      <p>这里展示学生当前可参加的试卷，并直接提供开始考试或继续作答的入口。</p>
+      <p>这里展示学生当前可参加的试卷，并直接提供开始考试、断点恢复和查看最近记录的入口。</p>
     </div>
 
     <StatusBanner v-if="errorMessage" tone="danger">
@@ -39,7 +39,9 @@
         <article v-for="paper in papers" :key="paper.paperId" class="record-card">
           <div class="record-card-head">
             <strong>{{ paper.paperName }}</strong>
-            <span class="pill pill-success">已发布</span>
+            <span :class="['pill', paper.hasInProgressRecord ? 'pill-accent' : 'pill-success']">
+              {{ paper.hasInProgressRecord ? "进行中" : "已发布" }}
+            </span>
           </div>
           <div class="record-card-meta">
             <span>科目：{{ paper.subject || "-" }}</span>
@@ -53,21 +55,21 @@
           <div v-if="paper.latestRecord" class="detail-tips">
             <p>
               最近记录：{{ formatStatus(paper.latestRecord.status) }}
-              / 成绩 {{ formatNullableScore(paper.latestRecord.score) }}
+              / {{ paper.latestRecord.resumeAvailable ? "可继续作答" : `成绩 ${formatNullableScore(paper.latestRecord.score)}` }}
               / {{ formatDateTime(paper.latestRecord.submitTime || paper.latestRecord.startTime) }}
             </p>
           </div>
 
           <div class="action-row">
             <RouterLink class="ghost-link-button" :to="`/student/papers/${paper.paperId}/exam`">
-              {{ paper.latestRecord?.status === "IN_PROGRESS" ? "继续作答" : "开始考试" }}
+              {{ paper.hasInProgressRecord ? "继续作答" : "开始考试" }}
             </RouterLink>
             <RouterLink
               v-if="paper.latestRecord?.recordId"
               class="ghost-link-button"
-              :to="`/student/records/${paper.latestRecord.recordId}`"
+              :to="paper.latestRecord.resumeAvailable ? `/student/papers/${paper.paperId}/exam` : `/student/records/${paper.latestRecord.recordId}`"
             >
-              查看最近记录
+              {{ paper.latestRecord.resumeAvailable ? "重新进入进行中考试" : "查看最近记录" }}
             </RouterLink>
           </div>
         </article>

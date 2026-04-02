@@ -3,7 +3,7 @@
     <div class="page-copy">
       <p class="page-tag">成绩中心</p>
       <h2>我的考试记录</h2>
-      <p>这里承接原来学生端成绩与记录查看场景，方便在桌面端快速查看历次考试结果。</p>
+      <p>这里承接原来学生端成绩与记录查看场景，支持从记录列表继续进入进行中的考试，或查看已提交结果。</p>
     </div>
 
     <StatusBanner v-if="errorMessage" tone="danger">
@@ -29,22 +29,21 @@
       <div class="section-head">
         <div>
           <h3>记录列表</h3>
-          <p class="section-copy">点击任意一条记录，查看该次考试结果与逐题作答详情。</p>
+          <p class="section-copy">点击对应操作即可恢复作答、查看结果页或进入详细复盘。</p>
         </div>
         <RouterLink class="text-link" to="/student/papers">返回考试中心</RouterLink>
       </div>
 
       <div v-if="loading" class="empty-copy">正在加载考试记录...</div>
       <div v-else-if="records.length" class="record-list">
-        <RouterLink
+        <article
           v-for="record in records"
           :key="record.recordId"
           class="record-card"
-          :to="`/student/records/${record.recordId}`"
         >
           <div class="record-card-head">
             <strong>{{ record.paperName || "未命名试卷" }}</strong>
-            <span :class="['pill', isSubmitted(record.status) ? 'pill-success' : 'pill-muted']">
+            <span :class="['pill', record.resumeAvailable ? 'pill-accent' : isSubmitted(record.status) ? 'pill-success' : 'pill-muted']">
               {{ formatStatus(record.status) }}
             </span>
           </div>
@@ -53,10 +52,38 @@
             <span>总分：{{ record.totalScore ?? 0 }}</span>
             <span>正确：{{ record.correctCount ?? 0 }}</span>
             <span>错误：{{ record.wrongCount ?? 0 }}</span>
+            <span>用时：{{ formatDuration(record.durationSeconds) }}</span>
             <span>开始：{{ formatDateTime(record.startTime) }}</span>
             <span>提交：{{ formatDateTime(record.submitTime) }}</span>
           </div>
-        </RouterLink>
+
+          <div v-if="record.resumeAvailable" class="detail-tips">
+            <p>这场考试仍在进行中，你可以直接恢复作答，完成后再查看正式结果。</p>
+          </div>
+
+          <div class="action-row">
+            <RouterLink
+              v-if="record.resumeAvailable"
+              class="ghost-link-button"
+              :to="`/student/papers/${record.paperId}/exam`"
+            >
+              继续作答
+            </RouterLink>
+            <RouterLink
+              v-else
+              class="ghost-link-button"
+              :to="`/student/records/${record.recordId}`"
+            >
+              查看记录详情
+            </RouterLink>
+            <RouterLink
+              class="ghost-link-button"
+              :to="record.resumeAvailable ? `/student/records/${record.recordId}` : `/student/records/${record.recordId}/result`"
+            >
+              {{ record.resumeAvailable ? "查看当前记录" : "查看结果页" }}
+            </RouterLink>
+          </div>
+        </article>
       </div>
       <p v-else class="empty-copy">你还没有考试记录。</p>
     </article>
@@ -100,7 +127,8 @@ async function loadRecords() {
 }
 
 function formatScore(value) {
-  return Number.isFinite(value) ? Number(value).toFixed(1) : "0.0";
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue.toFixed(1) : "0.0";
 }
 
 function formatNullableScore(value) {
@@ -132,6 +160,20 @@ function formatDateTime(value) {
   }
 
   return date.toLocaleString("zh-CN", { hour12: false });
+}
+
+function formatDuration(value) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return "-";
+  }
+
+  const minutes = Math.floor(numericValue / 60);
+  const seconds = numericValue % 60;
+  if (minutes <= 0) {
+    return `${seconds} 秒`;
+  }
+  return `${minutes} 分 ${seconds} 秒`;
 }
 
 onMounted(loadRecords);

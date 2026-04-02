@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +97,7 @@ public class WorkbenchController {
                 .map(this::toStudentPaperCard)
                 .collect(Collectors.toList()));
         payload.put("recentRecords", records.stream()
+                .sorted((left, right) -> compareRecordOrder(right, left))
                 .limit(DEFAULT_LIST_LIMIT)
                 .map(this::toStudentRecordCard)
                 .collect(Collectors.toList()));
@@ -150,8 +153,26 @@ public class WorkbenchController {
         item.put("paperName", record.getPaper() != null ? record.getPaper().getPaperName() : null);
         item.put("status", record.getStatus() != null ? record.getStatus().name() : null);
         item.put("score", record.getScore());
+        item.put("startTime", record.getStartTime());
         item.put("submitTime", record.getSubmitTime());
+        item.put("durationSeconds", calculateDurationSeconds(record));
+        item.put("resumeAvailable", record.getStatus() == ExamStatus.IN_PROGRESS);
         return item;
+    }
+
+    private int compareRecordOrder(ExamRecord left, ExamRecord right) {
+        Integer leftId = left.getRecordId();
+        Integer rightId = right.getRecordId();
+        if (leftId == null && rightId == null) {
+            return 0;
+        }
+        if (leftId == null) {
+            return -1;
+        }
+        if (rightId == null) {
+            return 1;
+        }
+        return Integer.compare(leftId, rightId);
     }
 
     private int resolveQuestionCount(Paper paper) {
@@ -160,5 +181,18 @@ public class WorkbenchController {
             return optimizedCount;
         }
         return paper.getQuestions() == null ? 0 : paper.getQuestions().size();
+    }
+
+    private long calculateDurationSeconds(ExamRecord record) {
+        if (record.getStartTime() == null) {
+            return 0;
+        }
+
+        LocalDateTime endTime = record.getSubmitTime() != null ? record.getSubmitTime() : record.getEndTime();
+        if (endTime == null) {
+            return 0;
+        }
+
+        return Math.max(0, Duration.between(record.getStartTime(), endTime).getSeconds());
     }
 }

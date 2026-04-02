@@ -95,12 +95,8 @@ public class StudentWorkspaceController {
     ) {
         User student = requireStudent(userId);
         Paper paper = requirePublishedPaper(paperId);
-        List<ExamRecord> records = examService.getStudentExamRecordsOptimized(userId);
-        ExamRecord record = records.stream()
-                .filter(item -> paperId.equals(item.getPaperId()))
-                .filter(item -> item.getStatus() == ExamStatus.IN_PROGRESS)
-                .findFirst()
-                .orElse(null);
+        ExamRecord record = findInProgressRecord(userId, paperId);
+        boolean resumed = record != null;
         if (record == null) {
             record = examService.startExam(userId, paperId);
         }
@@ -110,26 +106,10 @@ public class StudentWorkspaceController {
         payload.put("record", toExamLifecycleRecordItem(record));
         payload.put("paper", toStudentPaperItem(paper, record));
         payload.put("questions", paper.getQuestions().stream().map(this::toQuestionExamItem).collect(Collectors.toList()));
-        return ApiResponse.success("考试开始成功", payload);
-    }
-
-    @GetMapping("/{userId}/records/{recordId}/exam")
-    public ApiResponse<Map<String, Object>> getStudentExamSession(
-            @PathVariable("userId") Integer userId,
-            @PathVariable("recordId") Integer recordId
-    ) {
-        User student = requireStudent(userId);
-        ExamRecord record = requireOwnedRecord(userId, recordId);
-        Paper paper = record.getPaper() != null ? record.getPaper() : paperService.getPaperById(record.getPaperId());
-
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("user", AuthUserResponse.from(student));
-        payload.put("record", toExamLifecycleRecordItem(record));
-        payload.put("paper", toStudentPaperItem(paper, record));
-        payload.put("questions", paper.getQuestions().stream().map(this::toQuestionExamItem).collect(Collectors.toList()));
         payload.put("remainingSeconds", calculateRemainingSeconds(record, paper));
         payload.put("deadlineTime", calculateDeadlineTime(record, paper));
-        return ApiResponse.success("考试作答页加载成功", payload);
+        payload.put("resumed", resumed);
+        return ApiResponse.success(resumed ? "已恢复进行中的考试" : "考试开始成功", payload);
     }
 
     @GetMapping("/{userId}/records")
@@ -193,6 +173,25 @@ public class StudentWorkspaceController {
         return ApiResponse.success("考试记录详情加载成功", payload);
     }
 
+    @GetMapping("/{userId}/records/{recordId}/exam")
+    public ApiResponse<Map<String, Object>> getStudentExamSession(
+            @PathVariable("userId") Integer userId,
+            @PathVariable("recordId") Integer recordId
+    ) {
+        User student = requireStudent(userId);
+        ExamRecord record = requireOwnedRecord(userId, recordId);
+        Paper paper = record.getPaper() != null ? record.getPaper() : paperService.getPaperById(record.getPaperId());
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("user", AuthUserResponse.from(student));
+        payload.put("record", toExamLifecycleRecordItem(record));
+        payload.put("paper", toStudentPaperItem(paper, record));
+        payload.put("questions", paper.getQuestions().stream().map(this::toQuestionExamItem).collect(Collectors.toList()));
+        payload.put("remainingSeconds", calculateRemainingSeconds(record, paper));
+        payload.put("deadlineTime", calculateDeadlineTime(record, paper));
+        return ApiResponse.success("考试作答页加载成功", payload);
+    }
+
     @PostMapping("/{userId}/records/{recordId}/submit")
     public ApiResponse<Map<String, Object>> submitExam(
             @PathVariable("userId") Integer userId,
@@ -221,10 +220,21 @@ public class StudentWorkspaceController {
         Paper paper = submittedRecord.getPaper() != null
                 ? submittedRecord.getPaper()
                 : paperService.getPaperById(submittedRecord.getPaperId());
+        List<AnswerRecord> answerRecords = examService.getAnswerRecords(recordId);
+        long answeredCount = answerRecords.stream()
+                .filter(answer -> answer.getStudentAnswer() != null && !answer.getStudentAnswer().trim().isEmpty())
+                .count();
+        long correctCount = answerRecords.stream()
+                .filter(answer -> Boolean.TRUE.equals(answer.getIsCorrect()))
+                .count();
+        long wrongCount = answerRecords.stream()
+                .filter(answer -> answer.getStudentAnswer() != null && !answer.getStudentAnswer().trim().isEmpty())
+                .filter(answer -> !Boolean.TRUE.equals(answer.getIsCorrect()))
+                .count();
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("user", AuthUserResponse.from(student));
-        payload.put("result", toSubmitResultItem(submittedRecord, paper, score));
+        payload.put("result", toSubmitResultItem(submittedRecord, paper, score, answerRecords.size(), answeredCount, correctCount, wrongCount));
         return ApiResponse.success("考试提交成功", payload);
     }
 
@@ -255,6 +265,15 @@ public class StudentWorkspaceController {
         return record;
     }
 
+    private ExamRecord findInProgressRecord(Integer userId, Integer paperId) {
+        List<ExamRecord> records = examService.getStudentExamRecordsOptimized(userId);
+        return records.stream()
+                .filter(record -> paperId.equals(record.getPaperId()))
+                .filter(record -> record.getStatus() == ExamStatus.IN_PROGRESS)
+                .findFirst()
+                .orElse(null);
+    }
+
     private Map<String, Object> toStudentPaperItem(Paper paper, ExamRecord latestRecord) {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("paperId", paper.getPaperId());
@@ -266,6 +285,7 @@ public class StudentWorkspaceController {
         item.put("description", paper.getDescription());
         item.put("questionCount", resolveQuestionCount(paper));
         item.put("published", Boolean.TRUE.equals(paper.getIsPublished()));
+        item.put("hasInProgressRecord", latestRecord != null && latestRecord.getStatus() == ExamStatus.IN_PROGRESS);
         if (latestRecord != null) {
             item.put("latestRecord", toStudentRecordCard(latestRecord));
         }
@@ -295,6 +315,7 @@ public class StudentWorkspaceController {
         item.put("startTime", record.getStartTime());
         item.put("submitTime", record.getSubmitTime());
         item.put("durationSeconds", calculateDurationSeconds(record));
+        item.put("resumeAvailable", record.getStatus() == ExamStatus.IN_PROGRESS);
         return item;
     }
 
@@ -308,6 +329,7 @@ public class StudentWorkspaceController {
         item.put("submitTime", record.getSubmitTime());
         item.put("startTime", record.getStartTime());
         item.put("durationSeconds", calculateDurationSeconds(record));
+        item.put("resumeAvailable", record.getStatus() == ExamStatus.IN_PROGRESS);
         return item;
     }
 
@@ -333,6 +355,7 @@ public class StudentWorkspaceController {
         item.put("durationSeconds", calculateDurationSeconds(record));
         item.put("correctCount", correctCount);
         item.put("wrongCount", wrongCount);
+        item.put("resumeAvailable", record.getStatus() == ExamStatus.IN_PROGRESS);
         return item;
     }
 
@@ -360,6 +383,7 @@ public class StudentWorkspaceController {
         item.put("answeredCount", answeredCount);
         item.put("correctCount", correctCount);
         item.put("wrongCount", wrongCount);
+        item.put("resumeAvailable", record.getStatus() == ExamStatus.IN_PROGRESS);
         item.put("passed",
                 record.getScore() != null
                         && paper != null
@@ -388,7 +412,15 @@ public class StudentWorkspaceController {
         return item;
     }
 
-    private Map<String, Object> toSubmitResultItem(ExamRecord record, Paper paper, BigDecimal score) {
+    private Map<String, Object> toSubmitResultItem(
+            ExamRecord record,
+            Paper paper,
+            BigDecimal score,
+            int questionCount,
+            long answeredCount,
+            long correctCount,
+            long wrongCount
+    ) {
         boolean passed = false;
         if (score != null && paper.getPassScore() != null) {
             passed = score.compareTo(BigDecimal.valueOf(paper.getPassScore())) >= 0;
@@ -398,12 +430,18 @@ public class StudentWorkspaceController {
         item.put("recordId", record.getRecordId());
         item.put("paperId", record.getPaperId());
         item.put("paperName", paper.getPaperName());
+        item.put("subject", paper.getSubject());
         item.put("score", score);
         item.put("totalScore", paper.getTotalScore());
         item.put("passScore", paper.getPassScore());
         item.put("passed", passed);
         item.put("status", record.getStatus() != null ? record.getStatus().name() : null);
         item.put("submitTime", record.getSubmitTime());
+        item.put("durationSeconds", calculateDurationSeconds(record));
+        item.put("questionCount", questionCount);
+        item.put("answeredCount", answeredCount);
+        item.put("correctCount", correctCount);
+        item.put("wrongCount", wrongCount);
         return item;
     }
 

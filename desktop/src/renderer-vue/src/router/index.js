@@ -15,6 +15,7 @@ import StudentPapersView from "@/views/student/StudentPapersView.vue";
 import StudentRecordsView from "@/views/student/StudentRecordsView.vue";
 import StudentRecordDetailView from "@/views/student/StudentRecordDetailView.vue";
 import StudentExamView from "@/views/student/StudentExamView.vue";
+import StudentExamResultView from "@/views/student/StudentExamResultView.vue";
 
 const routes = [
   {
@@ -94,6 +95,11 @@ const routes = [
         path: "student/records/:recordId",
         name: "student-record-detail",
         component: StudentRecordDetailView
+      },
+      {
+        path: "student/records/:recordId/result",
+        name: "student-submit-result",
+        component: StudentExamResultView
       }
     ]
   }
@@ -124,7 +130,8 @@ router.beforeEach(async (to) => {
     "student-papers",
     "student-exam",
     "student-records",
-    "student-record-detail"
+    "student-record-detail",
+    "student-submit-result"
   ].includes(String(to.name || ""));
 
   if (!requiresAuth) {
@@ -166,7 +173,8 @@ router.beforeEach(async (to) => {
     "student-papers",
     "student-exam",
     "student-records",
-    "student-record-detail"
+    "student-record-detail",
+    "student-submit-result"
   ];
   if (studentRoutes.includes(String(to.name || "")) && !sessionStore.isStudent) {
     return "/teacher";

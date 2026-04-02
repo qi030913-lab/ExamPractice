@@ -12,6 +12,9 @@
     <StatusBanner v-if="errorMessage" tone="danger">
       {{ errorMessage }}
     </StatusBanner>
+    <StatusBanner v-if="submittedNotice" tone="info">
+      试卷已提交成功，下面可以继续查看结果摘要和逐题解析。
+    </StatusBanner>
 
     <div v-if="loading" class="empty-copy">正在加载记录详情...</div>
     <template v-else-if="record">
@@ -51,7 +54,7 @@
             </div>
             <div class="detail-row">
               <span>是否通过</span>
-              <strong>{{ record.passed ? "已通过" : "未通过" }}</strong>
+              <strong>{{ formatPassed(record) }}</strong>
             </div>
             <div class="detail-row">
               <span>总分</span>
@@ -79,9 +82,23 @@
             </div>
           </div>
 
-          <div v-if="record.status === 'IN_PROGRESS'" class="action-row">
-            <RouterLink class="ghost-link-button" :to="`/student/papers/${record.paperId}/exam`">
+          <div class="action-row">
+            <RouterLink
+              v-if="record.resumeAvailable"
+              class="ghost-link-button"
+              :to="`/student/papers/${record.paperId}/exam`"
+            >
               继续作答
+            </RouterLink>
+            <RouterLink class="ghost-link-button" :to="`/student/papers/${record.paperId}/exam`">
+              {{ record.resumeAvailable ? "重新进入考试页" : "再考一次" }}
+            </RouterLink>
+            <RouterLink
+              v-if="!record.resumeAvailable"
+              class="ghost-link-button"
+              :to="`/student/records/${record.recordId}/result`"
+            >
+              查看结果页
             </RouterLink>
           </div>
         </article>
@@ -143,7 +160,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 import StatusBanner from "@/components/StatusBanner.vue";
 import { useSessionStore } from "@/stores/session";
@@ -156,6 +173,7 @@ const loading = ref(false);
 const record = ref(null);
 const answers = ref([]);
 const errorMessage = ref("");
+const submittedNotice = computed(() => route.query.submitted === "1");
 
 async function loadRecordDetail() {
   if (!sessionStore.user?.userId || !route.params.recordId) {
@@ -194,6 +212,13 @@ function formatStatus(status) {
   return statusMap[status] || status || "未知状态";
 }
 
+function formatPassed(currentRecord) {
+  if (currentRecord?.resumeAvailable || currentRecord?.status === "IN_PROGRESS") {
+    return "待提交";
+  }
+  return currentRecord?.passed ? "已通过" : "未通过";
+}
+
 function formatQuestionType(type) {
   const typeMap = {
     SINGLE: "单选题",
@@ -229,13 +254,13 @@ function formatDateTime(value) {
 }
 
 function formatDuration(value) {
-  if (!value || value <= 0) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
     return "-";
   }
 
-  const totalSeconds = Number(value);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
+  const minutes = Math.floor(numericValue / 60);
+  const seconds = numericValue % 60;
   if (minutes <= 0) {
     return `${seconds} 秒`;
   }

@@ -3,9 +3,9 @@
     <div class="workspace-hero">
       <div class="page-copy">
         <p class="page-tag">学生工作台</p>
-        <h2>把考试与成绩入口收口到桌面端</h2>
+        <h2>把考试、恢复作答和成绩复盘收口到桌面端</h2>
         <p>
-          这一层承接原来 Swing 学生首页的主要导航。现在已经能从这里进入考试中心、开始作答、查看记录和复盘成绩。
+          这一层承接原来 Swing 学生首页的主要导航。现在已经能从这里进入考试中心、重新进入进行中的考试、查看记录和复盘成绩。
         </p>
       </div>
       <div class="hero-metrics">
@@ -24,10 +24,26 @@
       </div>
     </div>
 
+    <article v-if="ongoingRecord" class="ongoing-banner">
+      <div>
+        <p class="action-tag">进行中考试</p>
+        <h3>{{ ongoingRecord.paperName || "你有一场未提交的考试" }}</h3>
+        <p>系统检测到你有一场进行中的考试。你可以从这里直接恢复作答，无需重新开始。</p>
+      </div>
+      <div class="action-row">
+        <RouterLink class="ghost-link-button" :to="`/student/papers/${ongoingRecord.paperId}/exam`">
+          重新进入考试
+        </RouterLink>
+        <RouterLink class="text-link" to="/student/records">
+          查看我的记录
+        </RouterLink>
+      </div>
+    </article>
+
     <div class="action-grid">
       <RouterLink class="action-card action-card-accent" to="/student/papers">
         <p class="action-tag">考试中心</p>
-        <h3>查看可参加试卷</h3>
+        <h3>{{ ongoingRecord ? "继续未完成考试" : "查看可参加试卷" }}</h3>
         <p>已发布试卷会统一收口在这里，并直接提供开始考试或继续作答的入口。</p>
       </RouterLink>
       <RouterLink class="action-card" to="/student/records">
@@ -37,8 +53,8 @@
       </RouterLink>
       <article class="action-card">
         <p class="action-tag">迁移进度</p>
-        <h3>在线考试主流程已接通</h3>
-        <p>这轮已经补齐开始考试、答题、提交和结果查看，下一轮可以继续补草稿恢复和更多考试保护逻辑。</p>
+        <h3>学生考试体验持续完善中</h3>
+        <p>这轮已经补齐断点恢复、继续作答和提交后的结果提示页，桌面端链路更接近真实可用状态。</p>
       </article>
     </div>
 
@@ -53,7 +69,7 @@
             :to="`/student/papers/${paper.paperId}/exam`"
           >
             <strong>{{ paper.paperName }}</strong>
-            <span>{{ paper.subject }} / {{ paper.questionCount }} 题 / {{ paper.totalScore }} 分</span>
+            <span>{{ paper.subject || "-" }} / {{ paper.questionCount ?? 0 }} 题 / {{ paper.totalScore ?? 0 }} 分</span>
           </RouterLink>
         </div>
         <p v-else class="empty-copy">当前暂无试卷数据。</p>
@@ -66,10 +82,13 @@
             v-for="record in recentRecords"
             :key="record.recordId"
             class="list-row"
-            :to="record.status === 'IN_PROGRESS' ? `/student/papers/${record.paperId}/exam` : `/student/records/${record.recordId}`"
+            :to="record.resumeAvailable ? `/student/papers/${record.paperId}/exam` : `/student/records/${record.recordId}`"
           >
             <strong>{{ record.paperName || "未命名试卷" }}</strong>
-            <span>{{ formatStatus(record.status) }} / {{ formatNullableScore(record.score) }}</span>
+            <span>
+              {{ formatStatus(record.status) }}
+              / {{ record.resumeAvailable ? "可继续作答" : formatNullableScore(record.score) }}
+            </span>
           </RouterLink>
         </div>
         <p v-else class="empty-copy">当前暂无考试记录。</p>
@@ -79,7 +98,7 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { RouterLink } from "vue-router";
 import { useSessionStore } from "@/stores/session";
 
@@ -88,9 +107,12 @@ const sessionStore = useSessionStore();
 const stats = computed(() => sessionStore.workbench?.stats || {});
 const availablePapers = computed(() => sessionStore.workbench?.availablePapers || []);
 const recentRecords = computed(() => sessionStore.workbench?.recentRecords || []);
+const ongoingRecord = computed(() =>
+  recentRecords.value.find((record) => record.resumeAvailable || record.status === "IN_PROGRESS") || null
+);
 const averageScoreCopy = computed(() => {
-  const value = stats.value?.averageScore;
-  return Number.isFinite(value) ? Number(value).toFixed(1) : "0.0";
+  const value = Number(stats.value?.averageScore);
+  return Number.isFinite(value) ? value.toFixed(1) : "0.0";
 });
 
 function formatNullableScore(value) {
@@ -106,4 +128,10 @@ function formatStatus(status) {
   };
   return statusMap[status] || status || "未知状态";
 }
+
+onMounted(() => {
+  if (sessionStore.isStudent) {
+    sessionStore.loadWorkbench().catch(() => undefined);
+  }
+});
 </script>
