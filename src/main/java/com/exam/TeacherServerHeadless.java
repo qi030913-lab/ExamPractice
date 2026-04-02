@@ -12,8 +12,7 @@ public class TeacherServerHeadless {
     private static final Logger LOGGER = LoggerFactory.getLogger(TeacherServerHeadless.class);
 
     public static void main(String[] args) {
-        System.setProperty("java.awt.headless", "true");
-        LOGGER.info("Starting Spring Boot API in headless mode for Electron desktop.");
+        LOGGER.info("Starting Spring Boot API for Electron desktop.");
         ApiApplication.main(args);
     }
 }

@@ -4,11 +4,11 @@
       <p class="page-tag">第一阶段</p>
       <h2>登录页已经切到桌面端</h2>
       <p>
-        这里替代原来的 Swing 登录窗口。当前已经接入 Spring Boot 登录与注册接口，成功后会按角色进入教师或学生工作台。
+        这里是桌面端统一登录入口。当前已经接入 Spring Boot 登录与注册接口，成功后会按角色进入教师或学生工作台。
       </p>
       <div class="detail-tips">
         <p>
-          如果你还没有账号，现在可以直接在桌面端完成学生或教师注册，不需要再回到旧的 Swing 对话框。
+          如果你还没有账号，现在可以直接在桌面端完成学生或教师注册。
         </p>
       </div>
     </div>
@@ -61,7 +61,7 @@
           <div>
             <p class="page-tag">注册账号</p>
             <h3>{{ registerForm.role === "TEACHER" ? "教师注册" : "学生注册" }}</h3>
-            <p class="section-copy">这里对齐原来 Swing 的注册对话框，注册成功后会自动回填登录表单。</p>
+            <p class="section-copy">注册成功后会自动回填登录表单，便于你直接继续登录。</p>
           </div>
           <button class="ghost-button" type="button" :disabled="sessionStore.loading" @click="closeRegisterDialog">
             关闭

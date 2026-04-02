@@ -1,35 +1,34 @@
-# Electron Migration Shell
+# Electron Desktop
 
-This folder is the new desktop entry layer for the project.
+This folder contains the current desktop application built with `Electron + Vue3`.
 
-## What it does now
+## Architecture
 
-- Creates a standalone Electron shell for the repository.
-- Shows local environment and legacy artifact status.
-- Runs `mvn -q -DskipTests compile` from Electron.
-- Runs `mvn -q -Dmaven.test.skip=true package` from Electron to build legacy runtime artifacts.
-- Reads and updates `src/main/resources/db.properties` from Electron.
-- Logs in and loads role-based overview data through `exam-electron-bridge.jar`.
-- Launches legacy student or teacher JARs when those artifacts exist.
-- Keeps the migration work isolated from the current Java Swing code.
+- `src/main`: Electron main process and preload bridge
+- `src/renderer-vue`: Vue3 renderer application
+- `dist/renderer`: built renderer assets
 
-## What it does not do yet
+The Java backend is provided by the root project through `target/exam-server-headless.jar`, which is started by Electron at runtime.
 
-- It does not replace the Swing UI yet.
-- It does not expose Java services as a local API yet.
-- It does not package the full Electron app yet.
+## Development
 
-## Run
+```bash
+cd desktop
+npm install
+npm run dev
+```
 
-1. Open a terminal in `desktop`.
-2. Run `npm install`.
-3. Run `npm run dev`.
-4. Use `Build JARs and EXEs` in the Electron workbench when you need fresh legacy artifacts.
-5. Update `db.properties` from the Electron screen before using bridge-backed login if your local MySQL password differs.
+## Production renderer build
 
-## Migration plan
+```bash
+cd desktop
+npm run build:renderer
+```
 
-1. Electron becomes the new desktop shell and launcher.
-2. Java business logic is exposed through the Electron bridge jar.
-3. Renderer pages replace Swing login and dashboard flows.
-4. Legacy Swing windows are removed after functional parity.
+## Backend package
+
+Run this from the project root to prepare the desktop backend artifact:
+
+```bash
+mvn -q -Dmaven.test.skip=true package
+```

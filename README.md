@@ -2,21 +2,13 @@
 
 ## 当前架构
 
-项目正在从 `Java Swing` 迁移到 `Vue3 + Electron + Spring Boot`。
+项目当前桌面架构为 `Vue3 + Electron + Spring Boot`。
 
-当前推荐的正式桌面端入口：
+当前正式桌面端入口：
 
 - 前端：`Vue3`
 - 桌面壳：`Electron`
 - 后端：`Spring Boot`
-
-当前保留但已降级为兼容入口：
-
-- `com.exam.StudentApplication`
-- `com.exam.TeacherApplication`
-- `com.exam.MultiThreadApplication`
-
-这些 Swing 启动类仍可用于旧版联调，但不再是推荐主入口。
 
 ## 推荐启动方式
 
@@ -76,7 +68,7 @@ cd desktop
 npm run build:renderer
 ```
 
-## 当前桌面端已迁移能力
+## 当前桌面端能力
 
 ### 教师端
 
@@ -108,25 +100,23 @@ desktop/
 └── dist/renderer/            # Vue 构建产物
 ```
 
-### Java 后端与兼容层
+### Java 后端
 
 ```text
 src/main/java/com/exam/
 ├── api/                      # Spring Boot API
-├── bridge/                   # Electron Bridge
-├── view/                     # Swing 旧界面
-├── StudentApplication.java   # Swing 学生兼容入口
-├── TeacherApplication.java   # Swing 教师兼容入口
-├── MultiThreadApplication.java
+├── service/                  # 业务服务
+├── dao/                      # 数据访问层
+├── model/                    # 领域模型
+├── util/                     # 非 UI 工具类
 └── TeacherServerHeadless.java # Electron 使用的无界面后端入口
 ```
 
-## 当前迁移策略
+## 当前项目状态
 
-1. 正式桌面入口统一收口到 Electron。
-2. 业务页面逐步由 Vue3 替代 Swing。
-3. 底层业务能力通过 Spring Boot API 和 Electron Bridge 承接。
-4. Swing 入口暂时保留，仅用于兼容和过渡。
+1. 当前桌面端已统一为 Electron + Vue3，旧桌面入口已完成清理。
+2. 桌面端统一由 Electron 承载，渲染层统一为 Vue3。
+3. 后端统一由 Spring Boot API 提供能力。
 
 ## 注意事项
 

@@ -2,7 +2,7 @@
   "name": "exampractice-electron-desktop",
   "version": "0.1.0",
   "private": true,
-  "description": "Electron migration shell for the legacy Java exam system",
+  "description": "Electron desktop app for the Vue3 + Spring Boot exam system",
   "main": "src/main/main.js",
   "scripts": {
     "dev": "concurrently -k \"npm:dev:renderer\" \"npm:dev:desktop\"",

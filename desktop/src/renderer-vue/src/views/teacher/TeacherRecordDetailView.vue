@@ -104,7 +104,7 @@
         <div class="section-head">
           <div>
             <h3>逐题作答</h3>
-            <p class="section-copy">这里对齐原来 Swing 的答题查看场景，方便教师快速核对学生答案与参考解析。</p>
+            <p class="section-copy">这里集中展示学生答案与参考解析，方便教师快速核对考试过程。</p>
           </div>
           <span class="pill pill-muted">共 {{ answers.length }} 题</span>
         </div>

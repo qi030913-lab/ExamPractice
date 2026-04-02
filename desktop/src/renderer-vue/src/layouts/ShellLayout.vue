@@ -40,7 +40,7 @@ const sessionStore = useSessionStore();
 
 const headerCopy = computed(() => {
   if (!sessionStore.isLoggedIn) {
-    return "当前处于桌面端迁移阶段，我们正在逐步用 Vue3 页面替代原来的 Swing 界面。";
+    return "当前桌面端由 Vue3、Electron 和 Spring Boot 统一承载。";
   }
 
   const roleLabel = sessionStore.isTeacher ? "教师" : "学生";

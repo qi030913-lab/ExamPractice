@@ -28,28 +28,24 @@
             <version>${spring.boot.version}</version>
         </dependency>
 
-        <!-- MySQL Connector -->
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.33</version>
         </dependency>
-        
-        <!-- HikariCP 高性能数据库连接池 -->
+
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>5.0.1</version>
         </dependency>
-        
-        <!-- SLF4J API -->
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>2.0.9</version>
         </dependency>
 
-        <!-- Testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -90,7 +86,6 @@
 
     <build>
         <plugins>
-            <!-- Maven Compiler Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -118,118 +113,6 @@
                 <version>${spring.boot.version}</version>
             </plugin>
 
-            <!-- Maven Jar Plugin - 打包教师端 -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.3.0</version>
-                <executions>
-                    <execution>
-                        <id>teacher-jar</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <classifier>teacher</classifier>
-                            <archive>
-                                <manifest>
-                                    <mainClass>com.exam.TeacherApplication</mainClass>
-                                    <addClasspath>true</addClasspath>
-                                    <classpathPrefix>lib/</classpathPrefix>
-                                </manifest>
-                            </archive>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>student-jar</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <classifier>student</classifier>
-                            <archive>
-                                <manifest>
-                                    <mainClass>com.exam.StudentApplication</mainClass>
-                                    <addClasspath>true</addClasspath>
-                                    <classpathPrefix>lib/</classpathPrefix>
-                                </manifest>
-                            </archive>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Maven Assembly Plugin - 创建包含所有依赖的可执行jar -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.6.0</version>
-                <executions>
-                    <!-- 教师端独立可执行jar -->
-                    <execution>
-                        <id>teacher-jar-with-dependencies</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <archive>
-                                <manifest>
-                                    <mainClass>com.exam.TeacherApplication</mainClass>
-                                </manifest>
-                            </archive>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                            <finalName>exam-teacher</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                        </configuration>
-                    </execution>
-                    <!-- 学生端独立可执行jar -->
-                    <execution>
-                        <id>student-jar-with-dependencies</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <archive>
-                                <manifest>
-                                    <mainClass>com.exam.StudentApplication</mainClass>
-                                </manifest>
-                            </archive>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                            <finalName>exam-student</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>electron-bridge-jar-with-dependencies</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <archive>
-                                <manifest>
-                                    <mainClass>com.exam.bridge.ElectronBridge</mainClass>
-                                </manifest>
-                            </archive>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                            <finalName>exam-electron-bridge</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Maven Resources Plugin - 复制资源文件 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
@@ -239,94 +122,6 @@
                 </configuration>
             </plugin>
 
-            <!-- Launch4j Plugin - 打包学生端为Windows exe -->
-            <plugin>
-                <groupId>com.akathist.maven.plugins.launch4j</groupId>
-                <artifactId>launch4j-maven-plugin</artifactId>
-                <version>2.5.0</version>
-                <executions>
-                    <!-- 学生端 exe -->
-                    <execution>
-                        <id>student-exe</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>launch4j</goal>
-                        </goals>
-                        <configuration>
-                            <!-- 输出的exe文件名 -->
-                            <outfile>${project.build.directory}/在线考试系统-学生端.exe</outfile>
-                            <!-- 源jar文件 -->
-                            <jar>${project.build.directory}/exam-student.jar</jar>
-                            <!-- exe文件图标 -->
-                            <icon>${project.basedir}/src/main/resources/pic/logo.ico</icon>
-                            <!-- exe文件配置 -->
-                            <headerType>gui</headerType>
-                            <dontWrapJar>false</dontWrapJar>
-                            <!-- JRE配置 -->
-                            <jre>
-                                <minVersion>17.0.0</minVersion>
-                                <path>jre</path>
-                                <opts>
-                                    <opt>-Dfile.encoding=UTF-8</opt>
-                                </opts>
-                            </jre>
-                            <!-- 版本信息 -->
-                            <versionInfo>
-                                <fileVersion>1.0.0.0</fileVersion>
-                                <txtFileVersion>1.0.0</txtFileVersion>
-                                <fileDescription>在线考试系统 - 学生端</fileDescription>
-                                <copyright>Copyright © 2026</copyright>
-                                <productVersion>1.0.0.0</productVersion>
-                                <txtProductVersion>1.0.0</txtProductVersion>
-                                <productName>在线考试系统</productName>
-                                <internalName>ExamStudent</internalName>
-                                <originalFilename>在线考试系统-学生端.exe</originalFilename>
-                            </versionInfo>
-                        </configuration>
-                    </execution>
-                    <!-- 教师端 exe -->
-                    <execution>
-                        <id>teacher-exe</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>launch4j</goal>
-                        </goals>
-                        <configuration>
-                            <!-- 输出的exe文件名 -->
-                            <outfile>${project.build.directory}/在线考试系统-教师端.exe</outfile>
-                            <!-- 源jar文件 -->
-                            <jar>${project.build.directory}/exam-teacher.jar</jar>
-                            <!-- exe文件图标 -->
-                            <icon>${project.basedir}/src/main/resources/pic/logo.ico</icon>
-                            <!-- exe文件配置 -->
-                            <headerType>gui</headerType>
-                            <dontWrapJar>false</dontWrapJar>
-                            <!-- JRE配置 -->
-                            <jre>
-                                <minVersion>17.0.0</minVersion>
-                                <path>jre</path>
-                                <opts>
-                                    <opt>-Dfile.encoding=UTF-8</opt>
-                                </opts>
-                            </jre>
-                            <!-- 版本信息 -->
-                            <versionInfo>
-                                <fileVersion>1.0.0.0</fileVersion>
-                                <txtFileVersion>1.0.0</txtFileVersion>
-                                <fileDescription>在线考试系统 - 教师端</fileDescription>
-                                <copyright>Copyright © 2026</copyright>
-                                <productVersion>1.0.0.0</productVersion>
-                                <txtProductVersion>1.0.0</txtProductVersion>
-                                <productName>在线考试系统</productName>
-                                <internalName>ExamTeacher</internalName>
-                                <originalFilename>在线考试系统-教师端.exe</originalFilename>
-                            </versionInfo>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Maven Shade Plugin - 打包无界面教师端服务器 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -373,132 +168,4 @@
             </resource>
         </resources>
     </build>
-
-    <!-- macOS 打包配置 (需要在 macOS 上运行) -->
-    <profiles>
-        <profile>
-            <id>mac</id>
-            <build>
-                <plugins>
-                    <!-- jpackage 打包 macOS .app 应用 -->
-                    <plugin>
-                        <groupId>org.panteleyev</groupId>
-                        <artifactId>jpackage-maven-plugin</artifactId>
-                        <version>1.6.0</version>
-                        <executions>
-                            <!-- 学生端 macOS 应用 -->
-                            <execution>
-                                <id>student-mac</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>jpackage</goal>
-                                </goals>
-                                <configuration>
-                                    <name>在线考试系统-学生端</name>
-                                    <appVersion>1.0.0</appVersion>
-                                    <vendor>Exam System</vendor>
-                                    <destination>${project.build.directory}/mac</destination>
-                                    <input>${project.build.directory}</input>
-                                    <mainJar>exam-student.jar</mainJar>
-                                    <mainClass>com.exam.StudentApplication</mainClass>
-                                    <javaOptions>
-                                        <option>-Dfile.encoding=UTF-8</option>
-                                        <option>-Dapple.awt.application.appearance=system</option>
-                                    </javaOptions>
-                                    <type>APP_IMAGE</type>
-                                    <macPackageIdentifier>com.exam.student</macPackageIdentifier>
-                                    <macPackageName>考试系统学生端</macPackageName>
-                                </configuration>
-                            </execution>
-                            <!-- 教师端 macOS 应用 -->
-                            <execution>
-                                <id>teacher-mac</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>jpackage</goal>
-                                </goals>
-                                <configuration>
-                                    <name>在线考试系统-教师端</name>
-                                    <appVersion>1.0.0</appVersion>
-                                    <vendor>Exam System</vendor>
-                                    <destination>${project.build.directory}/mac</destination>
-                                    <input>${project.build.directory}</input>
-                                    <mainJar>exam-teacher.jar</mainJar>
-                                    <mainClass>com.exam.TeacherApplication</mainClass>
-                                    <javaOptions>
-                                        <option>-Dfile.encoding=UTF-8</option>
-                                        <option>-Dapple.awt.application.appearance=system</option>
-                                    </javaOptions>
-                                    <type>APP_IMAGE</type>
-                                    <macPackageIdentifier>com.exam.teacher</macPackageIdentifier>
-                                    <macPackageName>考试系统教师端</macPackageName>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        
-        <!-- macOS DMG 安装包配置 -->
-        <profile>
-            <id>mac-dmg</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.panteleyev</groupId>
-                        <artifactId>jpackage-maven-plugin</artifactId>
-                        <version>1.6.0</version>
-                        <executions>
-                            <execution>
-                                <id>student-dmg</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>jpackage</goal>
-                                </goals>
-                                <configuration>
-                                    <name>在线考试系统-学生端</name>
-                                    <appVersion>1.0.0</appVersion>
-                                    <vendor>Exam System</vendor>
-                                    <destination>${project.build.directory}/mac-dmg</destination>
-                                    <input>${project.build.directory}</input>
-                                    <mainJar>exam-student.jar</mainJar>
-                                    <mainClass>com.exam.StudentApplication</mainClass>
-                                    <javaOptions>
-                                        <option>-Dfile.encoding=UTF-8</option>
-                                    </javaOptions>
-                                    <type>DMG</type>
-                                    <macPackageIdentifier>com.exam.student</macPackageIdentifier>
-                                    <macPackageName>考试系统学生端</macPackageName>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>teacher-dmg</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>jpackage</goal>
-                                </goals>
-                                <configuration>
-                                    <name>在线考试系统-教师端</name>
-                                    <appVersion>1.0.0</appVersion>
-                                    <vendor>Exam System</vendor>
-                                    <destination>${project.build.directory}/mac-dmg</destination>
-                                    <input>${project.build.directory}</input>
-                                    <mainJar>exam-teacher.jar</mainJar>
-                                    <mainClass>com.exam.TeacherApplication</mainClass>
-                                    <javaOptions>
-                                        <option>-Dfile.encoding=UTF-8</option>
-                                    </javaOptions>
-                                    <type>DMG</type>
-                                    <macPackageIdentifier>com.exam.teacher</macPackageIdentifier>
-                                    <macPackageName>考试系统教师端</macPackageName>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
-
 </project>

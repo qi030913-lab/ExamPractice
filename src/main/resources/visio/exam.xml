@@ -1,71 +1,55 @@
-<mxfile host="app.diagrams.net" modified="2025-12-30T12:00:00Z" agent="Mozilla/5.0" version="20.8.10" editor="draw.io">
-    <diagram id="diagram1" name="Exam System Architecture">
+<mxfile host="app.diagrams.net" modified="2026-04-02T12:00:00Z" agent="Codex" version="20.8.10" editor="draw.io">
+    <diagram id="diagram1" name="Exam Desktop Architecture">
         <mxGraphModel dx="1304" dy="694" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
             <root>
                 <mxCell id="0" />
                 <mxCell id="1" parent="0" />
 
-                <!-- 表示层 -->
-                <mxCell id="layer_view" value="表示层 (View)" style="swimlane;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1" vertex="1" parent="1">
-                    <mxGeometry x="100" y="50" width="700" height="200" as="geometry" />
+                <mxCell id="layer_desktop" value="Desktop Layer" style="swimlane;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="80" y="40" width="740" height="220" as="geometry" />
                 </mxCell>
-                <mxCell id="view_student" value="学生端界面模块&#xa;- StudentLoginFrame&#xa;- StudentMainFrame&#xa;- ExamFrame&#xa;- 成绩查看面板" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#6c8ebf" vertex="1" parent="layer_view">
-                    <mxGeometry x="20" y="40" width="300" height="140" as="geometry" />
+                <mxCell id="desktop_shell" value="Electron Shell&#xa;- main.js&#xa;- preload.js&#xa;- desktop bootstrap" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#6c8ebf" vertex="1" parent="layer_desktop">
+                    <mxGeometry x="20" y="40" width="220" height="120" as="geometry" />
                 </mxCell>
-                <mxCell id="view_teacher" value="教师端界面模块&#xa;- TeacherLoginFrame&#xa;- TeacherMainFrame&#xa;- 题库管理面板&#xa;- 试卷管理面板" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#6c8ebf" vertex="1" parent="layer_view">
-                    <mxGeometry x="340" y="40" width="300" height="140" as="geometry" />
+                <mxCell id="desktop_teacher" value="Teacher Renderer&#xa;- LoginView&#xa;- TeacherWorkbenchView&#xa;- TeacherPaperView&#xa;- TeacherImportView" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#6c8ebf" vertex="1" parent="layer_desktop">
+                    <mxGeometry x="260" y="40" width="220" height="120" as="geometry" />
                 </mxCell>
-
-                <!-- 业务逻辑层 -->
-                <mxCell id="layer_service" value="业务逻辑层 (Service)" style="swimlane;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" vertex="1" parent="1">
-                    <mxGeometry x="100" y="270" width="700" height="200" as="geometry" />
-                </mxCell>
-                <mxCell id="svc_user" value="UserService&#xa;- 用户认证&#xa;- 权限控制" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#82b366" vertex="1" parent="layer_service">
-                    <mxGeometry x="20" y="40" width="160" height="60" as="geometry" />
-                </mxCell>
-                <mxCell id="svc_question" value="QuestionService&#xa;- 题目管理&#xa;- 题目导入" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#82b366" vertex="1" parent="layer_service">
-                    <mxGeometry x="200" y="40" width="160" height="60" as="geometry" />
-                </mxCell>
-                <mxCell id="svc_paper" value="PaperService&#xa;- 试卷管理&#xa;- 组卷逻辑" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#82b366" vertex="1" parent="layer_service">
-                    <mxGeometry x="380" y="40" width="160" height="60" as="geometry" />
-                </mxCell>
-                <mxCell id="svc_exam" value="ExamService&#xa;- 考试管理&#xa;- 成绩计算" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#82b366" vertex="1" parent="layer_service">
-                    <mxGeometry x="20" y="110" width="160" height="60" as="geometry" />
+                <mxCell id="desktop_student" value="Student Renderer&#xa;- StudentWorkbenchView&#xa;- StudentPapersView&#xa;- StudentExamView&#xa;- StudentAchievementView" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#6c8ebf" vertex="1" parent="layer_desktop">
+                    <mxGeometry x="500" y="40" width="220" height="120" as="geometry" />
                 </mxCell>
 
-                <!-- 数据访问层 -->
-                <mxCell id="layer_dao" value="数据访问层 (DAO)" style="swimlane;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1" vertex="1" parent="1">
-                    <mxGeometry x="100" y="490" width="700" height="200" as="geometry" />
+                <mxCell id="layer_api" value="API Layer" style="swimlane;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="80" y="290" width="740" height="210" as="geometry" />
                 </mxCell>
-                <mxCell id="dao_user" value="UserDao&#xa;- 用户CRUD" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#d6b656" vertex="1" parent="layer_dao">
-                    <mxGeometry x="20" y="40" width="160" height="60" as="geometry" />
+                <mxCell id="api_entry" value="Spring Boot API&#xa;- TeacherServerHeadless&#xa;- ApiApplication&#xa;- REST controllers" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#82b366" vertex="1" parent="layer_api">
+                    <mxGeometry x="20" y="40" width="220" height="110" as="geometry" />
                 </mxCell>
-                <mxCell id="dao_question" value="QuestionDao&#xa;- 题目CRUD" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#d6b656" vertex="1" parent="layer_dao">
-                    <mxGeometry x="200" y="40" width="160" height="60" as="geometry" />
+                <mxCell id="api_service" value="Service Layer&#xa;- UserService&#xa;- PaperService&#xa;- QuestionService&#xa;- ExamService" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#82b366" vertex="1" parent="layer_api">
+                    <mxGeometry x="260" y="40" width="220" height="110" as="geometry" />
                 </mxCell>
-                <mxCell id="dao_paper" value="PaperDao&#xa;- 试卷CRUD" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#d6b656" vertex="1" parent="layer_dao">
-                    <mxGeometry x="380" y="40" width="160" height="60" as="geometry" />
-                </mxCell>
-                <mxCell id="dao_exam_record" value="ExamRecordDao&#xa;- 考试记录" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#d6b656" vertex="1" parent="layer_dao">
-                    <mxGeometry x="20" y="110" width="160" height="60" as="geometry" />
+                <mxCell id="api_auth" value="Session and Role Flow&#xa;- teacher login&#xa;- student login&#xa;- workbench navigation" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#82b366" vertex="1" parent="layer_api">
+                    <mxGeometry x="500" y="40" width="220" height="110" as="geometry" />
                 </mxCell>
 
-                <!-- 数据层 -->
-                <mxCell id="layer_db" value="数据层 (Database)&#xa;MySQL数据库&#xa;表：user, question, paper, paper_question, exam_record, answer_record" style="rounded=0;whiteSpace=wrap;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1" vertex="1" parent="1">
-                    <mxGeometry x="100" y="710" width="700" height="100" as="geometry" />
+                <mxCell id="layer_data" value="Data Layer" style="swimlane;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="80" y="530" width="740" height="210" as="geometry" />
+                </mxCell>
+                <mxCell id="dao_group" value="DAO Layer&#xa;- UserDao&#xa;- QuestionDao&#xa;- PaperDao&#xa;- ExamRecordDao" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#d6b656" vertex="1" parent="layer_data">
+                    <mxGeometry x="20" y="40" width="220" height="110" as="geometry" />
+                </mxCell>
+                <mxCell id="model_group" value="Domain Model&#xa;- user&#xa;- paper&#xa;- question&#xa;- exam record" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#d6b656" vertex="1" parent="layer_data">
+                    <mxGeometry x="260" y="40" width="220" height="110" as="geometry" />
+                </mxCell>
+                <mxCell id="db_group" value="MySQL Database&#xa;- user&#xa;- question&#xa;- paper&#xa;- paper_question&#xa;- exam_record&#xa;- answer_record" style="rounded=0;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#d6b656" vertex="1" parent="layer_data">
+                    <mxGeometry x="500" y="40" width="220" height="110" as="geometry" />
                 </mxCell>
 
-                <!-- 连接箭头 -->
-                <mxCell id="arrow_view_service" style="endArrow=block;strokeColor=#6c8ebf" edge="1" source="layer_view" target="layer_service" parent="1">
+                <mxCell id="arrow_desktop_api" style="endArrow=block;strokeColor=#6c8ebf" edge="1" source="layer_desktop" target="layer_api" parent="1">
                     <mxGeometry relative="1" as="geometry" />
                 </mxCell>
-                <mxCell id="arrow_service_dao" style="endArrow=block;strokeColor=#82b366" edge="1" source="layer_service" target="layer_dao" parent="1">
+                <mxCell id="arrow_api_data" style="endArrow=block;strokeColor=#82b366" edge="1" source="layer_api" target="layer_data" parent="1">
                     <mxGeometry relative="1" as="geometry" />
                 </mxCell>
-                <mxCell id="arrow_dao_db" style="endArrow=block;strokeColor=#d6b656" edge="1" source="layer_dao" target="layer_db" parent="1">
-                    <mxGeometry relative="1" as="geometry" />
-                </mxCell>
-
             </root>
         </mxGraphModel>
     </diagram>
