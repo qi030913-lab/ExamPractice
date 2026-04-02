@@ -181,6 +181,58 @@ public class TeacherWorkspaceController {
         return ApiResponse.success("学生考试记录加载成功", payload);
     }
 
+    @GetMapping("/{userId}/students/{studentId}")
+    public ApiResponse<Map<String, Object>> getTeacherStudentDetail(
+            @PathVariable("userId") Integer userId,
+            @PathVariable("studentId") Integer studentId
+    ) {
+        requireTeacher(userId);
+        User student = requireStudent(studentId);
+        List<ExamRecord> records = examService.getStudentExamRecordsOptimized(studentId);
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("student", toTeacherStudentItem(student));
+        payload.put("summary", buildStudentSummary(records));
+        payload.put("records", records.stream().map(this::toTeacherStudentRecordItem).collect(Collectors.toList()));
+        return ApiResponse.success("学生详情加载成功", payload);
+    }
+
+    @GetMapping("/{userId}/students/{studentId}/records/{recordId}")
+    public ApiResponse<Map<String, Object>> getTeacherStudentRecordDetail(
+            @PathVariable("userId") Integer userId,
+            @PathVariable("studentId") Integer studentId,
+            @PathVariable("recordId") Integer recordId
+    ) {
+        requireTeacher(userId);
+        User student = requireStudent(studentId);
+        ExamRecord record = examService.getExamRecordById(recordId);
+        if (record == null) {
+            throw new BusinessException("考试记录不存在");
+        }
+        if (!studentId.equals(record.getStudentId())) {
+            throw new BusinessException("考试记录不属于当前学生");
+        }
+
+        Paper paper = record.getPaper() != null ? record.getPaper() : paperService.getPaperById(record.getPaperId());
+        List<com.exam.model.AnswerRecord> answerRecords = examService.getAnswerRecords(recordId);
+        long answeredCount = answerRecords.stream()
+                .filter(answer -> answer.getStudentAnswer() != null && !answer.getStudentAnswer().trim().isEmpty())
+                .count();
+        long correctCount = answerRecords.stream()
+                .filter(answer -> Boolean.TRUE.equals(answer.getIsCorrect()))
+                .count();
+        long wrongCount = answerRecords.stream()
+                .filter(answer -> answer.getStudentAnswer() != null && !answer.getStudentAnswer().trim().isEmpty())
+                .filter(answer -> !Boolean.TRUE.equals(answer.getIsCorrect()))
+                .count();
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("student", toTeacherStudentItem(student));
+        payload.put("record", toTeacherStudentRecordDetailItem(record, paper, answerRecords, answeredCount, correctCount, wrongCount));
+        payload.put("answers", answerRecords.stream().map(this::toAnswerRecordItem).collect(Collectors.toList()));
+        return ApiResponse.success("考试记录详情加载成功", payload);
+    }
+
     @PostMapping("/{userId}/import-paper")
     public ApiResponse<Map<String, Object>> importPaper(
             @PathVariable("userId") Integer userId,
@@ -302,6 +354,8 @@ public class TeacherWorkspaceController {
         item.put("phone", student.getPhone());
         item.put("gender", student.getGender());
         item.put("status", student.getStatus());
+        item.put("createTime", student.getCreateTime());
+        item.put("updateTime", student.getUpdateTime());
         item.put("recordCount", summary.get("recordCount"));
         item.put("submittedCount", summary.get("submittedCount"));
         item.put("averageScore", summary.get("averageScore"));
@@ -317,6 +371,7 @@ public class TeacherWorkspaceController {
         item.put("score", record.getScore());
         item.put("startTime", record.getStartTime());
         item.put("submitTime", record.getSubmitTime());
+        item.put("durationSeconds", calculateDurationSeconds(record));
         return item;
     }
 
@@ -339,6 +394,58 @@ public class TeacherWorkspaceController {
         item.put("optionC", question.getOptionC());
         item.put("optionD", question.getOptionD());
         item.put("analysis", question.getAnalysis());
+        return item;
+    }
+
+    private Map<String, Object> toTeacherStudentRecordDetailItem(
+            ExamRecord record,
+            Paper paper,
+            List<com.exam.model.AnswerRecord> answerRecords,
+            long answeredCount,
+            long correctCount,
+            long wrongCount
+    ) {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("recordId", record.getRecordId());
+        item.put("paperId", record.getPaperId());
+        item.put("paperName", paper != null ? paper.getPaperName() : null);
+        item.put("subject", paper != null ? paper.getSubject() : null);
+        item.put("totalScore", paper != null ? paper.getTotalScore() : null);
+        item.put("passScore", paper != null ? paper.getPassScore() : null);
+        item.put("score", record.getScore());
+        item.put("status", record.getStatus() == null ? null : record.getStatus().name());
+        item.put("startTime", record.getStartTime());
+        item.put("submitTime", record.getSubmitTime());
+        item.put("durationSeconds", calculateDurationSeconds(record));
+        item.put("questionCount", answerRecords.size());
+        item.put("answeredCount", answeredCount);
+        item.put("correctCount", correctCount);
+        item.put("wrongCount", wrongCount);
+        item.put("passed",
+                record.getScore() != null
+                        && paper != null
+                        && paper.getPassScore() != null
+                        && record.getScore().compareTo(BigDecimal.valueOf(paper.getPassScore())) >= 0);
+        return item;
+    }
+
+    private Map<String, Object> toAnswerRecordItem(com.exam.model.AnswerRecord answerRecord) {
+        Question question = answerRecord.getQuestion();
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("answerId", answerRecord.getAnswerId());
+        item.put("recordId", answerRecord.getRecordId());
+        item.put("questionId", answerRecord.getQuestionId());
+        item.put("questionType", question != null && question.getQuestionType() != null ? question.getQuestionType().name() : null);
+        item.put("content", question != null ? question.getContent() : null);
+        item.put("optionA", question != null ? question.getOptionA() : null);
+        item.put("optionB", question != null ? question.getOptionB() : null);
+        item.put("optionC", question != null ? question.getOptionC() : null);
+        item.put("optionD", question != null ? question.getOptionD() : null);
+        item.put("studentAnswer", answerRecord.getStudentAnswer());
+        item.put("correctAnswer", question != null ? question.getCorrectAnswer() : null);
+        item.put("analysis", question != null ? question.getAnalysis() : null);
+        item.put("score", answerRecord.getScore());
+        item.put("isCorrect", Boolean.TRUE.equals(answerRecord.getIsCorrect()));
         return item;
     }
 
@@ -384,5 +491,20 @@ public class TeacherWorkspaceController {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private long calculateDurationSeconds(ExamRecord record) {
+        if (record.getStartTime() == null) {
+            return 0;
+        }
+
+        java.time.LocalDateTime endTime = record.getSubmitTime() != null
+                ? record.getSubmitTime()
+                : record.getEndTime();
+        if (endTime == null) {
+            return 0;
+        }
+
+        return Math.max(0, java.time.Duration.between(record.getStartTime(), endTime).getSeconds());
     }
 }

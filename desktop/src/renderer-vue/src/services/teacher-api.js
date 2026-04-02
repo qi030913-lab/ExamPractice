@@ -35,8 +35,18 @@ export async function getTeacherStudents(userId) {
   return unwrapResponse(response);
 }
 
+export async function getTeacherStudentDetail(userId, studentId) {
+  const response = await apiClient.get(`/teacher/${userId}/students/${studentId}`);
+  return unwrapResponse(response);
+}
+
 export async function getTeacherStudentRecords(userId, studentId) {
   const response = await apiClient.get(`/teacher/${userId}/students/${studentId}/records`);
+  return unwrapResponse(response);
+}
+
+export async function getTeacherStudentRecordDetail(userId, studentId, recordId) {
+  const response = await apiClient.get(`/teacher/${userId}/students/${studentId}/records/${recordId}`);
   return unwrapResponse(response);
 }
 
