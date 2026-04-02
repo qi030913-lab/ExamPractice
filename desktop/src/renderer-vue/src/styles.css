@@ -637,18 +637,100 @@ textarea {
   word-break: break-word;
 }
 
+.exam-hero {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.exam-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.1fr);
+  gap: 16px;
+}
+
+.exam-index-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+  gap: 10px;
+}
+
+.exam-index-item {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 0;
+  background: rgba(32, 26, 21, 0.04);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.exam-index-item-active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.exam-index-item-done {
+  border-color: rgba(15, 118, 110, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.1);
+}
+
+.exam-question-card {
+  gap: 18px;
+}
+
+.exam-question-title {
+  margin: 0;
+  font-size: 1.12rem;
+  line-height: 1.8;
+}
+
+.exam-option-list {
+  display: grid;
+  gap: 10px;
+}
+
+.exam-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+}
+
+.exam-option input {
+  margin-top: 4px;
+}
+
+.exam-option span {
+  line-height: 1.7;
+}
+
+.timer-copy {
+  font-variant-numeric: tabular-nums;
+}
+
+.timer-copy-danger {
+  color: var(--danger) !important;
+}
+
 @media (max-width: 1100px) {
   .workspace-hero,
   .students-layout,
   .import-layout,
   .paper-detail-layout,
-  .detail-layout {
+  .detail-layout,
+  .exam-layout {
     grid-template-columns: 1fr;
   }
 
   .hero-metrics,
   .action-grid,
-  .compact-summary {
+  .compact-summary,
+  .exam-hero {
     grid-template-columns: 1fr;
   }
 }

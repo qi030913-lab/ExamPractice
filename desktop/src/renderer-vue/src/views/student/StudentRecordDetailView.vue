@@ -4,7 +4,7 @@
       <div class="page-copy">
         <p class="page-tag">记录详情</p>
         <h2>{{ record?.paperName || "考试记录详情" }}</h2>
-        <p>这里展示学生自己这次考试的结果、统计和逐题答案，方便在桌面端复盘错题。</p>
+        <p>这里展示本次考试的结果、统计和逐题答案，方便在桌面端复盘错题。</p>
       </div>
       <RouterLink class="text-link" to="/student/records">返回我的记录</RouterLink>
     </div>
@@ -78,6 +78,12 @@
               <strong>{{ formatDateTime(record.submitTime) }}</strong>
             </div>
           </div>
+
+          <div v-if="record.status === 'IN_PROGRESS'" class="action-row">
+            <RouterLink class="ghost-link-button" :to="`/student/papers/${record.paperId}/exam`">
+              继续作答
+            </RouterLink>
+          </div>
         </article>
       </div>
 
@@ -85,7 +91,7 @@
         <div class="section-head">
           <div>
             <h3>逐题作答</h3>
-            <p class="section-copy">当前先提供结果查看和错题复盘，后面再继续迁考试作答流程。</p>
+            <p class="section-copy">考试提交后，这里会展示每一道题的答案与解析。</p>
           </div>
           <span class="pill pill-muted">共 {{ answers.length }} 题</span>
         </div>

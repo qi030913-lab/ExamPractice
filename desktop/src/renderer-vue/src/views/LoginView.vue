@@ -2,10 +2,9 @@
   <section class="page-card">
     <div class="page-copy">
       <p class="page-tag">第一阶段</p>
-      <h2>登录页面迁移完成第一版</h2>
+      <h2>登录页已经切到桌面端</h2>
       <p>
-        这里会替代原来的 Swing 登录窗口。当前已经接入 Spring Boot 登录接口，
-        登录成功后会按角色进入教师或学生工作台。
+        这里替代原来的 Swing 登录窗口。当前已经接入 Spring Boot 登录接口，登录成功后会按角色进入教师或学生工作台。
       </p>
     </div>
     <form class="page-form" @submit.prevent="handleSubmit">

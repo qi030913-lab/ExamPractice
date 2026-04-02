@@ -14,6 +14,7 @@ import StudentWorkbenchView from "@/views/student/StudentWorkbenchView.vue";
 import StudentPapersView from "@/views/student/StudentPapersView.vue";
 import StudentRecordsView from "@/views/student/StudentRecordsView.vue";
 import StudentRecordDetailView from "@/views/student/StudentRecordDetailView.vue";
+import StudentExamView from "@/views/student/StudentExamView.vue";
 
 const routes = [
   {
@@ -80,6 +81,11 @@ const routes = [
         component: StudentPapersView
       },
       {
+        path: "student/papers/:paperId/exam",
+        name: "student-exam",
+        component: StudentExamView
+      },
+      {
         path: "student/records",
         name: "student-records",
         component: StudentRecordsView
@@ -116,6 +122,7 @@ router.beforeEach(async (to) => {
     "teacher-record-detail",
     "student-workbench",
     "student-papers",
+    "student-exam",
     "student-records",
     "student-record-detail"
   ].includes(String(to.name || ""));
@@ -157,6 +164,7 @@ router.beforeEach(async (to) => {
   const studentRoutes = [
     "student-workbench",
     "student-papers",
+    "student-exam",
     "student-records",
     "student-record-detail"
   ];

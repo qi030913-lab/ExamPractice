@@ -5,8 +5,7 @@
         <p class="page-tag">学生工作台</p>
         <h2>把考试与成绩入口收口到桌面端</h2>
         <p>
-          这一层承接原来 Swing 学生首页的主要导航。当前先把可参加试卷、考试记录和成绩复盘三块串起来，
-          下一轮继续往在线答题界面推进。
+          这一层承接原来 Swing 学生首页的主要导航。现在已经能从这里进入考试中心、开始作答、查看记录和复盘成绩。
         </p>
       </div>
       <div class="hero-metrics">
@@ -29,7 +28,7 @@
       <RouterLink class="action-card action-card-accent" to="/student/papers">
         <p class="action-tag">考试中心</p>
         <h3>查看可参加试卷</h3>
-        <p>先查看已发布试卷、考试时长、及格分，以及最近一次考试状态。</p>
+        <p>已发布试卷会统一收口在这里，并直接提供开始考试或继续作答的入口。</p>
       </RouterLink>
       <RouterLink class="action-card" to="/student/records">
         <p class="action-tag">成绩中心</p>
@@ -38,8 +37,8 @@
       </RouterLink>
       <article class="action-card">
         <p class="action-tag">迁移进度</p>
-        <h3>在线答题页下一轮继续</h3>
-        <p>本轮先把学生端浏览链路迁完，确保桌面端已经能完整承接常用查看场景。</p>
+        <h3>在线考试主流程已接通</h3>
+        <p>这轮已经补齐开始考试、答题、提交和结果查看，下一轮可以继续补草稿恢复和更多考试保护逻辑。</p>
       </article>
     </div>
 
@@ -47,10 +46,15 @@
       <article class="list-card">
         <h3>最近可参加试卷</h3>
         <div v-if="availablePapers.length" class="list-stack">
-          <div v-for="paper in availablePapers" :key="paper.paperId" class="list-row">
+          <RouterLink
+            v-for="paper in availablePapers"
+            :key="paper.paperId"
+            class="list-row"
+            :to="`/student/papers/${paper.paperId}/exam`"
+          >
             <strong>{{ paper.paperName }}</strong>
             <span>{{ paper.subject }} / {{ paper.questionCount }} 题 / {{ paper.totalScore }} 分</span>
-          </div>
+          </RouterLink>
         </div>
         <p v-else class="empty-copy">当前暂无试卷数据。</p>
       </article>
@@ -62,7 +66,7 @@
             v-for="record in recentRecords"
             :key="record.recordId"
             class="list-row"
-            :to="`/student/records/${record.recordId}`"
+            :to="record.status === 'IN_PROGRESS' ? `/student/papers/${record.paperId}/exam` : `/student/records/${record.recordId}`"
           >
             <strong>{{ record.paperName || "未命名试卷" }}</strong>
             <span>{{ formatStatus(record.status) }} / {{ formatNullableScore(record.score) }}</span>

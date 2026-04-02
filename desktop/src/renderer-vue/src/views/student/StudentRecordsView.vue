@@ -3,7 +3,7 @@
     <div class="page-copy">
       <p class="page-tag">成绩中心</p>
       <h2>我的考试记录</h2>
-      <p>这里承接原来学生端成绩与记录查看场景，先把记录概览和详情查询迁到桌面端。</p>
+      <p>这里承接原来学生端成绩与记录查看场景，方便在桌面端快速查看历次考试结果。</p>
     </div>
 
     <StatusBanner v-if="errorMessage" tone="danger">
@@ -29,7 +29,7 @@
       <div class="section-head">
         <div>
           <h3>记录列表</h3>
-          <p class="section-copy">点击任意一条记录，查看该次考试的答题结果与逐题详情。</p>
+          <p class="section-copy">点击任意一条记录，查看该次考试结果与逐题作答详情。</p>
         </div>
         <RouterLink class="text-link" to="/student/papers">返回考试中心</RouterLink>
       </div>

@@ -3,7 +3,7 @@
     <div class="page-copy">
       <p class="page-tag">考试中心</p>
       <h2>可参加试卷</h2>
-      <p>先把学生端可见试卷和最近一次考试状态迁到桌面端，便于后续继续接考试作答页。</p>
+      <p>这里展示学生当前可参加的试卷，并直接提供开始考试或继续作答的入口。</p>
     </div>
 
     <StatusBanner v-if="errorMessage" tone="danger">
@@ -29,7 +29,7 @@
       <div class="section-head">
         <div>
           <h3>试卷列表</h3>
-          <p class="section-copy">这一轮先打通试卷查看和历史记录跳转，考试作答页下一轮继续迁移。</p>
+          <p class="section-copy">已发布试卷会在这里集中展示，点击按钮即可进入桌面端考试页。</p>
         </div>
         <RouterLink class="text-link" to="/student/records">查看我的记录</RouterLink>
       </div>
@@ -59,6 +59,9 @@
           </div>
 
           <div class="action-row">
+            <RouterLink class="ghost-link-button" :to="`/student/papers/${paper.paperId}/exam`">
+              {{ paper.latestRecord?.status === "IN_PROGRESS" ? "继续作答" : "开始考试" }}
+            </RouterLink>
             <RouterLink
               v-if="paper.latestRecord?.recordId"
               class="ghost-link-button"

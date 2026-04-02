@@ -2,6 +2,7 @@ package com.exam.api.controller;
 
 import com.exam.api.common.ApiResponse;
 import com.exam.api.dto.AuthUserResponse;
+import com.exam.api.dto.StudentSubmitExamRequest;
 import com.exam.exception.BusinessException;
 import com.exam.model.AnswerRecord;
 import com.exam.model.ExamRecord;
@@ -13,8 +14,11 @@ import com.exam.model.enums.UserRole;
 import com.exam.service.ExamService;
 import com.exam.service.PaperService;
 import com.exam.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -67,6 +71,67 @@ public class StudentWorkspaceController {
         return ApiResponse.success("学生试卷中心加载成功", payload);
     }
 
+    @GetMapping("/{userId}/papers/{paperId}")
+    public ApiResponse<Map<String, Object>> getStudentPaperDetail(
+            @PathVariable("userId") Integer userId,
+            @PathVariable("paperId") Integer paperId
+    ) {
+        User student = requireStudent(userId);
+        Paper paper = requirePublishedPaper(paperId);
+        List<ExamRecord> records = examService.getStudentExamRecordsOptimized(userId);
+        ExamRecord latestRecord = resolveLatestRecordByPaperId(records).get(paperId);
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("user", AuthUserResponse.from(student));
+        payload.put("paper", toStudentPaperItem(paper, latestRecord));
+        payload.put("questions", paper.getQuestions().stream().map(this::toQuestionExamItem).collect(Collectors.toList()));
+        return ApiResponse.success("考试详情加载成功", payload);
+    }
+
+    @PostMapping("/{userId}/papers/{paperId}/start")
+    public ApiResponse<Map<String, Object>> startExam(
+            @PathVariable("userId") Integer userId,
+            @PathVariable("paperId") Integer paperId
+    ) {
+        User student = requireStudent(userId);
+        Paper paper = requirePublishedPaper(paperId);
+        List<ExamRecord> records = examService.getStudentExamRecordsOptimized(userId);
+        ExamRecord record = records.stream()
+                .filter(item -> paperId.equals(item.getPaperId()))
+                .filter(item -> item.getStatus() == ExamStatus.IN_PROGRESS)
+                .findFirst()
+                .orElse(null);
+        if (record == null) {
+            record = examService.startExam(userId, paperId);
+        }
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("user", AuthUserResponse.from(student));
+        payload.put("record", toExamLifecycleRecordItem(record));
+        payload.put("paper", toStudentPaperItem(paper, record));
+        payload.put("questions", paper.getQuestions().stream().map(this::toQuestionExamItem).collect(Collectors.toList()));
+        return ApiResponse.success("考试开始成功", payload);
+    }
+
+    @GetMapping("/{userId}/records/{recordId}/exam")
+    public ApiResponse<Map<String, Object>> getStudentExamSession(
+            @PathVariable("userId") Integer userId,
+            @PathVariable("recordId") Integer recordId
+    ) {
+        User student = requireStudent(userId);
+        ExamRecord record = requireOwnedRecord(userId, recordId);
+        Paper paper = record.getPaper() != null ? record.getPaper() : paperService.getPaperById(record.getPaperId());
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("user", AuthUserResponse.from(student));
+        payload.put("record", toExamLifecycleRecordItem(record));
+        payload.put("paper", toStudentPaperItem(paper, record));
+        payload.put("questions", paper.getQuestions().stream().map(this::toQuestionExamItem).collect(Collectors.toList()));
+        payload.put("remainingSeconds", calculateRemainingSeconds(record, paper));
+        payload.put("deadlineTime", calculateDeadlineTime(record, paper));
+        return ApiResponse.success("考试作答页加载成功", payload);
+    }
+
     @GetMapping("/{userId}/records")
     public ApiResponse<Map<String, Object>> getStudentRecords(@PathVariable("userId") Integer userId) {
         User student = requireStudent(userId);
@@ -107,14 +172,7 @@ public class StudentWorkspaceController {
             @PathVariable("recordId") Integer recordId
     ) {
         User student = requireStudent(userId);
-        ExamRecord record = examService.getExamRecordById(recordId);
-        if (record == null) {
-            throw new BusinessException("考试记录不存在");
-        }
-        if (!userId.equals(record.getStudentId())) {
-            throw new BusinessException("考试记录不属于当前学生");
-        }
-
+        ExamRecord record = requireOwnedRecord(userId, recordId);
         Paper paper = record.getPaper() != null ? record.getPaper() : paperService.getPaperById(record.getPaperId());
         List<AnswerRecord> answerRecords = examService.getAnswerRecords(recordId);
         long correctCount = answerRecords.stream()
@@ -135,12 +193,66 @@ public class StudentWorkspaceController {
         return ApiResponse.success("考试记录详情加载成功", payload);
     }
 
+    @PostMapping("/{userId}/records/{recordId}/submit")
+    public ApiResponse<Map<String, Object>> submitExam(
+            @PathVariable("userId") Integer userId,
+            @PathVariable("recordId") Integer recordId,
+            @Valid @RequestBody StudentSubmitExamRequest request
+    ) {
+        User student = requireStudent(userId);
+        ExamRecord record = requireOwnedRecord(userId, recordId);
+        if (record.getStatus() != ExamStatus.IN_PROGRESS) {
+            throw new BusinessException("当前考试不处于可提交状态");
+        }
+
+        Map<Integer, String> answers = request.getAnswers() == null
+                ? new LinkedHashMap<>()
+                : request.getAnswers().stream()
+                .filter(item -> item.getQuestionId() != null)
+                .collect(Collectors.toMap(
+                        StudentSubmitExamRequest.AnswerItem::getQuestionId,
+                        item -> normalizeBlank(item.getAnswer()) == null ? "" : item.getAnswer().trim(),
+                        (left, right) -> right,
+                        LinkedHashMap::new
+                ));
+
+        BigDecimal score = examService.submitExam(recordId, answers);
+        ExamRecord submittedRecord = examService.getExamRecordById(recordId);
+        Paper paper = submittedRecord.getPaper() != null
+                ? submittedRecord.getPaper()
+                : paperService.getPaperById(submittedRecord.getPaperId());
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("user", AuthUserResponse.from(student));
+        payload.put("result", toSubmitResultItem(submittedRecord, paper, score));
+        return ApiResponse.success("考试提交成功", payload);
+    }
+
     private User requireStudent(Integer userId) {
         User user = userService.getUserById(userId);
         if (user.getRole() != UserRole.STUDENT) {
             throw new BusinessException("当前用户不是学生角色");
         }
         return user;
+    }
+
+    private Paper requirePublishedPaper(Integer paperId) {
+        Paper paper = paperService.getPaperById(paperId);
+        if (!Boolean.TRUE.equals(paper.getIsPublished())) {
+            throw new BusinessException("该试卷尚未发布");
+        }
+        return paper;
+    }
+
+    private ExamRecord requireOwnedRecord(Integer userId, Integer recordId) {
+        ExamRecord record = examService.getExamRecordById(recordId);
+        if (record == null) {
+            throw new BusinessException("考试记录不存在");
+        }
+        if (!userId.equals(record.getStudentId())) {
+            throw new BusinessException("考试记录不属于当前学生");
+        }
+        return record;
     }
 
     private Map<String, Object> toStudentPaperItem(Paper paper, ExamRecord latestRecord) {
@@ -157,6 +269,32 @@ public class StudentWorkspaceController {
         if (latestRecord != null) {
             item.put("latestRecord", toStudentRecordCard(latestRecord));
         }
+        return item;
+    }
+
+    private Map<String, Object> toQuestionExamItem(Question question) {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("questionId", question.getQuestionId());
+        item.put("questionType", question.getQuestionType() == null ? null : question.getQuestionType().name());
+        item.put("subject", question.getSubject());
+        item.put("content", question.getContent());
+        item.put("optionA", question.getOptionA());
+        item.put("optionB", question.getOptionB());
+        item.put("optionC", question.getOptionC());
+        item.put("optionD", question.getOptionD());
+        item.put("score", question.getScore());
+        return item;
+    }
+
+    private Map<String, Object> toExamLifecycleRecordItem(ExamRecord record) {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("recordId", record.getRecordId());
+        item.put("studentId", record.getStudentId());
+        item.put("paperId", record.getPaperId());
+        item.put("status", record.getStatus() == null ? null : record.getStatus().name());
+        item.put("startTime", record.getStartTime());
+        item.put("submitTime", record.getSubmitTime());
+        item.put("durationSeconds", calculateDurationSeconds(record));
         return item;
     }
 
@@ -250,6 +388,25 @@ public class StudentWorkspaceController {
         return item;
     }
 
+    private Map<String, Object> toSubmitResultItem(ExamRecord record, Paper paper, BigDecimal score) {
+        boolean passed = false;
+        if (score != null && paper.getPassScore() != null) {
+            passed = score.compareTo(BigDecimal.valueOf(paper.getPassScore())) >= 0;
+        }
+
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("recordId", record.getRecordId());
+        item.put("paperId", record.getPaperId());
+        item.put("paperName", paper.getPaperName());
+        item.put("score", score);
+        item.put("totalScore", paper.getTotalScore());
+        item.put("passScore", paper.getPassScore());
+        item.put("passed", passed);
+        item.put("status", record.getStatus() != null ? record.getStatus().name() : null);
+        item.put("submitTime", record.getSubmitTime());
+        return item;
+    }
+
     private Map<Integer, ExamRecord> resolveLatestRecordByPaperId(List<ExamRecord> records) {
         Map<Integer, ExamRecord> latest = new LinkedHashMap<>();
         for (ExamRecord record : records) {
@@ -303,5 +460,32 @@ public class StudentWorkspaceController {
         }
 
         return Math.max(0, Duration.between(record.getStartTime(), endTime).getSeconds());
+    }
+
+    private long calculateRemainingSeconds(ExamRecord record, Paper paper) {
+        if (record.getStatus() != ExamStatus.IN_PROGRESS) {
+            return 0;
+        }
+        if (record.getStartTime() == null || paper == null || paper.getDuration() == null) {
+            return 0;
+        }
+
+        LocalDateTime deadline = record.getStartTime().plusMinutes(paper.getDuration());
+        return Math.max(0, Duration.between(LocalDateTime.now(), deadline).getSeconds());
+    }
+
+    private LocalDateTime calculateDeadlineTime(ExamRecord record, Paper paper) {
+        if (record.getStartTime() == null || paper == null || paper.getDuration() == null) {
+            return null;
+        }
+        return record.getStartTime().plusMinutes(paper.getDuration());
+    }
+
+    private String normalizeBlank(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }
