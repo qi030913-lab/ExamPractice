@@ -383,6 +383,84 @@ textarea {
   box-shadow: 0 12px 24px rgba(15, 118, 110, 0.18);
 }
 
+.pager-bar {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(32, 26, 21, 0.03);
+}
+
+.pager-info {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.pager-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.page-size-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+}
+
+.page-size-control span {
+  white-space: nowrap;
+}
+
+.page-size-control select {
+  min-width: 96px;
+  border: 1px solid rgba(92, 72, 56, 0.16);
+  border-radius: 12px;
+  padding: 9px 12px;
+  background: #fff;
+  color: var(--text);
+}
+
+.pager-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pager-button {
+  min-width: 42px;
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.pager-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(15, 118, 110, 0.28);
+  color: var(--primary);
+}
+
+.pager-button-active {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--accent), #db7d33);
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(204, 107, 29, 0.18);
+}
+
 .text-link {
   color: var(--primary);
   font-weight: 700;
@@ -1007,5 +1085,14 @@ textarea {
   .refresh-meta {
     width: 100%;
     white-space: normal;
+  }
+
+  .pager-controls {
+    justify-content: flex-start;
+  }
+
+  .page-size-control {
+    width: 100%;
+    justify-content: space-between;
   }
 }
