@@ -1,20 +1,14 @@
 <template>
-  <section
-    ref="sceneRef"
-    class="login-stage"
-    @mousemove="handlePointerMove"
-    @mouseleave="resetPointer"
-  >
-    <canvas ref="canvasRef" class="login-stage__canvas"></canvas>
-    <div class="login-stage__sky"></div>
-    <div class="login-stage__mist"></div>
+  <section ref="sceneRef" class="login-stage">
+    <div ref="threeMountRef" class="login-stage__three"></div>
+    <div class="login-stage__overlay"></div>
 
     <section class="login-card">
       <header class="login-card__header">
         <p class="login-card__tag">Exam Practice Desktop</p>
         <h2>{{ isRegisterMode ? registerTitle : loginTitle }}</h2>
         <p class="login-card__copy">
-          {{ isRegisterMode ? "注册成功后会自动回填到登录表单。" : "保留当前项目字段与接口，接入旧版登录页的视觉效果。" }}
+          {{ isRegisterMode ? "注册成功后会自动回填到登录表单。" : "背景复用 login 目录下旧版云层动画，表单继续使用当前项目字段与接口。" }}
         </p>
       </header>
 
@@ -200,16 +194,20 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import StatusBanner from "@/components/StatusBanner.vue";
 import { useSessionStore } from "@/stores/session";
-import cloudSprite from "@/views/login/img/cloud.png";
 import userIcon from "@/views/login/img/user_icon_copy.png";
 import keyIcon from "@/views/login/img/key.png";
 import lockIcon from "@/views/login/img/lock_icon_copy.png";
+import cloudSpriteUrl from "@/views/login/img/cloud.png";
+import DetectorScript from "@/views/login/img/Detector.js?raw";
+import ThreeWebGLScript from "@/views/login/img/ThreeWebGL.js?raw";
+import ThreeExtrasScript from "@/views/login/img/ThreeExtras.js?raw";
+import RequestAnimationFrameScript from "@/views/login/img/RequestAnimationFrame.js?raw";
 
 const router = useRouter();
 const sessionStore = useSessionStore();
 
 const sceneRef = ref(null);
-const canvasRef = ref(null);
+const threeMountRef = ref(null);
 const successMessage = ref("");
 const isRegisterMode = ref(false);
 const registerErrorMessage = ref("");
@@ -229,16 +227,8 @@ const registerForm = reactive({
   confirmPassword: ""
 });
 
-const pointerTarget = reactive({ x: 0, y: 0 });
-const pointer = reactive({ x: 0, y: 0 });
-const animationState = {
-  frameId: 0,
-  lastTime: 0,
-  image: null,
-  clouds: [],
-  width: 0,
-  height: 0,
-  dpr: 1
+const backgroundState = {
+  cleanup: null
 };
 
 const loginIdPlaceholder = computed(() => form.role === "TEACHER" ? "教工号" : "学号");
@@ -247,167 +237,166 @@ const loginTitle = computed(() => form.role === "TEACHER" ? "教师登录" : "�
 const registerTitle = computed(() => registerForm.role === "TEACHER" ? "教师注册" : "学生注册");
 const footerCopy = computed(() => {
   if (isRegisterMode.value) {
-    return "注册后将自动回填到登录表单，不额外引入旧页面里的验证码字段。";
+    return "注册后将自动回填到登录表单，背景继续保留旧版动态云层效果。";
   }
 
-  return "云层背景按旧版页面的 Three.js 思路复现，layui 在该效果里不再需要。";
+  return "当前背景直接复用 login 目录里的旧版 Three.js 云层方案。";
 });
 
-function createCloud(width, height) {
-  const layerRoll = Math.random();
-  let y;
-  let z;
-  let size;
-  let opacity;
-  let speed;
-
-  if (layerRoll < 0.64) {
-    y = height * (0.72 + Math.random() * 0.2);
-    z = 820 + Math.pow(Math.random(), 1.65) * 4700;
-    size = 1.28 + Math.random() * 1.36;
-    opacity = 0.12 + Math.random() * 0.11;
-    speed = 42 + Math.random() * 50;
-  } else if (layerRoll < 0.9) {
-    y = height * (0.6 + Math.random() * 0.14);
-    z = 1800 + Math.random() * 4700;
-    size = 0.82 + Math.random() * 0.72;
-    opacity = 0.06 + Math.random() * 0.07;
-    speed = 54 + Math.random() * 68;
-  } else {
-    y = height * (0.52 + Math.random() * 0.08);
-    z = 3200 + Math.random() * 4200;
-    size = 0.56 + Math.random() * 0.4;
-    opacity = 0.025 + Math.random() * 0.03;
-    speed = 72 + Math.random() * 64;
+function injectLegacyThree() {
+  if (window.__legacyLoginThreeLoaded) {
+    return;
   }
 
-  return {
-    x: (Math.random() - 0.5) * width * 2.8,
-    y,
-    z,
-    size,
-    opacity,
-    speed
+  window.eval(`${DetectorScript}\n//# sourceURL=legacy-detector.js`);
+  window.eval(`${ThreeWebGLScript}\n//# sourceURL=legacy-threewebgl.js`);
+  window.eval(`${ThreeExtrasScript}\n//# sourceURL=legacy-threeextras.js`);
+  window.eval(`${RequestAnimationFrameScript}\n//# sourceURL=legacy-requestAnimationFrame.js`);
+  window.__legacyLoginThreeLoaded = true;
+}
+
+function mountLegacyBackground() {
+  const mountEl = threeMountRef.value;
+  const stageEl = sceneRef.value;
+  if (!mountEl || !stageEl) {
+    return;
+  }
+
+  injectLegacyThree();
+
+  const THREE = window.THREE;
+  const Detector = window.Detector;
+  const GeometryUtils = window.GeometryUtils;
+
+  if (!THREE || !Detector || !GeometryUtils || !Detector.webgl) {
+    return;
+  }
+
+  let renderer;
+  let camera;
+  let scene;
+  let geometry;
+  let material;
+  let meshFront;
+  let meshBack;
+  let frameId = 0;
+  let startTime = Date.now();
+  let mouseX = 0;
+  let mouseY = 0;
+  let container;
+
+  const gradientCanvas = document.createElement("canvas");
+  const gradientContext = gradientCanvas.getContext("2d");
+  gradientCanvas.width = 32;
+  gradientCanvas.height = Math.max(720, stageEl.clientHeight);
+  const gradient = gradientContext.createLinearGradient(0, 0, 0, gradientCanvas.height);
+  gradient.addColorStop(0, "#1e4877");
+  gradient.addColorStop(0.52, "#4e88ba");
+  gradient.addColorStop(1, "#8ec0e8");
+  gradientContext.fillStyle = gradient;
+  gradientContext.fillRect(0, 0, gradientCanvas.width, gradientCanvas.height);
+  stageEl.style.backgroundImage = `url(${gradientCanvas.toDataURL("image/png")})`;
+  stageEl.style.backgroundSize = "cover";
+
+  container = document.createElement("div");
+  container.className = "legacy-clouds";
+  mountEl.appendChild(container);
+
+  camera = new THREE.Camera(30, stageEl.clientWidth / stageEl.clientHeight, 1, 3000);
+  camera.position.z = 6000;
+
+  scene = new THREE.Scene();
+  geometry = new THREE.Geometry();
+
+  const texture = THREE.ImageUtils.loadTexture(cloudSpriteUrl);
+  texture.magFilter = THREE.LinearMipMapLinearFilter;
+  texture.minFilter = THREE.LinearMipMapLinearFilter;
+
+  const fog = new THREE.Fog(0x4584b4, -100, 3000);
+
+  material = new THREE.MeshShaderMaterial({
+    uniforms: {
+      map: { type: "t", value: 2, texture },
+      fogColor: { type: "c", value: fog.color },
+      fogNear: { type: "f", value: fog.near },
+      fogFar: { type: "f", value: fog.far }
+    },
+    vertexShader: "varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 ); }",
+    fragmentShader: "uniform sampler2D map; uniform vec3 fogColor; uniform float fogNear; uniform float fogFar; varying vec2 vUv; void main() { float depth = gl_FragCoord.z / gl_FragCoord.w; float fogFactor = smoothstep( fogNear, fogFar, depth ); gl_FragColor = texture2D( map, vUv ); gl_FragColor.w *= pow( gl_FragCoord.z, 20.0 ); gl_FragColor = mix( gl_FragColor, vec4( fogColor, gl_FragColor.w ), fogFactor ); }",
+    depthTest: false
+  });
+
+  const plane = new THREE.Mesh(new THREE.Plane(64, 64));
+  for (let index = 0; index < 8000; index += 1) {
+    plane.position.x = Math.random() * 1000 - 500;
+    plane.position.y = -Math.random() * Math.random() * 200 - 15;
+    plane.position.z = index;
+    plane.rotation.z = Math.random() * Math.PI;
+    plane.scale.x = plane.scale.y = Math.random() * Math.random() * 1.5 + 0.5;
+    GeometryUtils.merge(geometry, plane);
+  }
+
+  meshFront = new THREE.Mesh(geometry, material);
+  scene.addObject(meshFront);
+  meshBack = new THREE.Mesh(geometry, material);
+  meshBack.position.z = -8000;
+  scene.addObject(meshBack);
+
+  renderer = new THREE.WebGLRenderer({
+    antialias: false,
+    alpha: true
+  });
+  renderer.setSize(stageEl.clientWidth, stageEl.clientHeight);
+  container.appendChild(renderer.domElement);
+
+  const onMouseMove = (event) => {
+    const rect = stageEl.getBoundingClientRect();
+    mouseX = (event.clientX - rect.left - rect.width / 2) * 0.25;
+    mouseY = (event.clientY - rect.top - rect.height / 2) * 0.15;
   };
-}
 
-function resetCloud(cloud, width, height) {
-  const nextCloud = createCloud(width, height);
-  cloud.x = nextCloud.x;
-  cloud.y = nextCloud.y;
-  cloud.z = 6800 + Math.random() * 1400;
-  cloud.size = nextCloud.size;
-  cloud.opacity = nextCloud.opacity;
-  cloud.speed = nextCloud.speed;
-}
-
-function resizeScene() {
-  const canvas = canvasRef.value;
-  const scene = sceneRef.value;
-  if (!canvas || !scene) {
-    return;
-  }
-
-  const rect = scene.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  animationState.width = rect.width;
-  animationState.height = rect.height;
-  animationState.dpr = dpr;
-
-  canvas.width = Math.round(rect.width * dpr);
-  canvas.height = Math.round(rect.height * dpr);
-  canvas.style.width = `${rect.width}px`;
-  canvas.style.height = `${rect.height}px`;
-
-  const desiredCount = Math.max(56, Math.min(104, Math.round(rect.width / 13)));
-  if (animationState.clouds.length === 0) {
-    animationState.clouds = Array.from({ length: desiredCount }, () => createCloud(rect.width, rect.height));
-    return;
-  }
-
-  if (animationState.clouds.length < desiredCount) {
-    while (animationState.clouds.length < desiredCount) {
-      animationState.clouds.push(createCloud(rect.width, rect.height));
-    }
-    return;
-  }
-
-  animationState.clouds.length = desiredCount;
-}
-
-function drawClouds(timestamp) {
-  const canvas = canvasRef.value;
-  if (!canvas || !animationState.image) {
-    return;
-  }
-
-  if (!animationState.lastTime) {
-    animationState.lastTime = timestamp;
-  }
-
-  const delta = Math.min(0.04, (timestamp - animationState.lastTime) / 1000);
-  animationState.lastTime = timestamp;
-
-  const context = canvas.getContext("2d");
-  if (!context) {
-    return;
-  }
-
-  const { width, height, dpr, image, clouds } = animationState;
-  const perspective = 1400;
-
-  pointer.x += (pointerTarget.x - pointer.x) * 0.065;
-  pointer.y += (pointerTarget.y - pointer.y) * 0.065;
-
-  context.setTransform(1, 0, 0, 1, 0, 0);
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  context.scale(dpr, dpr);
-
-  clouds.sort((left, right) => right.z - left.z);
-
-  for (const cloud of clouds) {
-    cloud.z -= cloud.speed * delta;
-
-    if (cloud.z < 260) {
-      resetCloud(cloud, width, height);
+  const onResize = () => {
+    if (!renderer || !camera) {
+      return;
     }
 
-    const scale = perspective / cloud.z;
-    const size = image.width * cloud.size * scale * 1.96;
-    const parallaxX = pointer.x * 118 * scale;
-    const parallaxY = pointer.y * 52 * scale;
-    const screenX = width / 2 + cloud.x * scale + parallaxX;
-    const screenY = cloud.y * scale + parallaxY;
-    const alpha = Math.min(0.68, cloud.opacity + (1 - cloud.z / 8200) * 0.12);
+    const width = stageEl.clientWidth;
+    const height = stageEl.clientHeight;
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height);
+  };
 
-    context.globalAlpha = Math.max(0.04, alpha);
-    context.drawImage(
-      image,
-      screenX - size * 0.5,
-      screenY - size * 0.3,
-      size,
-      size
-    );
-  }
+  const render = () => {
+    const position = ((Date.now() - startTime) * 0.03) % 8000;
 
-  context.globalAlpha = 1;
-  animationState.frameId = window.requestAnimationFrame(drawClouds);
-}
+    camera.position.x += (mouseX - camera.target.position.x) * 0.01;
+    camera.position.y += (-mouseY - camera.target.position.y) * 0.01;
+    camera.position.z = -position + 8000;
+    camera.target.position.x = camera.position.x;
+    camera.target.position.y = camera.position.y;
+    camera.target.position.z = camera.position.z - 1000;
 
-function handlePointerMove(event) {
-  const scene = sceneRef.value;
-  if (!scene) {
-    return;
-  }
+    renderer.render(scene, camera);
+    frameId = window.requestAnimationFrame(render);
+  };
 
-  const rect = scene.getBoundingClientRect();
-  pointerTarget.x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
-  pointerTarget.y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
-}
+  stageEl.addEventListener("mousemove", onMouseMove);
+  window.addEventListener("resize", onResize);
+  render();
 
-function resetPointer() {
-  pointerTarget.x = 0;
-  pointerTarget.y = 0;
+  backgroundState.cleanup = () => {
+    window.cancelAnimationFrame(frameId);
+    window.removeEventListener("resize", onResize);
+    stageEl.removeEventListener("mousemove", onMouseMove);
+    if (renderer?.domElement?.parentNode) {
+      renderer.domElement.parentNode.removeChild(renderer.domElement);
+    }
+    if (container?.parentNode) {
+      container.parentNode.removeChild(container);
+    }
+    stageEl.style.backgroundImage = "";
+  };
 }
 
 function switchToRegister() {
@@ -474,25 +463,12 @@ async function handleRegister() {
   }
 }
 
-function handleResize() {
-  resizeScene();
-}
-
 onMounted(() => {
-  const image = new Image();
-  image.onload = () => {
-    animationState.image = image;
-    resizeScene();
-    animationState.frameId = window.requestAnimationFrame(drawClouds);
-  };
-  image.src = cloudSprite;
-
-  window.addEventListener("resize", handleResize);
+  mountLegacyBackground();
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener("resize", handleResize);
-  window.cancelAnimationFrame(animationState.frameId);
+  backgroundState.cleanup?.();
 });
 </script>
 
@@ -503,43 +479,30 @@ onBeforeUnmount(() => {
   place-items: center;
   min-height: 100vh;
   overflow: hidden;
-  background:
-    linear-gradient(180deg, #2b588b 0%, #3b74a7 62%, #6ea6d4 100%);
+  background: #3f76a8;
 }
 
-.login-stage__canvas,
-.login-stage__sky,
-.login-stage__mist {
+.login-stage__three,
+.login-stage__overlay {
   position: absolute;
   inset: 0;
 }
 
-.login-stage__canvas {
+.login-stage__three {
   z-index: 0;
-  pointer-events: none;
 }
 
-.login-stage__sky {
+.login-stage__overlay {
   z-index: 1;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 30%),
-    radial-gradient(circle at center 84%, rgba(255, 255, 255, 0.08), transparent 16rem),
-    radial-gradient(circle at 16% 86%, rgba(255, 255, 255, 0.06), transparent 12rem),
-    radial-gradient(circle at 84% 86%, rgba(255, 255, 255, 0.05), transparent 12rem);
-  mix-blend-mode: screen;
-  pointer-events: none;
-}
-
-.login-stage__mist {
-  z-index: 2;
-  background:
-    linear-gradient(180deg, rgba(10, 23, 42, 0.14) 0%, transparent 18%, transparent 52%, rgba(255, 255, 255, 0.08) 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 28%),
+    linear-gradient(180deg, rgba(6, 16, 30, 0.06), transparent 22%, transparent 72%, rgba(255, 255, 255, 0.04) 100%);
   pointer-events: none;
 }
 
 .login-card {
   position: relative;
-  z-index: 3;
+  z-index: 2;
   width: min(430px, calc(100% - 32px));
   padding: 34px 34px 28px;
   border: 1px solid rgba(136, 178, 217, 0.16);
