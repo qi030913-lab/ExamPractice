@@ -100,6 +100,11 @@ const routes = [
         path: "student/records/:recordId/result",
         name: "student-submit-result",
         component: StudentExamResultView
+      },
+      {
+        path: "student/achievement",
+        name: "student-achievement",
+        component: () => import("@/views/student/StudentAchievementView.vue")
       }
     ]
   }
@@ -131,7 +136,8 @@ router.beforeEach(async (to) => {
     "student-exam",
     "student-records",
     "student-record-detail",
-    "student-submit-result"
+    "student-submit-result",
+    "student-achievement"
   ].includes(String(to.name || ""));
 
   if (!requiresAuth) {
@@ -174,7 +180,8 @@ router.beforeEach(async (to) => {
     "student-exam",
     "student-records",
     "student-record-detail",
-    "student-submit-result"
+    "student-submit-result",
+    "student-achievement"
   ];
   if (studentRoutes.includes(String(to.name || "")) && !sessionStore.isStudent) {
     return "/teacher";

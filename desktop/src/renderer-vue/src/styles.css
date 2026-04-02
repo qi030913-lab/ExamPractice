@@ -225,6 +225,10 @@ textarea {
   gap: 18px;
 }
 
+.achievement-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .hero-metrics {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -818,6 +822,84 @@ textarea {
   color: var(--muted);
 }
 
+.achievement-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.achievement-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -20px -38px auto;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  opacity: 0.2;
+}
+
+.achievement-card p {
+  font-size: 2rem !important;
+}
+
+.achievement-card span {
+  color: var(--muted);
+}
+
+.achievement-card-emerald {
+  background:
+    linear-gradient(180deg, rgba(15, 118, 110, 0.14), rgba(255, 255, 255, 0.9));
+}
+
+.achievement-card-emerald::after {
+  background: rgba(15, 118, 110, 0.22);
+}
+
+.achievement-card-sand {
+  background:
+    linear-gradient(180deg, rgba(204, 107, 29, 0.16), rgba(255, 255, 255, 0.9));
+}
+
+.achievement-card-sand::after {
+  background: rgba(204, 107, 29, 0.2);
+}
+
+.achievement-card-ink {
+  background:
+    linear-gradient(180deg, rgba(32, 26, 21, 0.12), rgba(255, 255, 255, 0.9));
+}
+
+.achievement-card-ink::after {
+  background: rgba(32, 26, 21, 0.16);
+}
+
+.achievement-card-copper {
+  background:
+    linear-gradient(180deg, rgba(160, 85, 33, 0.16), rgba(255, 255, 255, 0.9));
+}
+
+.achievement-card-copper::after {
+  background: rgba(160, 85, 33, 0.18);
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.chart-card {
+  gap: 14px;
+}
+
+.chart-card-wide {
+  grid-column: 1 / -1;
+}
+
+.chart-panel {
+  width: 100%;
+  min-height: 320px;
+}
+
 @media (max-width: 1100px) {
   .workspace-hero,
   .students-layout,
@@ -833,7 +915,9 @@ textarea {
   .hero-metrics,
   .action-grid,
   .compact-summary,
-  .exam-hero {
+  .exam-hero,
+  .achievement-summary,
+  .chart-grid {
     grid-template-columns: 1fr;
   }
 }

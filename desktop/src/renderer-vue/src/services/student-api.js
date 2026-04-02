@@ -5,6 +5,11 @@ export async function getStudentPapers(userId) {
   return unwrapResponse(response);
 }
 
+export async function getStudentAchievement(userId) {
+  const response = await apiClient.get(`/student/${userId}/achievement`);
+  return unwrapResponse(response);
+}
+
 export async function getStudentPaperDetail(userId, paperId) {
   const response = await apiClient.get(`/student/${userId}/papers/${paperId}`);
   return unwrapResponse(response);

@@ -51,11 +51,11 @@
         <h3>查看我的记录</h3>
         <p>统一查看历次考试成绩、正确题数和错误题数，并继续进入详情页复盘。</p>
       </RouterLink>
-      <article class="action-card">
-        <p class="action-tag">迁移进度</p>
-        <h3>学生考试体验持续完善中</h3>
-        <p>这轮已经补齐断点恢复、继续作答和提交后的结果提示页，桌面端链路更接近真实可用状态。</p>
-      </article>
+      <RouterLink class="action-card" to="/student/achievement">
+        <p class="action-tag">学生成就</p>
+        <h3>查看趋势与统计图表</h3>
+        <p>使用图表查看成绩走势、题型准确率和各学科表现，方便长期复盘自己的考试状态。</p>
+      </RouterLink>
     </div>
 
     <div class="list-grid">
