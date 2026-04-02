@@ -41,7 +41,7 @@ public class PaperService {
             }
             Question question = questionMap.get(questionId);
             if (question == null) {
-                throw new BusinessException("题目ID " + questionId + " 不存在");
+                throw new BusinessException("题目 ID " + questionId + " 不存在");
             }
             totalScore += question.getScore();
         }
@@ -61,7 +61,7 @@ public class PaperService {
                 conn.setAutoCommit(true);
             }
         } catch (SQLException e) {
-            throw new BusinessException("创建试卷失败: " + e.getMessage());
+            throw new BusinessException("创建试卷失败：" + e.getMessage());
         }
     }
 

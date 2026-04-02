@@ -65,7 +65,7 @@ public class WorkbenchController {
                 .map(this::toTeacherStudentCard)
                 .collect(Collectors.toList()));
 
-        return ApiResponse.success("教师工作台加载成功。", payload);
+        return ApiResponse.success("教师工作台加载成功", payload);
     }
 
     @GetMapping("/student/{userId}")
@@ -102,7 +102,7 @@ public class WorkbenchController {
                 .map(this::toStudentRecordCard)
                 .collect(Collectors.toList()));
 
-        return ApiResponse.success("学生工作台加载成功。", payload);
+        return ApiResponse.success("学生工作台加载成功", payload);
     }
 
     private User requireRole(Integer userId, UserRole role) {

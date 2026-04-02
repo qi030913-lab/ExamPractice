@@ -2,7 +2,7 @@
   <div class="shell-layout">
     <header class="shell-header">
       <div>
-        <p class="shell-eyebrow">Vue3 + Electron + Spring Boot</p>
+        <p class="shell-eyebrow">桌面考试平台</p>
         <h1>在线考试系统桌面端</h1>
         <p class="shell-subcopy">
           {{ headerCopy }}
@@ -40,7 +40,7 @@ const sessionStore = useSessionStore();
 
 const headerCopy = computed(() => {
   if (!sessionStore.isLoggedIn) {
-    return "当前桌面端由 Vue3、Electron 和 Spring Boot 统一承载。";
+    return "登录后可直接进入对应角色工作区，完成出卷、考试与成绩查看。";
   }
 
   const roleLabel = sessionStore.isTeacher ? "教师" : "学生";

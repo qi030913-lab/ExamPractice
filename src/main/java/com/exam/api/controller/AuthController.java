@@ -32,7 +32,7 @@ public class AuthController {
                 role
         );
 
-        return ApiResponse.success("登录成功。", AuthUserResponse.from(user));
+        return ApiResponse.success("登录成功", AuthUserResponse.from(user));
     }
 
     @PostMapping("/register")
@@ -50,6 +50,6 @@ public class AuthController {
         Integer userId = userService.register(user);
         User createdUser = userService.getUserById(userId);
 
-        return ApiResponse.success("注册成功，请登录。", AuthUserResponse.from(createdUser));
+        return ApiResponse.success("注册成功，请登录", AuthUserResponse.from(createdUser));
     }
 }

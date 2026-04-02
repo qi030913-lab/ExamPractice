@@ -18,8 +18,8 @@
         <p>{{ nextCopy }}</p>
       </article>
       <article class="mini-card">
-        <h3>当前栈</h3>
-        <p>Vue3 渲染层、Electron 桌面壳、Spring Boot API</p>
+        <h3>使用方式</h3>
+        <p>从工作台进入对应角色功能区，教师可管理试卷与学生，学生可参加考试并查看成绩。</p>
       </article>
     </div>
   </section>

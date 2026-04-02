@@ -115,7 +115,7 @@ public class ExamService {
                 conn.setAutoCommit(true);
             }
         } catch (SQLException e) {
-            throw new BusinessException("提交考试失败: " + e.getMessage());
+            throw new BusinessException("提交考试失败：" + e.getMessage());
         }
     }
 
