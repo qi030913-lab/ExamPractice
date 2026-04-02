@@ -146,28 +146,9 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
-import { CanvasRenderer } from "echarts/renderers";
-import { BarChart, LineChart } from "echarts/charts";
-import {
-  GridComponent,
-  LegendComponent,
-  MarkLineComponent,
-  TooltipComponent
-} from "echarts/components";
-import { graphic, init, use } from "echarts/core";
 import StatusBanner from "@/components/StatusBanner.vue";
 import { useSessionStore } from "@/stores/session";
 import { getStudentAchievement } from "@/services/student-api";
-
-use([
-  CanvasRenderer,
-  BarChart,
-  LineChart,
-  GridComponent,
-  LegendComponent,
-  MarkLineComponent,
-  TooltipComponent
-]);
 
 const sessionStore = useSessionStore();
 
@@ -189,6 +170,8 @@ let subjectChart = null;
 let refreshTimer = null;
 let focusHandler = null;
 let resizeHandler = null;
+let chartFactory = null;
+let chartFactoryPromise = null;
 
 const latestUpdatedCopy = computed(() => formatDateTime(new Date()));
 
@@ -215,7 +198,7 @@ async function loadAchievement(showRefreshMessage = false) {
     subjectPerformance.value = result.data?.subjectPerformance || [];
     await sessionStore.loadWorkbench();
     await nextTick();
-    renderCharts();
+    await renderCharts();
 
     if (showRefreshMessage) {
       successMessage.value = `学生成就数据已刷新，更新时间 ${latestUpdatedCopy.value}`;
@@ -227,17 +210,53 @@ async function loadAchievement(showRefreshMessage = false) {
   }
 }
 
-function renderCharts() {
+async function ensureChartFactory() {
+  if (chartFactory) {
+    return chartFactory;
+  }
+
+  if (!chartFactoryPromise) {
+    chartFactoryPromise = Promise.all([
+      import("echarts/core"),
+      import("echarts/renderers"),
+      import("echarts/charts"),
+      import("echarts/components")
+    ]).then(([core, renderers, charts, components]) => {
+      core.use([
+        renderers.CanvasRenderer,
+        charts.BarChart,
+        charts.LineChart,
+        components.GridComponent,
+        components.LegendComponent,
+        components.MarkLineComponent,
+        components.TooltipComponent
+      ]);
+
+      chartFactory = {
+        init: core.init,
+        graphic: core.graphic
+      };
+
+      return chartFactory;
+    });
+  }
+
+  return chartFactoryPromise;
+}
+
+async function renderCharts() {
+  await ensureChartFactory();
   renderScoreTrendChart();
   renderQuestionTypeChart();
   renderSubjectChart();
 }
 
 function renderScoreTrendChart() {
-  if (!scoreTrendChartRef.value) {
+  if (!scoreTrendChartRef.value || !chartFactory) {
     return;
   }
 
+  const { init, graphic } = chartFactory;
   scoreTrendChart = scoreTrendChart || init(scoreTrendChartRef.value);
   const chartData = scoreTrend.value;
 
@@ -346,10 +365,11 @@ function renderScoreTrendChart() {
 }
 
 function renderQuestionTypeChart() {
-  if (!questionTypeChartRef.value) {
+  if (!questionTypeChartRef.value || !chartFactory) {
     return;
   }
 
+  const { init, graphic } = chartFactory;
   questionTypeChart = questionTypeChart || init(questionTypeChartRef.value);
   const data = questionTypeAccuracy.value;
 
@@ -440,10 +460,11 @@ function renderQuestionTypeChart() {
 }
 
 function renderSubjectChart() {
-  if (!subjectChartRef.value) {
+  if (!subjectChartRef.value || !chartFactory) {
     return;
   }
 
+  const { init, graphic } = chartFactory;
   subjectChart = subjectChart || init(subjectChartRef.value);
   const data = subjectPerformance.value;
 
