@@ -1,11 +1,11 @@
 <template>
   <section class="page-card">
     <div class="page-copy">
-      <p class="page-tag">第二阶段</p>
-      <h2>桌面工作台</h2>
+      <p class="page-tag">桌面工作台</p>
+      <h2>角色入口已经收口到桌面端导航</h2>
       <p>
-        这里会承接你现在 Electron renderer 里的角色首页能力。
-        后续迁移时，教师和学生都会先进入这个工作台层，再分流到各自业务区。
+        登录后会先进入这一层，再按角色流向教师或学生工作区。
+        现在教师端已经开始接入试卷中心、导题建卷和学生中心三个核心工作区。
       </p>
     </div>
     <div class="card-grid">
@@ -18,8 +18,8 @@
         <p>{{ nextCopy }}</p>
       </article>
       <article class="mini-card">
-        <h3>系统状态</h3>
-        <p>Spring Boot API、Electron 壳、Vue3 页面</p>
+        <h3>当前栈</h3>
+        <p>Vue3 渲染层、Electron 桌面壳、Spring Boot API</p>
       </article>
     </div>
   </section>
@@ -45,7 +45,7 @@ const nextCopy = computed(() => {
   }
 
   return sessionStore.isTeacher
-    ? "进入教师端：试卷管理、导题建卷、学生管理"
-    : "进入学生端：考试中心、成绩中心、成就页";
+    ? "进入教师工作区：试卷中心、导题建卷、学生中心"
+    : "进入学生工作区：考试中心、成绩中心、成就页";
 });
 </script>

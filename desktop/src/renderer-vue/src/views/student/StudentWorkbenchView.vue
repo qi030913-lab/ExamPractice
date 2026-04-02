@@ -1,29 +1,30 @@
 <template>
   <section class="page-card">
     <div class="page-copy">
-      <p class="page-tag">学生端</p>
-      <h2>学生工作台</h2>
+      <p class="page-tag">学生工作台</p>
+      <h2>学生桌面入口</h2>
       <p>
-        这一层会参考原 Swing 学生主页，后续承接考试中心、成绩中心、成就页。
+        这里承接原来 Swing 学生首页的入口能力，当前先展示考试、成绩和概览数据，
+        后续再继续迁学生考试与成绩详情。
       </p>
     </div>
     <div class="card-grid">
       <article class="mini-card">
         <h3>考试中心</h3>
-        <p>当前可考试卷 {{ stats.publishedPaperCount ?? 0 }} 份。</p>
+        <p>当前可参加试卷 {{ stats.publishedPaperCount ?? 0 }} 份。</p>
       </article>
       <article class="mini-card">
         <h3>成绩中心</h3>
         <p>已有考试记录 {{ stats.recordCount ?? 0 }} 条，已提交 {{ stats.submittedCount ?? 0 }} 次。</p>
       </article>
       <article class="mini-card">
-        <h3>成就页</h3>
-        <p>当前平均分 {{ averageScoreCopy }}。</p>
+        <h3>平均成绩</h3>
+        <p>{{ averageScoreCopy }}</p>
       </article>
     </div>
     <div class="list-grid">
       <article class="list-card">
-        <h3>可考试卷</h3>
+        <h3>可参加试卷</h3>
         <div v-if="availablePapers.length" class="list-stack">
           <div v-for="paper in availablePapers" :key="paper.paperId" class="list-row">
             <strong>{{ paper.paperName }}</strong>
@@ -36,8 +37,8 @@
         <h3>最近记录</h3>
         <div v-if="recentRecords.length" class="list-stack">
           <div v-for="record in recentRecords" :key="record.recordId" class="list-row">
-            <strong>{{ record.paperName || '未知试卷' }}</strong>
-            <span>{{ record.status || '未知状态' }} / {{ record.score ?? '暂无成绩' }}</span>
+            <strong>{{ record.paperName || "未知试卷" }}</strong>
+            <span>{{ record.status || "未知状态" }} / {{ record.score ?? "暂无成绩" }}</span>
           </div>
         </div>
         <p v-else class="empty-copy">暂无考试记录。</p>

@@ -212,4 +212,41 @@ public class QuestionImportUtil {
     public static List<Question> importQuestionsFromFile(String filePath) throws Exception {
         return importFromTextFile(new File(filePath), null);
     }
+
+    /**
+     * Import questions from raw text content.
+     */
+    public static List<Question> importFromText(String sourceText, Integer creatorId) throws Exception {
+        if (sourceText == null || sourceText.trim().isEmpty()) {
+            throw new Exception("导入内容不能为空");
+        }
+
+        List<Question> questions = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new StringReader(sourceText))) {
+            String line;
+            int lineNumber = 0;
+
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+                line = line.trim();
+
+                if (line.isEmpty() || line.startsWith("#") || line.startsWith("//")) {
+                    continue;
+                }
+
+                try {
+                    Question question = parseLine(line, creatorId);
+                    questions.add(question);
+                } catch (Exception e) {
+                    throw new Exception("第 " + lineNumber + " 行解析错误: " + e.getMessage());
+                }
+            }
+        }
+
+        if (questions.isEmpty()) {
+            throw new Exception("导入内容中没有有效题目");
+        }
+
+        return questions;
+    }
 }

@@ -4,6 +4,9 @@ import ShellLayout from "@/layouts/ShellLayout.vue";
 import LoginView from "@/views/LoginView.vue";
 import HomeView from "@/views/HomeView.vue";
 import TeacherWorkbenchView from "@/views/teacher/TeacherWorkbenchView.vue";
+import TeacherPapersView from "@/views/teacher/TeacherPapersView.vue";
+import TeacherStudentsView from "@/views/teacher/TeacherStudentsView.vue";
+import TeacherImportView from "@/views/teacher/TeacherImportView.vue";
 import StudentWorkbenchView from "@/views/student/StudentWorkbenchView.vue";
 
 const routes = [
@@ -31,6 +34,21 @@ const routes = [
         component: TeacherWorkbenchView
       },
       {
+        path: "teacher/papers",
+        name: "teacher-papers",
+        component: TeacherPapersView
+      },
+      {
+        path: "teacher/import",
+        name: "teacher-import",
+        component: TeacherImportView
+      },
+      {
+        path: "teacher/students",
+        name: "teacher-students",
+        component: TeacherStudentsView
+      },
+      {
         path: "student",
         name: "student-workbench",
         component: StudentWorkbenchView
@@ -51,7 +69,15 @@ router.beforeEach(async (to) => {
     return sessionStore.isTeacher ? "/teacher" : "/student";
   }
 
-  const requiresAuth = ["home", "teacher-workbench", "student-workbench"].includes(String(to.name || ""));
+  const requiresAuth = [
+    "home",
+    "teacher-workbench",
+    "teacher-papers",
+    "teacher-import",
+    "teacher-students",
+    "student-workbench"
+  ].includes(String(to.name || ""));
+
   if (!requiresAuth) {
     return true;
   }
@@ -69,7 +95,8 @@ router.beforeEach(async (to) => {
     }
   }
 
-  if (to.name === "teacher-workbench" && !sessionStore.isTeacher) {
+  const teacherRoutes = ["teacher-workbench", "teacher-papers", "teacher-import", "teacher-students"];
+  if (teacherRoutes.includes(String(to.name || "")) && !sessionStore.isTeacher) {
     return "/student";
   }
 
