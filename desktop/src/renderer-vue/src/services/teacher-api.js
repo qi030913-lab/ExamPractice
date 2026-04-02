@@ -35,6 +35,11 @@ export async function getTeacherStudents(userId) {
   return unwrapResponse(response);
 }
 
+export async function getTeacherImportTemplate(userId) {
+  const response = await apiClient.get(`/teacher/${userId}/import-template`);
+  return unwrapResponse(response);
+}
+
 export async function getTeacherStudentDetail(userId, studentId) {
   const response = await apiClient.get(`/teacher/${userId}/students/${studentId}`);
   return unwrapResponse(response);

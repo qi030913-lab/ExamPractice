@@ -233,6 +233,16 @@ public class TeacherWorkspaceController {
         return ApiResponse.success("考试记录详情加载成功", payload);
     }
 
+    @GetMapping("/{userId}/import-template")
+    public ApiResponse<Map<String, Object>> getImportTemplate(@PathVariable("userId") Integer userId) {
+        requireTeacher(userId);
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("fileName", "题目导入模板.txt");
+        payload.put("content", QuestionImportUtil.buildTemplateContent());
+        return ApiResponse.success("导题模板加载成功", payload);
+    }
+
     @PostMapping("/{userId}/import-paper")
     public ApiResponse<Map<String, Object>> importPaper(
             @PathVariable("userId") Integer userId,

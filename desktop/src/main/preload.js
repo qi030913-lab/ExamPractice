@@ -29,6 +29,7 @@ contextBridge.exposeInMainWorld("desktopApi", {
   buildLegacyArtifacts: () => ipcRenderer.invoke("desktop:build-legacy-artifacts"),
   pickLegacyArtifact: () => ipcRenderer.invoke("desktop:pick-legacy-artifact"),
   pickTeacherImportFile: () => ipcRenderer.invoke("desktop:pick-teacher-import-file"),
+  saveTextFile: (payload) => ipcRenderer.invoke("desktop:save-text-file", payload),
   launchLegacyApp: (payload) => ipcRenderer.invoke("desktop:launch-legacy-app", payload),
   openTarget: (target) => ipcRenderer.invoke("desktop:open-target", target),
   onDesktopEvent: (listener) => {

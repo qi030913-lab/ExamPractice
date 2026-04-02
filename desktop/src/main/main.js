@@ -608,6 +608,49 @@ async function pickTeacherImportFile() {
   };
 }
 
+async function saveTextFile(payload = {}) {
+  const defaultFileName = typeof payload.defaultFileName === "string" && payload.defaultFileName.trim()
+    ? payload.defaultFileName.trim()
+    : "未命名.txt";
+  const extension = typeof payload.extension === "string" ? payload.extension.replace(/^\./u, "").trim() : "";
+  const result = await dialog.showSaveDialog({
+    title: payload.title || "保存文件",
+    defaultPath: defaultFileName,
+    filters: Array.isArray(payload.filters) && payload.filters.length
+      ? payload.filters
+      : [
+          { name: "文本文件", extensions: ["txt"] },
+          { name: "所有文件", extensions: ["*"] }
+        ]
+  });
+
+  if (result.canceled || !result.filePath) {
+    return {
+      canceled: true
+    };
+  }
+
+  let finalPath = result.filePath;
+  if (extension && !path.extname(finalPath)) {
+    finalPath = `${finalPath}.${extension}`;
+  }
+
+  try {
+    fs.writeFileSync(finalPath, String(payload.content ?? ""), payload.encoding || "utf-8");
+    return {
+      ok: true,
+      canceled: false,
+      path: finalPath
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      canceled: false,
+      message: error.message
+    };
+  }
+}
+
 function openTarget(target) {
   const targetMap = {
     projectRoot,
@@ -775,6 +818,7 @@ ipcMain.handle("desktop:compile-java", async () => startCompileTask());
 ipcMain.handle("desktop:build-legacy-artifacts", async () => startPackageTask());
 ipcMain.handle("desktop:pick-legacy-artifact", async () => pickLegacyArtifact());
 ipcMain.handle("desktop:pick-teacher-import-file", async () => pickTeacherImportFile());
+ipcMain.handle("desktop:save-text-file", async (_event, payload) => saveTextFile(payload));
 ipcMain.handle("desktop:launch-legacy-app", async (_event, payload) => {
   return launchLegacyApp(payload.role, payload.artifactPath);
 });

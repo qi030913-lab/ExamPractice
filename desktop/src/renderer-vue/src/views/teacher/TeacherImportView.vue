@@ -59,6 +59,14 @@
 
       <article class="list-card">
         <h3>格式说明</h3>
+        <div class="detail-tips">
+          <p>建议先下载模板文件，再按模板格式编辑题目内容，这样和后端解析规则能保持一致。</p>
+          <div class="action-row">
+            <button class="ghost-button" type="button" :disabled="templateLoading" @click="downloadTemplate">
+              {{ templateLoading ? "准备模板中..." : "下载导题模板" }}
+            </button>
+          </div>
+        </div>
         <div class="format-block">
           <p>每行一题，格式如下：</p>
           <code>题目类型|科目|题目内容|选项A|选项B|选项C|选项D|正确答案|分值|难度|解析</code>
@@ -87,11 +95,12 @@
 import { reactive, ref } from "vue";
 import StatusBanner from "@/components/StatusBanner.vue";
 import { useSessionStore } from "@/stores/session";
-import { importTeacherPaper } from "@/services/teacher-api";
+import { getTeacherImportTemplate, importTeacherPaper } from "@/services/teacher-api";
 
 const sessionStore = useSessionStore();
 const fileInputRef = ref(null);
 const loading = ref(false);
+const templateLoading = ref(false);
 const errorMessage = ref("");
 const successMessage = ref("");
 const importSummary = ref(null);
@@ -108,6 +117,61 @@ const form = reactive({
 
 function pickLocalFile() {
   fileInputRef.value?.click();
+}
+
+async function downloadTemplate() {
+  if (!sessionStore.user?.userId) {
+    return;
+  }
+
+  templateLoading.value = true;
+  errorMessage.value = "";
+  successMessage.value = "";
+
+  try {
+    const result = await getTeacherImportTemplate(sessionStore.user.userId);
+    if (!result?.success) {
+      throw new Error(result?.message || "加载导题模板失败");
+    }
+
+    const fileName = result.data?.fileName || "题目导入模板.txt";
+    const content = result.data?.content || "";
+    if (!content.trim()) {
+      throw new Error("导题模板内容为空");
+    }
+
+    if (window?.desktopApi?.saveTextFile) {
+      const saveResult = await window.desktopApi.saveTextFile({
+        title: "保存题目导入模板",
+        defaultFileName: fileName,
+        extension: "txt",
+        content
+      });
+
+      if (saveResult?.canceled) {
+        return;
+      }
+      if (!saveResult?.ok) {
+        throw new Error(saveResult?.message || "保存模板文件失败");
+      }
+
+      successMessage.value = `模板文件已保存到：${saveResult.path}`;
+      return;
+    }
+
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(objectUrl);
+    successMessage.value = `模板文件已下载：${fileName}`;
+  } catch (error) {
+    errorMessage.value = error?.response?.data?.message || error?.message || "加载导题模板失败";
+  } finally {
+    templateLoading.value = false;
+  }
 }
 
 async function handleFileChange(event) {
