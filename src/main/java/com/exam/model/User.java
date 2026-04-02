@@ -1,40 +1,35 @@
 package com.exam.model;
 
 import com.exam.model.enums.UserRole;
+
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-/**
- * 用户实体类
- * 使用封装、继承等面向对象特性
- */
 public class User {
     private Integer userId;
-    private String realName;  // 真实姓名
-    private String studentNumber;  // 学号（唯一标识）
+    private String realName;
+    private String loginId;
     private String password;
     private UserRole role;
     private String email;
     private String phone;
-    private String gender;  // 性别
-    private String avatarUrl;  // 头像URL
-    private String status;  // 账户状态
-    private LocalDateTime lastLoginTime;  // 最后登录时间
+    private String gender;
+    private String avatarUrl;
+    private String status;
+    private LocalDateTime lastLoginTime;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
-    // 构造方法
     public User() {
     }
 
-    public User(String realName, String studentNumber, String password, UserRole role) {
+    public User(String realName, String loginId, String password, UserRole role) {
         this.realName = realName;
-        this.studentNumber = studentNumber;
+        this.loginId = loginId;
         this.password = password;
         this.role = role;
     }
 
-    // Getter和Setter方法
     public Integer getUserId() {
         return userId;
     }
@@ -51,12 +46,21 @@ public class User {
         this.realName = realName;
     }
 
-    public String getStudentNumber() {
-        return studentNumber;
+    public String getLoginId() {
+        return loginId;
     }
 
+    public void setLoginId(String loginId) {
+        this.loginId = loginId;
+    }
+
+    public String getStudentNumber() {
+        return loginId;
+    }
+
+    // Legacy alias kept only for older persistence mappings during cleanup.
     public void setStudentNumber(String studentNumber) {
-        this.studentNumber = studentNumber;
+        this.loginId = studentNumber;
     }
 
     public String getPassword() {
@@ -141,8 +145,12 @@ public class User {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         User user = (User) o;
         return Objects.equals(userId, user.userId);
     }
@@ -157,7 +165,7 @@ public class User {
         return "User{" +
                 "userId=" + userId +
                 ", realName='" + realName + '\'' +
-                ", studentNumber='" + studentNumber + '\'' +
+                ", loginId='" + loginId + '\'' +
                 ", role=" + role +
                 ", email='" + email + '\'' +
                 '}';

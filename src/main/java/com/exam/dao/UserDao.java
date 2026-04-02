@@ -111,7 +111,7 @@ public class UserDao {
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             pstmt.setString(1, user.getRealName());
-            pstmt.setString(2, user.getStudentNumber());
+            pstmt.setString(2, user.getLoginId());
             pstmt.setString(3, user.getPassword());
             pstmt.setString(4, user.getRole().name());
             pstmt.setString(5, user.getEmail());
@@ -180,7 +180,7 @@ public class UserDao {
         User user = new User();
         user.setUserId(rs.getInt("user_id"));
         user.setRealName(rs.getString("real_name"));
-        user.setStudentNumber(rs.getString("student_number"));
+        user.setLoginId(rs.getString("student_number"));
         user.setPassword(rs.getString("password"));
         user.setRole(UserRole.valueOf(rs.getString("role")));
         user.setEmail(rs.getString("email"));

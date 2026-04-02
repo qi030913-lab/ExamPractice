@@ -66,7 +66,7 @@ public class UserService {
     public int register(User user) {
         validateUser(user);
 
-        User existingUser = userDao.findByLoginId(user.getStudentNumber());
+        User existingUser = userDao.findByLoginId(user.getLoginId());
         if (existingUser != null) {
             if (user.getRole() == UserRole.TEACHER) {
                 throw new BusinessException("教工号已存在");
@@ -128,7 +128,7 @@ public class UserService {
         if (user.getRealName() == null || user.getRealName().trim().isEmpty()) {
             throw new BusinessException("姓名不能为空");
         }
-        if (user.getStudentNumber() == null || user.getStudentNumber().trim().isEmpty()) {
+        if (user.getLoginId() == null || user.getLoginId().trim().isEmpty()) {
             if (user.getRole() == UserRole.TEACHER) {
                 throw new BusinessException("教工号不能为空");
             }
@@ -141,7 +141,7 @@ public class UserService {
             throw new BusinessException("用户角色不能为空");
         }
 
-        if (user.getStudentNumber().length() < 3 || user.getStudentNumber().length() > 20) {
+        if (user.getLoginId().length() < 3 || user.getLoginId().length() > 20) {
             if (user.getRole() == UserRole.TEACHER) {
                 throw new BusinessException("教工号长度应在3到20个字符之间");
             }

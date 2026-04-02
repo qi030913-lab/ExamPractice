@@ -16,7 +16,7 @@ public class AuthUserResponse {
         AuthUserResponse response = new AuthUserResponse();
         response.userId = user.getUserId();
         response.realName = user.getRealName();
-        response.loginId = user.getStudentNumber();
+        response.loginId = user.getLoginId();
         response.role = user.getRole() == null ? null : user.getRole().name();
         response.email = user.getEmail();
         response.phone = user.getPhone();

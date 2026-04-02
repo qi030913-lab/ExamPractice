@@ -41,7 +41,7 @@ public class AuthController {
 
         User user = new User();
         user.setRealName(request.getRealName().trim());
-        user.setStudentNumber(request.getLoginId().trim());
+        user.setLoginId(request.getLoginId().trim());
         user.setPassword(request.getPassword());
         user.setRole(role);
         user.setGender("MALE");
