@@ -1,15 +1,13 @@
 <template>
   <section class="page-card">
     <div class="page-copy">
-      <p class="page-tag">第一阶段</p>
-      <h2>登录页已经切到桌面端</h2>
+      <p class="page-tag">统一登录</p>
+      <h2>桌面端登录与注册入口</h2>
       <p>
-        这里是桌面端统一登录入口。当前已经接入 Spring Boot 登录与注册接口，成功后会按角色进入教师或学生工作台。
+        当前桌面端已经直接对接 Spring Boot API。登录成功后，会按角色进入教师或学生工作台。
       </p>
       <div class="detail-tips">
-        <p>
-          如果你还没有账号，现在可以直接在桌面端完成学生或教师注册。
-        </p>
+        <p>如果你还没有账号，也可以直接在这里完成教师或学生注册。</p>
       </div>
     </div>
 
@@ -33,11 +31,11 @@
         <input v-model="form.realName" type="text" placeholder="请输入姓名" />
       </label>
       <label>
-        <span>{{ accountLabel }}</span>
+        <span>{{ loginIdLabel }}</span>
         <input
-          v-model="form.account"
+          v-model="form.loginId"
           type="text"
-          :placeholder="accountPlaceholder"
+          :placeholder="loginIdPlaceholder"
         />
       </label>
       <label>
@@ -61,7 +59,7 @@
           <div>
             <p class="page-tag">注册账号</p>
             <h3>{{ registerForm.role === "TEACHER" ? "教师注册" : "学生注册" }}</h3>
-            <p class="section-copy">注册成功后会自动回填登录表单，便于你直接继续登录。</p>
+            <p class="section-copy">注册成功后会自动回填到登录表单，方便你继续登录。</p>
           </div>
           <button class="ghost-button" type="button" :disabled="sessionStore.loading" @click="closeRegisterDialog">
             关闭
@@ -88,11 +86,11 @@
             <input v-model="registerForm.realName" type="text" placeholder="请输入姓名" />
           </label>
           <label>
-            <span>{{ registerAccountLabel }}</span>
+            <span>{{ registerLoginIdLabel }}</span>
             <input
-              v-model="registerForm.account"
+              v-model="registerForm.loginId"
               type="text"
-              :placeholder="registerAccountPlaceholder"
+              :placeholder="registerLoginIdPlaceholder"
             />
           </label>
           <label>
@@ -135,22 +133,22 @@ const registerSuccessMessage = ref("");
 const form = reactive({
   role: "STUDENT",
   realName: "",
-  account: "",
+  loginId: "",
   password: ""
 });
 
 const registerForm = reactive({
   role: "STUDENT",
   realName: "",
-  account: "",
+  loginId: "",
   password: "",
   confirmPassword: ""
 });
 
-const accountLabel = computed(() => form.role === "TEACHER" ? "教工号" : "学号");
-const accountPlaceholder = computed(() => form.role === "TEACHER" ? "请输入教工号" : "请输入学号");
-const registerAccountLabel = computed(() => registerForm.role === "TEACHER" ? "教工号" : "学号");
-const registerAccountPlaceholder = computed(() => registerForm.role === "TEACHER" ? "请输入教工号" : "请输入学号");
+const loginIdLabel = computed(() => form.role === "TEACHER" ? "教工号" : "学号");
+const loginIdPlaceholder = computed(() => form.role === "TEACHER" ? "请输入教工号" : "请输入学号");
+const registerLoginIdLabel = computed(() => registerForm.role === "TEACHER" ? "教工号" : "学号");
+const registerLoginIdPlaceholder = computed(() => registerForm.role === "TEACHER" ? "请输入教工号" : "请输入学号");
 
 async function handleSubmit() {
   successMessage.value = "";
@@ -158,7 +156,7 @@ async function handleSubmit() {
   await sessionStore.loginWithPassword({
     role: form.role,
     realName: form.realName.trim(),
-    account: form.account.trim(),
+    loginId: form.loginId.trim(),
     password: form.password
   });
 
@@ -173,7 +171,7 @@ function openRegisterDialog() {
   registerSuccessMessage.value = "";
   registerForm.role = form.role;
   registerForm.realName = form.realName;
-  registerForm.account = form.account;
+  registerForm.loginId = form.loginId;
   registerForm.password = "";
   registerForm.confirmPassword = "";
 }
@@ -185,9 +183,9 @@ function closeRegisterDialog() {
 function fillLoginFromRegister() {
   form.role = registerForm.role;
   form.realName = registerForm.realName.trim();
-  form.account = registerForm.account.trim();
+  form.loginId = registerForm.loginId.trim();
   form.password = registerForm.password;
-  successMessage.value = "已将注册信息回填到登录表单，你可以直接登录。";
+  successMessage.value = "已将注册信息回填到登录表单，你可以直接继续登录。";
 }
 
 async function handleRegister() {
@@ -205,16 +203,17 @@ async function handleRegister() {
     await sessionStore.registerAccount({
       role: registerForm.role,
       realName: registerForm.realName.trim(),
-      account: registerForm.account.trim(),
+      loginId: registerForm.loginId.trim(),
       password: registerForm.password
     });
 
+    registerSuccessMessage.value = "注册成功";
     fillLoginFromRegister();
     sessionStore.errorMessage = "";
     successMessage.value = "注册成功，登录表单已自动回填。";
     closeRegisterDialog();
   } catch (error) {
-    registerErrorMessage.value = error?.response?.data?.message || error?.message || "注册失败";
+    registerErrorMessage.value = error?.message || "注册失败";
   }
 }
 </script>

@@ -5,7 +5,7 @@ import com.exam.model.User;
 public class AuthUserResponse {
     private Integer userId;
     private String realName;
-    private String studentNumber;
+    private String loginId;
     private String role;
     private String email;
     private String phone;
@@ -16,7 +16,7 @@ public class AuthUserResponse {
         AuthUserResponse response = new AuthUserResponse();
         response.userId = user.getUserId();
         response.realName = user.getRealName();
-        response.studentNumber = user.getStudentNumber();
+        response.loginId = user.getStudentNumber();
         response.role = user.getRole() == null ? null : user.getRole().name();
         response.email = user.getEmail();
         response.phone = user.getPhone();
@@ -33,8 +33,8 @@ public class AuthUserResponse {
         return realName;
     }
 
-    public String getStudentNumber() {
-        return studentNumber;
+    public String getLoginId() {
+        return loginId;
     }
 
     public String getRole() {

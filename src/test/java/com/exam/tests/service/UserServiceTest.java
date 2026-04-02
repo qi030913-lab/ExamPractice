@@ -30,9 +30,9 @@ class UserServiceTest {
     void loginTeacherWithHashedPasswordShouldSucceed() {
         User user = new User("Teacher", "teacher001", PasswordUtil.hashPassword("123456"), UserRole.TEACHER);
         user.setUserId(1);
-        when(userDao.findByNameAndPassword("Teacher", "123456")).thenReturn(user);
+        when(userDao.findTeacherByNameAndNumber("Teacher", "teacher001")).thenReturn(user);
 
-        User result = userService.login("Teacher", null, "123456", UserRole.TEACHER);
+        User result = userService.login("Teacher", "teacher001", "123456", UserRole.TEACHER);
 
         assertNotNull(result);
         assertEquals(UserRole.TEACHER, result.getRole());

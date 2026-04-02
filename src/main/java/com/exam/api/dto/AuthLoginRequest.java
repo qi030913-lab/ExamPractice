@@ -9,7 +9,8 @@ public class AuthLoginRequest {
     @NotBlank(message = "姓名不能为空")
     private String realName;
 
-    private String account;
+    @NotBlank(message = "登录号不能为空")
+    private String loginId;
 
     @NotBlank(message = "密码不能为空")
     private String password;
@@ -30,12 +31,12 @@ public class AuthLoginRequest {
         this.realName = realName;
     }
 
-    public String getAccount() {
-        return account;
+    public String getLoginId() {
+        return loginId;
     }
 
-    public void setAccount(String account) {
-        this.account = account;
+    public void setLoginId(String loginId) {
+        this.loginId = loginId;
     }
 
     public String getPassword() {

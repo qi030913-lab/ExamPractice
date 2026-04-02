@@ -27,7 +27,7 @@ public class AuthController {
         UserRole role = UserRole.valueOf(request.getRole().trim().toUpperCase());
         User user = userService.login(
                 request.getRealName(),
-                request.getAccount(),
+                request.getLoginId(),
                 request.getPassword(),
                 role
         );
@@ -41,7 +41,7 @@ public class AuthController {
 
         User user = new User();
         user.setRealName(request.getRealName().trim());
-        user.setStudentNumber(request.getAccount().trim());
+        user.setStudentNumber(request.getLoginId().trim());
         user.setPassword(request.getPassword());
         user.setRole(role);
         user.setGender("MALE");

@@ -4,10 +4,33 @@ import { getStudentWorkbench, getTeacherWorkbench, login, register } from "@/ser
 
 const SESSION_STORAGE_KEY = "exampractice.desktop.session";
 
+function normalizeAuthUser(user) {
+  if (!user) {
+    return null;
+  }
+
+  return {
+    ...user,
+    loginId: user.loginId || user.studentNumber || ""
+  };
+}
+
 function loadStoredSession() {
   try {
     const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed?.user) {
+      return null;
+    }
+
+    return {
+      ...parsed,
+      user: normalizeAuthUser(parsed.user)
+    };
   } catch (_error) {
     return null;
   }
@@ -18,7 +41,11 @@ function persistSession(session) {
     window.localStorage.removeItem(SESSION_STORAGE_KEY);
     return;
   }
-  window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+
+  window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+    ...session,
+    user: normalizeAuthUser(session.user)
+  }));
 }
 
 export const useSessionStore = defineStore("session", () => {
@@ -33,27 +60,27 @@ export const useSessionStore = defineStore("session", () => {
   const isStudent = computed(() => role.value === "STUDENT");
   const user = computed(() => session.value?.user || null);
 
+  function setSessionUser(nextUser) {
+    session.value = nextUser
+      ? { user: normalizeAuthUser(nextUser) }
+      : null;
+    persistSession(session.value);
+  }
+
   async function loginWithPassword(payload) {
     loading.value = true;
     errorMessage.value = "";
 
     try {
       const result = await login(payload);
-      if (!result?.success) {
-        throw new Error(result?.message || "登录失败");
-      }
-
-      session.value = {
-        user: result.data
-      };
-      persistSession(session.value);
+      setSessionUser(result.data);
       await loadWorkbench();
       return session.value;
     } catch (error) {
       session.value = null;
       workbench.value = null;
       persistSession(null);
-      errorMessage.value = error?.response?.data?.message || error?.message || "登录失败";
+      errorMessage.value = error?.message || "登录失败";
       throw error;
     } finally {
       loading.value = false;
@@ -65,13 +92,9 @@ export const useSessionStore = defineStore("session", () => {
     errorMessage.value = "";
 
     try {
-      const result = await register(payload);
-      if (!result?.success) {
-        throw new Error(result?.message || "注册失败");
-      }
-      return result;
+      return await register(payload);
     } catch (error) {
-      errorMessage.value = error?.response?.data?.message || error?.message || "注册失败";
+      errorMessage.value = error?.message || "注册失败";
       throw error;
     } finally {
       loading.value = false;
@@ -84,14 +107,10 @@ export const useSessionStore = defineStore("session", () => {
       return null;
     }
 
-    const { user: currentUser } = session.value;
+    const currentUser = session.value.user;
     const result = currentUser.role === "TEACHER"
       ? await getTeacherWorkbench(currentUser.userId)
       : await getStudentWorkbench(currentUser.userId);
-
-    if (!result?.success) {
-      throw new Error(result?.message || "加载工作台失败");
-    }
 
     workbench.value = result.data;
     return workbench.value;
