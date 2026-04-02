@@ -2,6 +2,7 @@ package com.exam.api.controller;
 
 import com.exam.api.common.ApiResponse;
 import com.exam.api.dto.AuthLoginRequest;
+import com.exam.api.dto.AuthRegisterRequest;
 import com.exam.api.dto.AuthUserResponse;
 import com.exam.model.User;
 import com.exam.model.enums.UserRole;
@@ -32,5 +33,23 @@ public class AuthController {
         );
 
         return ApiResponse.success("Login succeeded.", AuthUserResponse.from(user));
+    }
+
+    @PostMapping("/register")
+    public ApiResponse<AuthUserResponse> register(@Valid @RequestBody AuthRegisterRequest request) {
+        UserRole role = UserRole.valueOf(request.getRole().trim().toUpperCase());
+
+        User user = new User();
+        user.setRealName(request.getRealName().trim());
+        user.setStudentNumber(request.getAccount().trim());
+        user.setPassword(request.getPassword());
+        user.setRole(role);
+        user.setGender("MALE");
+        user.setStatus("ACTIVE");
+
+        Integer userId = userService.register(user);
+        User createdUser = userService.getUserById(userId);
+
+        return ApiResponse.success("注册成功，请登录。", AuthUserResponse.from(createdUser));
     }
 }

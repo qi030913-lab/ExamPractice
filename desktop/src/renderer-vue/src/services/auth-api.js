@@ -5,6 +5,11 @@ export async function login(payload) {
   return unwrapResponse(response);
 }
 
+export async function register(payload) {
+  const response = await apiClient.post("/auth/register", payload);
+  return unwrapResponse(response);
+}
+
 export async function getTeacherWorkbench(userId) {
   const response = await apiClient.get(`/workbench/teacher/${userId}`);
   return unwrapResponse(response);

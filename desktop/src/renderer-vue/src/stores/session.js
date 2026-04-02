@@ -1,6 +1,6 @@
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
-import { getStudentWorkbench, getTeacherWorkbench, login } from "@/services/auth-api";
+import { getStudentWorkbench, getTeacherWorkbench, login, register } from "@/services/auth-api";
 
 const SESSION_STORAGE_KEY = "exampractice.desktop.session";
 
@@ -60,6 +60,24 @@ export const useSessionStore = defineStore("session", () => {
     }
   }
 
+  async function registerAccount(payload) {
+    loading.value = true;
+    errorMessage.value = "";
+
+    try {
+      const result = await register(payload);
+      if (!result?.success) {
+        throw new Error(result?.message || "注册失败");
+      }
+      return result;
+    } catch (error) {
+      errorMessage.value = error?.response?.data?.message || error?.message || "注册失败";
+      throw error;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   async function loadWorkbench() {
     if (!session.value?.user?.userId || !session.value?.user?.role) {
       workbench.value = null;
@@ -97,6 +115,7 @@ export const useSessionStore = defineStore("session", () => {
     role,
     user,
     loginWithPassword,
+    registerAccount,
     loadWorkbench,
     logout
   };
