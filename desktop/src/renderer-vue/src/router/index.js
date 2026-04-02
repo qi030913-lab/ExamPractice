@@ -11,6 +11,9 @@ import TeacherStudentDetailView from "@/views/teacher/TeacherStudentDetailView.v
 import TeacherRecordDetailView from "@/views/teacher/TeacherRecordDetailView.vue";
 import TeacherImportView from "@/views/teacher/TeacherImportView.vue";
 import StudentWorkbenchView from "@/views/student/StudentWorkbenchView.vue";
+import StudentPapersView from "@/views/student/StudentPapersView.vue";
+import StudentRecordsView from "@/views/student/StudentRecordsView.vue";
+import StudentRecordDetailView from "@/views/student/StudentRecordDetailView.vue";
 
 const routes = [
   {
@@ -70,6 +73,21 @@ const routes = [
         path: "student",
         name: "student-workbench",
         component: StudentWorkbenchView
+      },
+      {
+        path: "student/papers",
+        name: "student-papers",
+        component: StudentPapersView
+      },
+      {
+        path: "student/records",
+        name: "student-records",
+        component: StudentRecordsView
+      },
+      {
+        path: "student/records/:recordId",
+        name: "student-record-detail",
+        component: StudentRecordDetailView
       }
     ]
   }
@@ -96,7 +114,10 @@ router.beforeEach(async (to) => {
     "teacher-students",
     "teacher-student-detail",
     "teacher-record-detail",
-    "student-workbench"
+    "student-workbench",
+    "student-papers",
+    "student-records",
+    "student-record-detail"
   ].includes(String(to.name || ""));
 
   if (!requiresAuth) {
@@ -130,6 +151,16 @@ router.beforeEach(async (to) => {
   }
 
   if (to.name === "student-workbench" && !sessionStore.isStudent) {
+    return "/teacher";
+  }
+
+  const studentRoutes = [
+    "student-workbench",
+    "student-papers",
+    "student-records",
+    "student-record-detail"
+  ];
+  if (studentRoutes.includes(String(to.name || "")) && !sessionStore.isStudent) {
     return "/teacher";
   }
 

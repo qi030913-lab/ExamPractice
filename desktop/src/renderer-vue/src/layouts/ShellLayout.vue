@@ -16,6 +16,8 @@
         <RouterLink v-if="sessionStore.isTeacher" to="/teacher/import">导题建卷</RouterLink>
         <RouterLink v-if="sessionStore.isTeacher" to="/teacher/students">学生中心</RouterLink>
         <RouterLink v-if="sessionStore.isStudent" to="/student">学生首页</RouterLink>
+        <RouterLink v-if="sessionStore.isStudent" to="/student/papers">考试中心</RouterLink>
+        <RouterLink v-if="sessionStore.isStudent" to="/student/records">成绩中心</RouterLink>
         <button v-if="sessionStore.isLoggedIn" class="shell-logout" type="button" @click="handleLogout">
           退出
         </button>
