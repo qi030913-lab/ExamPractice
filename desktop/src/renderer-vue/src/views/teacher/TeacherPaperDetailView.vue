@@ -4,7 +4,7 @@
       <div class="page-copy">
         <p class="page-tag">试卷详情</p>
         <h2>{{ paper?.paperName || "试卷详情" }}</h2>
-        <p>先迁试卷基础信息编辑和题目明细查看，后续再继续补换题、排题和手动组卷。</p>
+        <p>查看并维护试卷基础信息，同时核对题目明细、答案和解析内容。</p>
       </div>
       <RouterLink class="text-link" to="/teacher/papers">返回试卷中心</RouterLink>
     </div>
@@ -68,7 +68,7 @@
           <div class="section-head">
             <div>
               <h3>题目明细</h3>
-              <p class="section-copy">当前先只读展示题目结构，帮助我们确认导题建卷后的桌面端查看链路。</p>
+              <p class="section-copy">这里展示试卷中的题目结构、标准答案和解析，方便快速核对内容。</p>
             </div>
           </div>
 

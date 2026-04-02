@@ -3,7 +3,7 @@
     <div class="page-copy">
       <p class="page-tag">试卷中心</p>
       <h2>教师试卷管理</h2>
-      <p>先把最核心的桌面端动作迁过来：查看试卷、进入详情、发布、取消发布、删除。</p>
+      <p>在这里统一查看试卷、进入详情、调整发布状态，并执行删除操作。</p>
     </div>
 
     <StatusBanner v-if="errorMessage" tone="danger">

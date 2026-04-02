@@ -3,10 +3,10 @@
     <div class="workspace-hero">
       <div class="page-copy">
         <p class="page-tag">教师工作台</p>
-        <h2>把高频任务收进桌面端入口</h2>
+        <h2>快速进入常用教学管理功能</h2>
         <p>
-          这一层承接教师桌面端的导航逻辑。试卷管理、导题建卷、学生管理三块已经串成连续桌面流程，
-          后续再继续细化编辑和详情页。
+          这里集中展示教师最常用的工作入口，包括试卷管理、导题建卷和学生管理，
+          方便你在同一套桌面流程中完成日常操作。
         </p>
       </div>
       <div class="hero-metrics">
@@ -39,7 +39,7 @@
       <RouterLink class="action-card" to="/teacher/students">
         <p class="action-tag">学生管理</p>
         <h3>查看学生与考试记录</h3>
-        <p>先把学生列表和考试记录摘要迁到桌面端，便于后续继续扩展详情页。</p>
+        <p>查看学生资料、考试记录和作答详情，便于快速跟进学习情况。</p>
       </RouterLink>
     </div>
 

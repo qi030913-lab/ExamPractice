@@ -3,9 +3,10 @@
     <div class="workspace-hero">
       <div class="page-copy">
         <p class="page-tag">学生工作台</p>
-        <h2>把考试、恢复作答和成绩复盘收口到桌面端</h2>
+        <h2>集中进入考试、记录与成绩分析</h2>
         <p>
-          这一层承接学生桌面端的主要导航。现在已经能从这里进入考试中心、重新进入进行中的考试、查看记录和复盘成绩。
+          这里汇总了学生端最常用的入口，你可以从这里开始考试、继续未完成作答、
+          查看历史记录，并通过图表复盘学习表现。
         </p>
       </div>
       <div class="hero-metrics">
@@ -44,7 +45,7 @@
       <RouterLink class="action-card action-card-accent" to="/student/papers">
         <p class="action-tag">考试中心</p>
         <h3>{{ ongoingRecord ? "继续未完成考试" : "查看可参加试卷" }}</h3>
-        <p>已发布试卷会统一收口在这里，并直接提供开始考试或继续作答的入口。</p>
+        <p>查看当前可参加的试卷，并直接开始考试或继续未完成的作答。</p>
       </RouterLink>
       <RouterLink class="action-card" to="/student/records">
         <p class="action-tag">成绩中心</p>

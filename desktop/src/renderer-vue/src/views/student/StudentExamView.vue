@@ -4,7 +4,7 @@
       <div class="page-copy">
         <p class="page-tag">在线考试</p>
         <h2>{{ paper?.paperName || "考试作答" }}</h2>
-        <p>这一页接管桌面端在线考试流程，支持倒计时、断点恢复、本地草稿保存和提交试卷。</p>
+        <p>支持倒计时、断点恢复、本地草稿保存和提交试卷，帮助你稳定完成整场考试。</p>
       </div>
       <RouterLink class="text-link" to="/student/papers">返回考试中心</RouterLink>
     </div>

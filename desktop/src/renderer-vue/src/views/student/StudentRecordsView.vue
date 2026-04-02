@@ -3,7 +3,7 @@
     <div class="page-copy">
       <p class="page-tag">成绩中心</p>
       <h2>我的考试记录</h2>
-      <p>这里承接原来学生端成绩与记录查看场景，支持从记录列表继续进入进行中的考试，或查看已提交结果。</p>
+      <p>在这里统一查看历次考试记录，支持继续未完成的考试，或查看已提交结果与详细解析。</p>
     </div>
 
     <StatusBanner v-if="errorMessage" tone="danger">

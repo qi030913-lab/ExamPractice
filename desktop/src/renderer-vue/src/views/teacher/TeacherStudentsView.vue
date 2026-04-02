@@ -3,7 +3,7 @@
     <div class="page-copy">
       <p class="page-tag">学生中心</p>
       <h2>教师学生管理</h2>
-      <p>先串起学生列表和考试记录入口，后续继续在这个基础上扩展编辑、归档和更多统计能力。</p>
+      <p>集中查看学生资料、考试记录和成绩概览，方便快速了解学习情况。</p>
     </div>
 
     <StatusBanner v-if="errorMessage" tone="danger">

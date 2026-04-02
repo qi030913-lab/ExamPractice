@@ -4,7 +4,7 @@
       <div class="page-copy">
         <p class="page-tag">考试记录</p>
         <h2>{{ record?.paperName || "考试记录详情" }}</h2>
-        <p>这一页承接教师查看学生考试过程的需求，重点展示成绩结果、作答统计和逐题答案。</p>
+        <p>这里集中展示学生本次考试的成绩结果、作答统计和逐题答案，便于教师复核。</p>
       </div>
       <RouterLink class="text-link" :to="backToStudentDetail">返回学生详情</RouterLink>
     </div>
