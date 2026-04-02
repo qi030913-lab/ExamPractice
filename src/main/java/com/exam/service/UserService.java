@@ -18,7 +18,7 @@ public class UserService {
         this.userDao = new UserDao();
     }
 
-    public User login(String realName, String studentNumber, String password, UserRole role) {
+    public User login(String realName, String loginId, String password, UserRole role) {
         if (realName == null || realName.trim().isEmpty()) {
             throw new AuthenticationException("姓名不能为空");
         }
@@ -28,7 +28,7 @@ public class UserService {
         if (role == null) {
             throw new AuthenticationException("角色不能为空");
         }
-        if (studentNumber == null || studentNumber.trim().isEmpty()) {
+        if (loginId == null || loginId.trim().isEmpty()) {
             if (role == UserRole.TEACHER) {
                 throw new AuthenticationException("教工号不能为空");
             }
@@ -37,9 +37,9 @@ public class UserService {
 
         User user;
         if (role == UserRole.TEACHER) {
-            user = userDao.findTeacherByNameAndNumber(realName.trim(), studentNumber.trim());
+            user = userDao.findTeacherByLoginId(realName.trim(), loginId.trim());
         } else {
-            user = userDao.findByNameNumberAndPassword(realName.trim(), studentNumber.trim(), password);
+            user = userDao.findStudentByLoginId(realName.trim(), loginId.trim());
         }
 
         if (user == null || !PasswordUtil.matches(password, user.getPassword())) {
@@ -66,7 +66,7 @@ public class UserService {
     public int register(User user) {
         validateUser(user);
 
-        User existingUser = userDao.findByStudentNumber(user.getStudentNumber());
+        User existingUser = userDao.findByLoginId(user.getStudentNumber());
         if (existingUser != null) {
             if (user.getRole() == UserRole.TEACHER) {
                 throw new BusinessException("教工号已存在");

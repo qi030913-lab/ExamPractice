@@ -359,7 +359,7 @@ public class TeacherWorkspaceController {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("userId", student.getUserId());
         item.put("realName", student.getRealName());
-        item.put("studentNumber", student.getStudentNumber());
+        item.put("loginId", student.getStudentNumber());
         item.put("email", student.getEmail());
         item.put("phone", student.getPhone());
         item.put("gender", student.getGender());

@@ -25,7 +25,7 @@
             </div>
             <div class="detail-row">
               <span>学号</span>
-              <strong>{{ student.studentNumber || "-" }}</strong>
+              <strong>{{ student.loginId || "-" }}</strong>
             </div>
             <div class="detail-row">
               <span>邮箱</span>

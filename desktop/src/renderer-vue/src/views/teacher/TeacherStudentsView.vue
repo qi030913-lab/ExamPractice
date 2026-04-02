@@ -28,7 +28,7 @@
           :to="`/teacher/students/${student.userId}`"
         >
           <strong>{{ student.realName }}</strong>
-          <span>{{ student.studentNumber }}</span>
+          <span>{{ student.loginId }}</span>
           <span v-if="student.email">{{ student.email }}</span>
           <span>考试 {{ student.recordCount ?? 0 }} 次 / 已提交 {{ student.submittedCount ?? 0 }} 次</span>
           <span>平均分 {{ formatScore(student.averageScore) }}</span>

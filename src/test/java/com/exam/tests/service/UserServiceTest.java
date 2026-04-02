@@ -30,7 +30,7 @@ class UserServiceTest {
     void loginTeacherWithHashedPasswordShouldSucceed() {
         User user = new User("Teacher", "teacher001", PasswordUtil.hashPassword("123456"), UserRole.TEACHER);
         user.setUserId(1);
-        when(userDao.findTeacherByNameAndNumber("Teacher", "teacher001")).thenReturn(user);
+        when(userDao.findTeacherByLoginId("Teacher", "teacher001")).thenReturn(user);
 
         User result = userService.login("Teacher", "teacher001", "123456", UserRole.TEACHER);
 
@@ -42,7 +42,7 @@ class UserServiceTest {
     @Test
     void loginStudentWrongPasswordShouldThrow() {
         User user = new User("Student", "2021001", PasswordUtil.hashPassword("right-pass"), UserRole.STUDENT);
-        when(userDao.findByNameNumberAndPassword("Student", "2021001", "wrong-pass")).thenReturn(user);
+        when(userDao.findStudentByLoginId("Student", "2021001")).thenReturn(user);
 
         assertThrows(AuthenticationException.class,
                 () -> userService.login("Student", "2021001", "wrong-pass", UserRole.STUDENT));
@@ -52,7 +52,7 @@ class UserServiceTest {
     void loginShouldMigratePlainPasswordOnSuccess() {
         User user = new User("Student", "2021002", "123456", UserRole.STUDENT);
         user.setUserId(12);
-        when(userDao.findByNameNumberAndPassword("Student", "2021002", "123456")).thenReturn(user);
+        when(userDao.findStudentByLoginId("Student", "2021002")).thenReturn(user);
 
         User result = userService.login("Student", "2021002", "123456", UserRole.STUDENT);
 
@@ -64,7 +64,7 @@ class UserServiceTest {
     @Test
     void registerShouldHashPasswordBeforeInsert() {
         User user = new User("Alice", "2023001", "abcdef", UserRole.STUDENT);
-        when(userDao.findByStudentNumber("2023001")).thenReturn(null);
+        when(userDao.findByLoginId("2023001")).thenReturn(null);
         when(userDao.insert(any(User.class))).thenReturn(101);
 
         int id = userService.register(user);

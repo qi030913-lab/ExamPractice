@@ -59,7 +59,7 @@
         <div v-if="recentStudents.length" class="list-stack">
           <div v-for="student in recentStudents" :key="student.userId" class="list-row">
             <strong>{{ student.realName }}</strong>
-            <span>{{ student.studentNumber }}{{ student.email ? ` / ${student.email}` : "" }}</span>
+            <span>{{ student.loginId }}{{ student.email ? ` / ${student.email}` : "" }}</span>
           </div>
         </div>
         <p v-else class="empty-copy">暂无学生数据。</p>
