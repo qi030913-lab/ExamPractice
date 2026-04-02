@@ -5,11 +5,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Electron 桌面端使用的无界面后端入口。
- * 保留 TeacherServerHeadless 这个类名，是为了兼容现有 Maven 打包配置。
+ * Electron 桌面端使用的无界面 Spring Boot 后端入口。
  */
-public class TeacherServerHeadless {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TeacherServerHeadless.class);
+public class DesktopApiServer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DesktopApiServer.class);
 
     public static void main(String[] args) {
         LOGGER.info("Starting Spring Boot API for Electron desktop.");

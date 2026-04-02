@@ -25,7 +25,7 @@ npm run dev
 说明：
 
 - Electron 主进程会优先启动并检查 Spring Boot 后端。
-- 如果本地缺少 `target/exam-server-headless.jar`，需要先执行一次 Maven 打包。
+- 如果本地缺少 `target/exam-desktop-api.jar`，需要先执行一次 Maven 打包。
 
 ### 2. 首次构建后再启动
 
@@ -44,7 +44,7 @@ npm start
 
 这会使用已构建好的：
 
-- `target/exam-server-headless.jar`
+- `target/exam-desktop-api.jar`
 - `desktop/dist/renderer`
 
 ## 常用构建命令
@@ -109,7 +109,7 @@ src/main/java/com/exam/
 ├── dao/                      # 数据访问层
 ├── model/                    # 领域模型
 ├── util/                     # 非 UI 工具类
-└── TeacherServerHeadless.java # Electron 使用的无界面后端入口
+└── DesktopApiServer.java     # Electron 使用的无界面后端入口
 ```
 
 ## 当前项目状态
@@ -122,4 +122,4 @@ src/main/java/com/exam/
 
 - 数据库配置仍位于 `src/main/resources/db.properties`
 - Electron 启动时会把数据库配置映射为后端进程环境变量
-- 若后端启动失败，优先检查数据库连接、`target/exam-server-headless.jar` 是否存在，以及 `8080` 端口是否被占用
+- 若后端启动失败，优先检查数据库连接、`target/exam-desktop-api.jar` 是否存在，以及 `8080` 端口是否被占用

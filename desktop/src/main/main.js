@@ -6,7 +6,7 @@ const http = require("http");
 
 const projectRoot = path.resolve(__dirname, "../../..");
 const desktopArtifacts = {
-  serverHeadless: path.join(projectRoot, "target", "exam-server-headless.jar"),
+  serverHeadless: path.join(projectRoot, "target", "exam-desktop-api.jar"),
   dbConfig: path.join(projectRoot, "src", "main", "resources", "db.properties")
 };
 
@@ -149,7 +149,7 @@ async function ensureBackendServer() {
     if (!fs.existsSync(desktopArtifacts.serverHeadless)) {
       return {
         ok: false,
-        message: "未找到 exam-server-headless.jar，请先执行 mvn -q -Dmaven.test.skip=true package。"
+        message: "未找到 exam-desktop-api.jar，请先执行 mvn -q -Dmaven.test.skip=true package。"
       };
     }
 

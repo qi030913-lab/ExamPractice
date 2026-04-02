@@ -8,7 +8,7 @@ This folder contains the current desktop application built with `Electron + Vue3
 - `src/renderer-vue`: Vue3 renderer application
 - `dist/renderer`: built renderer assets
 
-The Java backend is provided by the root project through `target/exam-server-headless.jar`, which is started by Electron at runtime.
+The Java backend is provided by the root project through `target/exam-desktop-api.jar`, which is started by Electron at runtime.
 
 ## Development
 
