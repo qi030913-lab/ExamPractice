@@ -1,5 +1,6 @@
 <template>
-  <div class="shell-layout">
+  <router-view v-if="route.name === 'login'" />
+  <div v-else class="shell-layout">
     <header class="shell-header">
       <div>
         <p class="shell-eyebrow">桌面考试平台</p>
@@ -32,9 +33,10 @@
 
 <script setup>
 import { computed } from "vue";
-import { RouterLink, useRouter } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import { useSessionStore } from "@/stores/session";
 
+const route = useRoute();
 const router = useRouter();
 const sessionStore = useSessionStore();
 
