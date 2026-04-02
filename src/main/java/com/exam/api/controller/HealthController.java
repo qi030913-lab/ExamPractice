@@ -19,6 +19,6 @@ public class HealthController {
         payload.put("service", "exam-api");
         payload.put("status", "UP");
         payload.put("timestamp", OffsetDateTime.now().toString());
-        return ApiResponse.success("Service is ready.", payload);
+        return ApiResponse.success("服务已就绪。", payload);
     }
 }

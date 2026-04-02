@@ -32,7 +32,7 @@ public class AuthController {
                 role
         );
 
-        return ApiResponse.success("Login succeeded.", AuthUserResponse.from(user));
+        return ApiResponse.success("登录成功。", AuthUserResponse.from(user));
     }
 
     @PostMapping("/register")
