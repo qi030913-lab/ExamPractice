@@ -3,6 +3,7 @@ package com.exam.api.controller;
 import com.exam.api.common.ApiResponse;
 import com.exam.api.dto.AuthUserResponse;
 import com.exam.api.dto.TeacherImportPaperRequest;
+import com.exam.api.dto.TeacherUpdatePaperRequest;
 import com.exam.exception.BusinessException;
 import com.exam.model.ExamRecord;
 import com.exam.model.Paper;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PutMapping;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -110,6 +112,42 @@ public class TeacherWorkspaceController {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("paperId", paperId);
         return ApiResponse.success("试卷删除成功", payload);
+    }
+
+    @GetMapping("/{userId}/papers/{paperId}")
+    public ApiResponse<Map<String, Object>> getTeacherPaperDetail(
+            @PathVariable("userId") Integer userId,
+            @PathVariable("paperId") Integer paperId
+    ) {
+        requireTeacher(userId);
+        Paper paper = paperService.getPaperById(paperId);
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("paper", toTeacherPaperItem(paper));
+        payload.put("questions", paper.getQuestions().stream().map(this::toQuestionDetailItem).collect(Collectors.toList()));
+        return ApiResponse.success("试卷详情加载成功", payload);
+    }
+
+    @PutMapping("/{userId}/papers/{paperId}")
+    public ApiResponse<Map<String, Object>> updateTeacherPaper(
+            @PathVariable("userId") Integer userId,
+            @PathVariable("paperId") Integer paperId,
+            @Valid @RequestBody TeacherUpdatePaperRequest request
+    ) {
+        requireTeacher(userId);
+        Paper paper = paperService.getPaperById(paperId);
+        paper.setPaperName(request.getPaperName().trim());
+        paper.setSubject(request.getSubject().trim());
+        paper.setPassScore(request.getPassScore());
+        paper.setDuration(request.getDuration());
+        paper.setDescription(normalizeBlank(request.getDescription()));
+        paperService.updatePaper(paper);
+
+        Paper updatedPaper = paperService.getPaperById(paperId);
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("paper", toTeacherPaperItem(updatedPaper));
+        payload.put("questions", updatedPaper.getQuestions().stream().map(this::toQuestionDetailItem).collect(Collectors.toList()));
+        return ApiResponse.success("试卷更新成功", payload);
     }
 
     @GetMapping("/{userId}/students")
@@ -291,6 +329,16 @@ public class TeacherWorkspaceController {
         item.put("correctAnswer", question.getCorrectAnswer());
         item.put("score", question.getScore());
         item.put("difficulty", question.getDifficulty() == null ? null : question.getDifficulty().name());
+        return item;
+    }
+
+    private Map<String, Object> toQuestionDetailItem(Question question) {
+        Map<String, Object> item = toQuestionItem(question);
+        item.put("optionA", question.getOptionA());
+        item.put("optionB", question.getOptionB());
+        item.put("optionC", question.getOptionC());
+        item.put("optionD", question.getOptionD());
+        item.put("analysis", question.getAnalysis());
         return item;
     }
 

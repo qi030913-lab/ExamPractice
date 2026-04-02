@@ -5,6 +5,16 @@ export async function getTeacherPapers(userId) {
   return unwrapResponse(response);
 }
 
+export async function getTeacherPaperDetail(userId, paperId) {
+  const response = await apiClient.get(`/teacher/${userId}/papers/${paperId}`);
+  return unwrapResponse(response);
+}
+
+export async function updateTeacherPaper(userId, paperId, payload) {
+  const response = await apiClient.put(`/teacher/${userId}/papers/${paperId}`, payload);
+  return unwrapResponse(response);
+}
+
 export async function publishTeacherPaper(userId, paperId) {
   const response = await apiClient.post(`/teacher/${userId}/papers/${paperId}/publish`);
   return unwrapResponse(response);

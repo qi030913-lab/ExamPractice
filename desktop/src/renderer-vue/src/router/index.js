@@ -5,6 +5,7 @@ import LoginView from "@/views/LoginView.vue";
 import HomeView from "@/views/HomeView.vue";
 import TeacherWorkbenchView from "@/views/teacher/TeacherWorkbenchView.vue";
 import TeacherPapersView from "@/views/teacher/TeacherPapersView.vue";
+import TeacherPaperDetailView from "@/views/teacher/TeacherPaperDetailView.vue";
 import TeacherStudentsView from "@/views/teacher/TeacherStudentsView.vue";
 import TeacherImportView from "@/views/teacher/TeacherImportView.vue";
 import StudentWorkbenchView from "@/views/student/StudentWorkbenchView.vue";
@@ -37,6 +38,11 @@ const routes = [
         path: "teacher/papers",
         name: "teacher-papers",
         component: TeacherPapersView
+      },
+      {
+        path: "teacher/papers/:paperId",
+        name: "teacher-paper-detail",
+        component: TeacherPaperDetailView
       },
       {
         path: "teacher/import",
@@ -73,6 +79,7 @@ router.beforeEach(async (to) => {
     "home",
     "teacher-workbench",
     "teacher-papers",
+    "teacher-paper-detail",
     "teacher-import",
     "teacher-students",
     "student-workbench"
@@ -95,7 +102,7 @@ router.beforeEach(async (to) => {
     }
   }
 
-  const teacherRoutes = ["teacher-workbench", "teacher-papers", "teacher-import", "teacher-students"];
+  const teacherRoutes = ["teacher-workbench", "teacher-papers", "teacher-paper-detail", "teacher-import", "teacher-students"];
   if (teacherRoutes.includes(String(to.name || "")) && !sessionStore.isTeacher) {
     return "/student";
   }

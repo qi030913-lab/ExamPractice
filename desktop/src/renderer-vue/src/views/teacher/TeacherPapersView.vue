@@ -3,7 +3,7 @@
     <div class="page-copy">
       <p class="page-tag">试卷中心</p>
       <h2>教师试卷管理</h2>
-      <p>先把最核心的桌面端动作迁过来：查看试卷、发布/取消发布、删除。</p>
+      <p>先把最核心的桌面端动作迁过来：查看试卷、进入详情、发布、取消发布、删除。</p>
     </div>
 
     <StatusBanner v-if="errorMessage" tone="danger">
@@ -54,7 +54,11 @@
           </thead>
           <tbody>
             <tr v-for="paper in papers" :key="paper.paperId">
-              <td>{{ paper.paperName }}</td>
+              <td>
+                <RouterLink class="inline-link" :to="`/teacher/papers/${paper.paperId}`">
+                  {{ paper.paperName }}
+                </RouterLink>
+              </td>
               <td>{{ paper.subject }}</td>
               <td>{{ paper.questionCount }}</td>
               <td>{{ paper.totalScore }}</td>
@@ -67,6 +71,9 @@
               </td>
               <td>
                 <div class="action-row">
+                  <RouterLink class="ghost-link-button" :to="`/teacher/papers/${paper.paperId}`">
+                    详情
+                  </RouterLink>
                   <button
                     class="ghost-button"
                     type="button"
