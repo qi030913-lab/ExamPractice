@@ -6,6 +6,7 @@ import com.exam.exception.BusinessException;
 import com.exam.model.Paper;
 import com.exam.model.Question;
 import com.exam.util.DBUtil;
+import org.springframework.stereotype.Service;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 
+@Service
 public class PaperService {
     private final PaperDao paperDao;
     private final QuestionDao questionDao;

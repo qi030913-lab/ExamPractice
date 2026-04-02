@@ -1,0 +1,59 @@
+package com.exam.api.dto;
+
+import com.exam.model.User;
+
+public class AuthUserResponse {
+    private Integer userId;
+    private String realName;
+    private String studentNumber;
+    private String role;
+    private String email;
+    private String phone;
+    private String gender;
+    private String status;
+
+    public static AuthUserResponse from(User user) {
+        AuthUserResponse response = new AuthUserResponse();
+        response.userId = user.getUserId();
+        response.realName = user.getRealName();
+        response.studentNumber = user.getStudentNumber();
+        response.role = user.getRole() == null ? null : user.getRole().name();
+        response.email = user.getEmail();
+        response.phone = user.getPhone();
+        response.gender = user.getGender();
+        response.status = user.getStatus();
+        return response;
+    }
+
+    public Integer getUserId() {
+        return userId;
+    }
+
+    public String getRealName() {
+        return realName;
+    }
+
+    public String getStudentNumber() {
+        return studentNumber;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+}

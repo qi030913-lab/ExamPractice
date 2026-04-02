@@ -11,18 +11,23 @@ import com.exam.model.enums.ExamStatus;
 import com.exam.model.enums.UserRole;
 import com.exam.service.ExamService;
 import com.exam.service.PaperService;
+import com.exam.service.QuestionService;
 import com.exam.service.UserService;
+import com.exam.util.QuestionImportUtil;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -37,11 +42,13 @@ public class ElectronBridge {
     private final UserService userService;
     private final PaperService paperService;
     private final ExamService examService;
+    private final QuestionService questionService;
 
     public ElectronBridge() {
         this.userService = new UserService();
         this.paperService = new PaperService();
         this.examService = new ExamService();
+        this.questionService = new QuestionService();
     }
 
     public static void main(String[] args) {
@@ -80,11 +87,44 @@ public class ElectronBridge {
                 case "student-records":
                     handleStudentRecords(args);
                     break;
+                case "teacher-papers":
+                    handleTeacherPapers(args);
+                    break;
+                case "teacher-students":
+                    handleTeacherStudents(args);
+                    break;
                 case "paper-detail":
                     handlePaperDetail(args);
                     break;
                 case "record-detail":
                     handleRecordDetail(args);
+                    break;
+                case "teacher-record-detail":
+                    handleTeacherRecordDetail(args);
+                    break;
+                case "teacher-student-detail":
+                    handleTeacherStudentDetail(args);
+                    break;
+                case "toggle-paper-publish":
+                    handleTogglePaperPublish(args);
+                    break;
+                case "delete-paper":
+                    handleDeletePaper(args);
+                    break;
+                case "update-paper":
+                    handleUpdatePaper(args);
+                    break;
+                case "create-student":
+                    handleCreateStudent(args);
+                    break;
+                case "update-student":
+                    handleUpdateStudent(args);
+                    break;
+                case "delete-student":
+                    handleDeleteStudent(args);
+                    break;
+                case "import-paper":
+                    handleImportPaper(args);
                     break;
                 case "start-exam":
                     handleStartExam(args);
@@ -257,6 +297,52 @@ public class ElectronBridge {
         ), 0);
     }
 
+    private void handleTeacherPapers(String[] args) {
+        requireLength(args, 2, "Usage: teacher-papers <userId>");
+
+        Integer userId = parseInteger(args[1], "Teacher userId must be an integer.");
+        User user = requireTeacherUser(userId);
+        List<Paper> papers = paperService.getAllPapersOptimized();
+        long publishedCount = papers.stream()
+                .filter(paper -> Boolean.TRUE.equals(paper.getIsPublished()))
+                .count();
+        long unpublishedCount = papers.size() - publishedCount;
+
+        printAndExit(true, "Teacher paper center loaded.", object(
+                field("summary", object(
+                        stringField("role", "TEACHER"),
+                        stringField("displayName", user.getRealName()),
+                        stringField("teacherNumber", user.getStudentNumber()),
+                        numberField("paperCount", papers.size()),
+                        numberField("publishedCount", publishedCount),
+                        numberField("unpublishedCount", unpublishedCount)
+                )),
+                field("papers", array(papers.stream()
+                        .map(this::serializeTeacherPaper)
+                        .collect(Collectors.toList())))
+        ), 0);
+    }
+
+    private void handleTeacherStudents(String[] args) {
+        requireLength(args, 2, "Usage: teacher-students <userId>");
+
+        Integer userId = parseInteger(args[1], "Teacher userId must be an integer.");
+        User user = requireTeacherUser(userId);
+        List<User> students = userService.getStudents();
+
+        printAndExit(true, "Teacher student center loaded.", object(
+                field("summary", object(
+                        stringField("role", "TEACHER"),
+                        stringField("displayName", user.getRealName()),
+                        stringField("teacherNumber", user.getStudentNumber()),
+                        numberField("studentCount", students.size())
+                )),
+                field("students", array(students.stream()
+                        .map(this::serializeTeacherStudent)
+                        .collect(Collectors.toList())))
+        ), 0);
+    }
+
     private void handlePaperDetail(String[] args) {
         requireLength(args, 2, "Usage: paper-detail <paperId>");
 
@@ -300,6 +386,282 @@ public class ElectronBridge {
         printAndExit(true, "Exam record detail loaded.", object(
                 field("record", serializeStudentRecordDetail(record, paper, answerRecords, answeredCount, correctCount, wrongCount)),
                 field("answers", array(serializeAnswerRecords(answerRecords)))
+        ), 0);
+    }
+
+    private void handleTeacherStudentDetail(String[] args) {
+        requireLength(args, 3, "Usage: teacher-student-detail <teacherId> <studentId>");
+
+        Integer teacherId = parseInteger(args[1], "Teacher userId must be an integer.");
+        Integer studentId = parseInteger(args[2], "Student userId must be an integer.");
+        requireTeacherUser(teacherId);
+
+        User student = requireStudentUser(studentId);
+        List<ExamRecord> records = examService.getStudentExamRecordsOptimized(studentId);
+        long submittedCount = records.stream()
+                .filter(record -> record.getStatus() == ExamStatus.SUBMITTED || record.getStatus() == ExamStatus.TIMEOUT)
+                .count();
+        double averageScore = records.stream()
+                .map(ExamRecord::getScore)
+                .filter(score -> score != null)
+                .mapToDouble(BigDecimal::doubleValue)
+                .average()
+                .orElse(0);
+
+        printAndExit(true, "Teacher student detail loaded.", object(
+                field("student", serializeTeacherStudent(student)),
+                field("summary", object(
+                        numberField("recordCount", records.size()),
+                        numberField("submittedCount", submittedCount),
+                        decimalField("averageScore", averageScore)
+                )),
+                field("records", array(records.stream()
+                        .map(this::serializeTeacherStudentRecord)
+                        .collect(Collectors.toList())))
+        ), 0);
+    }
+
+    private void handleTeacherRecordDetail(String[] args) {
+        requireLength(args, 4, "Usage: teacher-record-detail <teacherId> <studentId> <recordId>");
+
+        Integer teacherId = parseInteger(args[1], "Teacher userId must be an integer.");
+        Integer studentId = parseInteger(args[2], "Student userId must be an integer.");
+        Integer recordId = parseInteger(args[3], "Record id must be an integer.");
+        requireTeacherUser(teacherId);
+        requireStudentUser(studentId);
+
+        ExamRecord record = examService.getExamRecordById(recordId);
+        if (record == null) {
+            throw new BusinessException("Requested exam record does not exist.");
+        }
+        if (!studentId.equals(record.getStudentId())) {
+            throw new BusinessException("Requested exam record does not belong to selected student.");
+        }
+
+        Paper paper = record.getPaper() != null ? record.getPaper() : paperService.getPaperById(record.getPaperId());
+        List<AnswerRecord> answerRecords = examService.getAnswerRecords(recordId);
+        long correctCount = answerRecords.stream()
+                .filter(answer -> Boolean.TRUE.equals(answer.getIsCorrect()))
+                .count();
+        long answeredCount = answerRecords.stream()
+                .filter(answer -> answer.getStudentAnswer() != null && !answer.getStudentAnswer().trim().isEmpty())
+                .count();
+        long wrongCount = answerRecords.stream()
+                .filter(answer -> answer.getStudentAnswer() != null && !answer.getStudentAnswer().trim().isEmpty())
+                .filter(answer -> !Boolean.TRUE.equals(answer.getIsCorrect()))
+                .count();
+
+        printAndExit(true, "Teacher record detail loaded.", object(
+                field("record", serializeStudentRecordDetail(record, paper, answerRecords, answeredCount, correctCount, wrongCount)),
+                field("answers", array(serializeAnswerRecords(answerRecords)))
+        ), 0);
+    }
+
+    private void handleTogglePaperPublish(String[] args) {
+        requireLength(args, 3, "Usage: toggle-paper-publish <teacherId> <paperId>");
+
+        Integer userId = parseInteger(args[1], "Teacher userId must be an integer.");
+        Integer paperId = parseInteger(args[2], "Paper id must be an integer.");
+        requireTeacherUser(userId);
+
+        Paper paper = paperService.getPaperById(paperId);
+        boolean published = Boolean.TRUE.equals(paper.getIsPublished());
+        if (published) {
+            paperService.unpublishPaper(paperId);
+        } else {
+            paperService.publishPaper(paperId);
+        }
+
+        Paper refreshed = paperService.getPaperById(paperId);
+        printAndExit(true, published ? "Paper unpublished successfully." : "Paper published successfully.", object(
+                field("paper", serializePaperDetail(refreshed))
+        ), 0);
+    }
+
+    private void handleDeletePaper(String[] args) {
+        requireLength(args, 3, "Usage: delete-paper <teacherId> <paperId>");
+
+        Integer userId = parseInteger(args[1], "Teacher userId must be an integer.");
+        Integer paperId = parseInteger(args[2], "Paper id must be an integer.");
+        requireTeacherUser(userId);
+
+        paperService.deletePaper(paperId);
+        printAndExit(true, "Paper deleted successfully.", object(
+                numberField("paperId", paperId)
+        ), 0);
+    }
+
+    private void handleUpdatePaper(String[] args) {
+        requireLength(args, 8, "Usage: update-paper <teacherId> <paperId> <paperName> <subject> <passScore> <duration> <description>");
+
+        Integer teacherId = parseInteger(args[1], "Teacher userId must be an integer.");
+        Integer paperId = parseInteger(args[2], "Paper id must be an integer.");
+        Integer passScore = parseInteger(args[5], "Pass score must be an integer.");
+        Integer duration = parseInteger(args[6], "Duration must be an integer.");
+        requireTeacherUser(teacherId);
+
+        Paper paper = paperService.getPaperById(paperId);
+        paper.setPaperName(args[3]);
+        paper.setSubject(args[4]);
+        paper.setPassScore(passScore);
+        paper.setDuration(duration);
+        paper.setDescription(normalizeBlank(args[7]));
+
+        paperService.updatePaper(paper);
+        Paper updated = paperService.getPaperById(paperId);
+        printAndExit(true, "Paper updated successfully.", object(
+                field("paper", serializePaperDetail(updated)),
+                field("questions", array(serializeQuestions(updated.getQuestions())))
+        ), 0);
+    }
+
+    private void handleCreateStudent(String[] args) {
+        requireLength(args, 8, "Usage: create-student <teacherId> <realName> <studentNumber> <password> <email> <phone> <gender>");
+
+        Integer teacherId = parseInteger(args[1], "Teacher userId must be an integer.");
+        requireTeacherUser(teacherId);
+
+        User student = new User();
+        student.setRealName(args[2]);
+        student.setStudentNumber(args[3]);
+        student.setPassword(args[4]);
+        student.setRole(UserRole.STUDENT);
+        student.setEmail(normalizeBlank(args[5]));
+        student.setPhone(normalizeBlank(args[6]));
+        student.setGender(normalizeBlank(args[7]));
+        student.setStatus("ACTIVE");
+
+        int studentId = userService.register(student);
+        User created = userService.getUserById(studentId);
+        printAndExit(true, "Student created successfully.", object(
+                field("student", serializeTeacherStudent(created))
+        ), 0);
+    }
+
+    private void handleUpdateStudent(String[] args) {
+        requireLength(args, 8, "Usage: update-student <teacherId> <studentId> <realName> <password> <email> <phone> <gender>");
+
+        Integer teacherId = parseInteger(args[1], "Teacher userId must be an integer.");
+        Integer studentId = parseInteger(args[2], "Student userId must be an integer.");
+        requireTeacherUser(teacherId);
+
+        User existing = requireStudentUser(studentId);
+        existing.setRealName(args[3]);
+        if (args[4] != null && !args[4].trim().isEmpty()) {
+            existing.setPassword(args[4]);
+        }
+        existing.setEmail(normalizeBlank(args[5]));
+        existing.setPhone(normalizeBlank(args[6]));
+        existing.setGender(normalizeBlank(args[7]));
+
+        userService.updateUser(existing);
+        User updated = userService.getUserById(studentId);
+        printAndExit(true, "Student updated successfully.", object(
+                field("student", serializeTeacherStudent(updated))
+        ), 0);
+    }
+
+    private void handleDeleteStudent(String[] args) {
+        requireLength(args, 3, "Usage: delete-student <teacherId> <studentId>");
+
+        Integer teacherId = parseInteger(args[1], "Teacher userId must be an integer.");
+        Integer studentId = parseInteger(args[2], "Student userId must be an integer.");
+        requireTeacherUser(teacherId);
+        requireStudentUser(studentId);
+
+        userService.deleteUser(studentId);
+        printAndExit(true, "Student deleted successfully.", object(
+                numberField("userId", studentId)
+        ), 0);
+    }
+
+    private void handleImportPaper(String[] args) {
+        requireLength(args, 7, "Usage: import-paper <teacherId> <filePath> <paperName> <subject> <passScore> <duration> [description]");
+
+        Integer teacherId = parseInteger(args[1], "Teacher userId must be an integer.");
+        Integer passScore = parseInteger(args[5], "Pass score must be an integer.");
+        Integer duration = parseInteger(args[6], "Duration must be an integer.");
+        requireTeacherUser(teacherId);
+
+        File importFile = new File(args[2]);
+        if (!importFile.exists() || !importFile.isFile()) {
+            throw new BusinessException("Selected import file does not exist.");
+        }
+
+        String paperName = args[3];
+        String subject = args[4];
+        String description = args.length > 7 ? normalizeBlank(args[7]) : null;
+        List<Question> questions;
+        try {
+            questions = QuestionImportUtil.importFromTextFile(importFile, teacherId);
+        } catch (Exception ex) {
+            throw new BusinessException(ex.getMessage());
+        }
+
+        List<Integer> questionIds = new ArrayList<>();
+        Set<Integer> addedQuestionIds = new LinkedHashSet<>();
+        int createdQuestionCount = 0;
+        int reusedQuestionCount = 0;
+
+        for (Question question : questions) {
+            if (question == null) {
+                continue;
+            }
+
+            List<Question> existingQuestions = questionService.searchQuestions(
+                    question.getContent(),
+                    null,
+                    null,
+                    null,
+                    0,
+                    Integer.MAX_VALUE
+            );
+            Question matched = existingQuestions.stream()
+                    .filter(existing -> safeEquals(existing.getContent(), question.getContent()))
+                    .filter(existing -> safeEquals(existing.getCorrectAnswer(), question.getCorrectAnswer()))
+                    .findFirst()
+                    .orElse(null);
+
+            int questionId;
+            if (matched == null) {
+                questionId = questionService.addQuestion(question);
+                createdQuestionCount++;
+            } else {
+                questionId = matched.getQuestionId();
+                reusedQuestionCount++;
+            }
+
+            if (questionId > 0) {
+                addedQuestionIds.add(questionId);
+            }
+        }
+
+        questionIds.addAll(addedQuestionIds);
+        if (questionIds.isEmpty()) {
+            throw new BusinessException("No valid questions could be linked to the paper.");
+        }
+
+        Paper paper = new Paper();
+        paper.setPaperName(paperName);
+        paper.setSubject(subject);
+        paper.setPassScore(passScore);
+        paper.setDuration(duration);
+        paper.setDescription(description);
+        paper.setCreatorId(teacherId);
+
+        int paperId = paperService.createPaper(paper, questionIds);
+        Paper createdPaper = paperService.getPaperById(paperId);
+        printAndExit(true, "Paper imported successfully.", object(
+                field("paper", serializePaperDetail(createdPaper)),
+                field("questions", array(serializeQuestions(createdPaper.getQuestions()))),
+                field("summary", object(
+                        numberField("sourceQuestionCount", questions.size()),
+                        numberField("linkedQuestionCount", questionIds.size()),
+                        numberField("createdQuestionCount", createdQuestionCount),
+                        numberField("reusedQuestionCount", reusedQuestionCount),
+                        numberField("duplicateQuestionCount", Math.max(0, questions.size() - questionIds.size())),
+                        stringField("fileName", importFile.getName())
+                ))
         ), 0);
     }
 
@@ -368,6 +730,21 @@ public class ElectronBridge {
             answers.put(questionId, answer == null ? "" : answer);
         }
         return answers;
+    }
+
+    private String normalizeBlank(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private boolean safeEquals(String left, String right) {
+        if (left == null) {
+            return right == null;
+        }
+        return left.equals(right);
     }
 
     private Map<Integer, ExamRecord> resolveLatestRecordByPaperId(List<ExamRecord> records) {
@@ -469,6 +846,49 @@ public class ElectronBridge {
                 numberField("duration", paper.getDuration()),
                 numberField("questionCount", resolveQuestionCount(paper)),
                 booleanField("isPublished", Boolean.TRUE.equals(paper.getIsPublished()))
+        );
+    }
+
+    private String serializeTeacherPaper(Paper paper) {
+        return object(
+                numberField("paperId", paper.getPaperId()),
+                stringField("paperName", paper.getPaperName()),
+                stringField("subject", paper.getSubject()),
+                numberField("totalScore", paper.getTotalScore()),
+                numberField("duration", paper.getDuration()),
+                numberField("passScore", paper.getPassScore()),
+                numberField("questionCount", resolveQuestionCount(paper)),
+                booleanField("isPublished", Boolean.TRUE.equals(paper.getIsPublished())),
+                stringField("description", paper.getDescription()),
+                stringField("createTime", formatDateTime(paper.getCreateTime())),
+                stringField("updateTime", formatDateTime(paper.getUpdateTime()))
+        );
+    }
+
+    private String serializeTeacherStudent(User user) {
+        return object(
+                numberField("userId", user.getUserId()),
+                stringField("realName", user.getRealName()),
+                stringField("studentNumber", user.getStudentNumber()),
+                stringField("email", user.getEmail()),
+                stringField("phone", user.getPhone()),
+                stringField("gender", user.getGender()),
+                stringField("status", user.getStatus()),
+                stringField("createTime", formatDateTime(user.getCreateTime())),
+                stringField("updateTime", formatDateTime(user.getUpdateTime()))
+        );
+    }
+
+    private String serializeTeacherStudentRecord(ExamRecord record) {
+        return object(
+                numberField("recordId", record.getRecordId()),
+                numberField("paperId", record.getPaperId()),
+                stringField("paperName", record.getPaper() != null ? record.getPaper().getPaperName() : null),
+                stringField("status", record.getStatus() != null ? record.getStatus().name() : null),
+                decimalField("score", record.getScore()),
+                stringField("startTime", formatDateTime(record.getStartTime())),
+                stringField("submitTime", formatDateTime(record.getSubmitTime())),
+                numberField("durationSeconds", calculateDurationSeconds(record))
         );
     }
 

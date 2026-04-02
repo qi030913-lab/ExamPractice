@@ -13,8 +13,7 @@
           <p class="eyebrow">Electron 迁移 / 第 2 阶段</p>
           <h1>在线考试系统桌面工作台</h1>
           <p class="hero-text">
-            当前 Electron 已不再只是启动器。我们正在把登录、概览、试卷列表和学生考试流程
-            一步步从 Swing 迁移到桌面端页面。
+            当前 Electron 已经不再只是启动器。我们正在把登录、概览、教师工作区和学生考试流程一步步从 Swing 迁移到桌面端页面。
           </p>
         </div>
         <div class="hero-panel">
@@ -24,7 +23,7 @@
           </div>
           <div class="hero-metric">
             <span class="metric-label">本轮目标</span>
-            <strong>在 Electron 中落地学生考试中心</strong>
+            <strong>继续接管教师与学生核心业务工作区</strong>
           </div>
           <button id="refresh-status" class="button button-primary">刷新状态</button>
         </div>
@@ -50,7 +49,7 @@
         <section class="panel panel-wide">
           <div class="panel-head">
             <h2>Electron 登录</h2>
-            <p>这是第一个通过 Java 桥接层迁移到 Electron 的真实业务流程。</p>
+            <p>这是第一批通过 Java 桥接层迁移到 Electron 的真实业务流程入口。</p>
           </div>
           <div class="auth-grid">
             <form id="auth-form" class="config-form">
@@ -68,9 +67,7 @@
               <label class="field">
                 <span id="auth-account-label">学号</span>
                 <input id="auth-account" type="text" placeholder="请输入学号" />
-                <small id="auth-account-help" class="field-help">
-                  学生当前使用“姓名 + 学号 + 密码”登录。
-                </small>
+                <small id="auth-account-help" class="field-help">学生当前使用“姓名 + 学号 + 密码”登录。</small>
               </label>
               <label class="field">
                 <span>密码</span>
@@ -141,12 +138,12 @@
         <section class="panel">
           <div class="panel-head">
             <h2>迁移路径</h2>
-            <p>当前这一步 Electron 迁移已经完成的内容</p>
+            <p>当前这一轮 Electron 迁移已经完成的内容</p>
           </div>
           <ol class="phase-list">
             <li><strong>现在：</strong>Electron 已成为新的桌面入口和进程管理器。</li>
-            <li><strong>下一步：</strong>把 Java 业务能力抽成可调用接口。</li>
-            <li><strong>当前推进：</strong>登录、概览、试卷列表和学生考试流程正在迁移到 renderer 页面。</li>
+            <li><strong>下一步：</strong>继续把 Java 业务能力抽成可调用接口。</li>
+            <li><strong>当前推进：</strong>登录、概览、教师工作区和学生考试流程正在迁移到 renderer 页面。</li>
             <li><strong>最终状态：</strong>移除 Swing，打包为单一 Electron 桌面应用。</li>
           </ol>
         </section>
@@ -173,6 +170,70 @@
             <div class="list-panel">
               <h3 id="dashboard-secondary-title">副列表</h3>
               <div id="dashboard-secondary-list" class="empty-state">登录后可加载数据。</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-wide">
+          <div class="panel-head">
+            <h2>桌面工作台</h2>
+            <p>把已经迁入 Electron 的业务能力整理成角色化入口，作为新的桌面端首页。</p>
+          </div>
+          <div id="workspace-hub-summary" class="status-grid"></div>
+          <div id="workspace-hub-actions" class="workspace-hub-grid">
+            <div class="empty-state">登录后这里会显示当前角色可直接进入的工作区入口。</div>
+          </div>
+        </section>
+
+        <section class="panel panel-wide">
+          <div class="panel-head">
+            <h2>教师试卷管理中心</h2>
+            <p>在 Electron 中查看全部试卷、浏览详情，并执行发布、取消发布、删除等常用教师操作。</p>
+          </div>
+          <div class="section-label-row">
+            <div>
+              <h3 class="section-title">试卷管理工作区</h3>
+              <p class="section-copy">登录教师账号后，这里会逐步替代 Swing 里的试卷管理页面。</p>
+            </div>
+            <button id="reload-teacher-papers" class="button button-secondary">刷新试卷</button>
+          </div>
+          <div id="teacher-paper-summary" class="status-grid"></div>
+          <div class="exam-center-grid">
+            <div class="exam-paper-panel">
+              <h3>试卷列表</h3>
+              <div id="teacher-paper-list" class="empty-state">登录教师账号后可查看试卷列表。</div>
+            </div>
+            <div class="exam-workspace-panel">
+              <h3>试卷详情与操作区</h3>
+              <div id="teacher-paper-workspace" class="empty-state">请选择一张试卷查看详情。</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel panel-wide">
+          <div class="panel-head">
+            <h2>教师学生管理中心</h2>
+            <p>在 Electron 中查看学生列表、学生档案和考试记录，并执行新增、编辑、删除等教师常用操作。</p>
+          </div>
+          <div class="section-label-row">
+            <div>
+              <h3 class="section-title">学生管理工作区</h3>
+              <p class="section-copy">登录教师账号后，这里会逐步替代 Swing 里的学生管理页面。</p>
+            </div>
+            <div class="button-row">
+              <button id="create-teacher-student" class="button button-primary" type="button">新建学生</button>
+              <button id="reload-teacher-students" class="button button-secondary" type="button">刷新学生</button>
+            </div>
+          </div>
+          <div id="teacher-student-summary" class="status-grid"></div>
+          <div class="exam-center-grid">
+            <div class="exam-paper-panel">
+              <h3>学生列表</h3>
+              <div id="teacher-student-list" class="empty-state">登录教师账号后可查看学生列表。</div>
+            </div>
+            <div class="exam-workspace-panel">
+              <h3>学生档案与考试记录</h3>
+              <div id="teacher-student-workspace" class="empty-state">请选择一名学生查看详情，或新建学生。</div>
             </div>
           </div>
         </section>
@@ -262,6 +323,55 @@
             <p>后台任务与进程输出</p>
           </div>
           <pre id="activity-log" class="log-panel">工作台已就绪。</pre>
+        </section>
+        <section class="panel panel-wide">
+          <div class="panel-head">
+            <h2>教师导题建卷中心</h2>
+            <p>在 Electron 中直接选择题目 txt 文件，导入后自动生成新试卷。</p>
+          </div>
+          <div class="exam-center-grid">
+            <div class="exam-paper-panel">
+              <h3>导入文件</h3>
+              <div id="teacher-import-file-status" class="empty-state">登录教师账号后可选择题目文件并导入生成试卷。</div>
+              <div class="button-row">
+                <button id="pick-teacher-import-file" class="button button-primary" type="button">选择题目文件</button>
+                <button id="clear-teacher-import-file" class="button button-secondary" type="button">清空选择</button>
+              </div>
+              <div class="warning-note">
+                支持 UTF-8 编码的 <code>.txt</code> 文件。每行一题，格式为：
+                <code>题型|科目|题干|选项A|选项B|选项C|选项D|答案|分值|难度|解析</code>
+              </div>
+              <div id="teacher-import-result" class="empty-state">当前还没有导入结果。</div>
+            </div>
+            <div class="exam-workspace-panel">
+              <h3>生成试卷</h3>
+              <form id="teacher-import-form" class="config-form">
+                <label class="field">
+                  <span>试卷名称</span>
+                  <input id="teacher-import-paper-name" type="text" placeholder="请输入导入后生成的试卷名称" />
+                </label>
+                <label class="field">
+                  <span>科目</span>
+                  <select id="teacher-import-subject"></select>
+                </label>
+                <label class="field">
+                  <span>及格分数</span>
+                  <input id="teacher-import-pass-score" type="number" min="0" max="100" step="1" value="60" />
+                </label>
+                <label class="field">
+                  <span>考试时长（分钟）</span>
+                  <input id="teacher-import-duration" type="number" min="1" max="300" step="5" value="90" />
+                </label>
+                <label class="field field-wide">
+                  <span>试卷说明</span>
+                  <textarea id="teacher-import-description" class="exam-textarea" placeholder="可选：补充试卷说明"></textarea>
+                </label>
+                <div class="button-row">
+                  <button class="button button-primary" type="submit">导入并生成试卷</button>
+                </div>
+              </form>
+            </div>
+          </div>
         </section>
       </main>
     </div>

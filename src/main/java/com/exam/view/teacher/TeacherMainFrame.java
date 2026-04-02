@@ -451,18 +451,6 @@ public class TeacherMainFrame extends JFrame {
                 if (importPanel == null) {
                     importPanel = new TeacherImportPanel(questionService, this, teacher.getUserId(), new TeacherImportPanel.TeacherImportCallback() {
                         @Override
-                        public void onImportSuccess() {
-                            // 刷新试卷管理面板数据（因为导入可能影响试卷）
-                            if (paperPanel != null) {
-                                paperPanel.refreshData();
-                            } else {
-                                // 即使paperPanel未初始化，也要确保试卷数据在需要时被更新
-                                // 我们调用mainFrame的refreshPaperData方法，该方法会处理未初始化的情况
-                                refreshPaperData();
-                            }
-                        }
-
-                        @Override
                         public void onCreatePaperWithQuestions(List<Question> questions) {
                             importManager.importAndGeneratePaper(questions);
                         }

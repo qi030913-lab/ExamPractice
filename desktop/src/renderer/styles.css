@@ -132,6 +132,12 @@ body {
   gap: 14px;
 }
 
+.workspace-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
 .auth-grid,
 .dashboard-grid {
   display: grid;
@@ -151,18 +157,66 @@ body {
   background: rgba(255, 255, 255, 0.86);
 }
 
+.workspace-hub-card {
+  position: relative;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--hub-accent) 24%, rgba(76, 54, 36, 0.08));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 250, 244, 0.88)),
+    linear-gradient(135deg, color-mix(in srgb, var(--hub-accent) 9%, transparent), transparent 55%);
+  box-shadow: 0 10px 22px rgba(45, 27, 10, 0.05);
+}
+
+.workspace-hub-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 18px 0 0 18px;
+  background: var(--hub-accent, var(--primary));
+}
+
+.workspace-hub-card.active {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 28px rgba(45, 27, 10, 0.09);
+}
+
 .status-card h3,
-.action-card h3 {
+.action-card h3,
+.workspace-hub-card h3 {
   margin: 0 0 10px;
   font-size: 1.06rem;
 }
 
 .status-card p,
 .action-card p,
+.workspace-hub-card p,
 .phase-list {
   margin: 0;
   line-height: 1.6;
   color: var(--muted);
+}
+
+.workspace-hub-meta {
+  margin-top: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: 0.92rem;
+  white-space: pre-wrap;
+}
+
+.workspace-hub-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--hub-accent) 14%, white);
+  color: color-mix(in srgb, var(--hub-accent) 72%, black);
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .status-line {
@@ -217,7 +271,8 @@ body {
 }
 
 .field input,
-.field select {
+.field select,
+.field textarea {
   width: 100%;
   border: 1px solid rgba(76, 54, 36, 0.14);
   border-radius: 14px;
@@ -228,9 +283,14 @@ body {
 }
 
 .field input:focus,
-.field select:focus {
+.field select:focus,
+.field textarea:focus {
   outline: 2px solid rgba(15, 118, 110, 0.2);
   border-color: rgba(15, 118, 110, 0.35);
+}
+
+.field-wide {
+  grid-column: 1 / -1;
 }
 
 .auth-session-card,
@@ -492,6 +552,15 @@ body {
   background: rgba(255, 255, 255, 0.94);
 }
 
+.answer-review-card.selected {
+  border-color: rgba(15, 118, 110, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.08);
+}
+
+.answer-review-card[data-teacher-record-action] {
+  cursor: pointer;
+}
+
 .answer-review-card.correct {
   border-color: rgba(22, 101, 52, 0.16);
   background: rgba(22, 101, 52, 0.08);
@@ -595,6 +664,10 @@ body {
 .button-secondary {
   background: rgba(31, 27, 23, 0.08);
   color: var(--text);
+}
+
+.workspace-hub-card .button-row {
+  margin-top: 16px;
 }
 
 .phase-list {

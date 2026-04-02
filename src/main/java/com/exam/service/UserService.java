@@ -6,9 +6,11 @@ import com.exam.exception.BusinessException;
 import com.exam.model.User;
 import com.exam.model.enums.UserRole;
 import com.exam.util.PasswordUtil;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Service
 public class UserService {
     private final UserDao userDao;
 
@@ -26,20 +28,23 @@ public class UserService {
         if (role == null) {
             throw new AuthenticationException("角色不能为空");
         }
+        if (studentNumber == null || studentNumber.trim().isEmpty()) {
+            if (role == UserRole.TEACHER) {
+                throw new AuthenticationException("教工号不能为空");
+            }
+            throw new AuthenticationException("学号不能为空");
+        }
 
         User user;
         if (role == UserRole.TEACHER) {
-            user = userDao.findByNameAndPassword(realName.trim(), password);
+            user = userDao.findTeacherByNameAndNumber(realName.trim(), studentNumber.trim());
         } else {
-            if (studentNumber == null || studentNumber.trim().isEmpty()) {
-                throw new AuthenticationException("学号不能为空");
-            }
             user = userDao.findByNameNumberAndPassword(realName.trim(), studentNumber.trim(), password);
         }
 
         if (user == null || !PasswordUtil.matches(password, user.getPassword())) {
             if (role == UserRole.TEACHER) {
-                throw new AuthenticationException("姓名或密码错误");
+                throw new AuthenticationException("姓名、教工号或密码错误");
             }
             throw new AuthenticationException("姓名、学号或密码错误");
         }
@@ -49,7 +54,6 @@ public class UserService {
             throw new AuthenticationException("当前用户不是" + roleName + "角色");
         }
 
-        // 老数据兼容：首次登录时将明文密码升级为哈希密码
         if (PasswordUtil.needsMigration(user.getPassword())) {
             String hashed = PasswordUtil.hashPassword(password);
             userDao.updatePassword(user.getUserId(), hashed);
@@ -79,7 +83,9 @@ public class UserService {
             throw new BusinessException("用户ID不能为空");
         }
 
-        if (user.getPassword() != null && !user.getPassword().trim().isEmpty() && PasswordUtil.needsMigration(user.getPassword())) {
+        if (user.getPassword() != null
+                && !user.getPassword().trim().isEmpty()
+                && PasswordUtil.needsMigration(user.getPassword())) {
             user.setPassword(PasswordUtil.hashPassword(user.getPassword()));
         }
 
@@ -97,6 +103,19 @@ public class UserService {
         }
 
         return user;
+    }
+
+    public int deleteUser(Integer userId) {
+        if (userId == null) {
+            throw new BusinessException("用户ID不能为空");
+        }
+
+        User user = userDao.findById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        return userDao.delete(userId);
     }
 
     private void validateUser(User user) {
@@ -117,10 +136,9 @@ public class UserService {
         }
 
         if (user.getStudentNumber().length() < 3 || user.getStudentNumber().length() > 20) {
-            throw new BusinessException("学号长度应在3-20个字符之间");
+            throw new BusinessException("学号长度应在3到20个字符之间");
         }
 
-        // 仅对非哈希密码做最小长度校验
         if (PasswordUtil.needsMigration(user.getPassword()) && user.getPassword().length() < 6) {
             throw new BusinessException("密码长度不能少于6个字符");
         }

@@ -5,7 +5,6 @@ import com.exam.service.QuestionService;
 import com.exam.util.QuestionImportUtil;
 import com.exam.util.UIUtil;
 import com.exam.view.teacher.TeacherUIHelper;
-import com.exam.view.teacher.manager.ImportManager;
 import com.exam.view.teacher.TeacherMainFrame;
 
 import javax.swing.*;
@@ -28,7 +27,6 @@ public class TeacherImportPanel extends JPanel {
     
     // 回调接口
     public interface TeacherImportCallback {
-        void onImportSuccess();
         void onCreatePaperWithQuestions(List<Question> questions);
     }
     
@@ -369,53 +367,10 @@ public class TeacherImportPanel extends JPanel {
                 return;
             }
 
-            // 显示选项对话框，让用户选择导入方式
-            Object[] options = {"仅导入题目", "导入并生成试卷", "取消"};
-            int result = JOptionPane.showOptionDialog(
-                    this,
-                    "选择导入方式：\n\n共找到 " + questions.size() + " 道题目",
-                    "导入方式选择",
-                    JOptionPane.YES_NO_CANCEL_OPTION,
-                    JOptionPane.QUESTION_MESSAGE,
-                    null,
-                    options,
-                    options[0]
-            );
-
-            if (result == JOptionPane.YES_OPTION) { // 仅导入题目
-                ImportManager importManager = new ImportManager(questionService, mainFrame);
-                importManager.importQuestions(questions, callback);
-            } else if (result == JOptionPane.NO_OPTION) { // 导入并生成试卷
-                if (callback != null) {
-                    callback.onCreatePaperWithQuestions(questions);
-                }
-            }
-            // 如果是取消或关闭对话框，则不执行任何操作
-
-        } catch (Exception e) {
-            UIUtil.showError(this, "导入失败：" + e.getMessage());
-        }
-    }
-    
-    /**
-     * 导入题目并自动生成试卷
-     */
-    private void importAndGeneratePaper() {
-        if (selectedImportFile == null) {
-            UIUtil.showWarning(this, "请先选择要导入的文件");
-            return;
-        }
-
-        try {
-            List<Question> questions = QuestionImportUtil.importQuestionsFromFile(selectedImportFile.getAbsolutePath());
-            if (questions.isEmpty()) {
-                UIUtil.showWarning(this, "文件中没有找到有效的题目数据");
-                return;
-            }
-
             if (callback != null) {
                 callback.onCreatePaperWithQuestions(questions);
             }
+
         } catch (Exception e) {
             UIUtil.showError(this, "导入失败：" + e.getMessage());
         }

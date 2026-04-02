@@ -10,6 +10,7 @@ import com.exam.model.Paper;
 import com.exam.model.Question;
 import com.exam.model.enums.ExamStatus;
 import com.exam.util.DBUtil;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@Service
 public class ExamService {
     private final ExamRecordDao examRecordDao;
     private final PaperDao paperDao;

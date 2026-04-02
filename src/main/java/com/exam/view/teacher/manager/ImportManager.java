@@ -131,9 +131,6 @@ public class ImportManager {
                         message += "\n跳过重复题目：" + skipped + " 道";
                     }
                     UIUtil.showInfo(mainFrame, message);
-                    if (callback != null) {
-                        callback.onImportSuccess();
-                    }
                 } catch (Exception e) {
                     UIUtil.showError(mainFrame, "导入失败：" + e.getMessage());
                 }

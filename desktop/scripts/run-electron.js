@@ -26,10 +26,16 @@ if (!fs.existsSync(binaryPath)) {
 const workingDirectory = path.join(__dirname, "..");
 const cliArgs = process.argv.slice(2);
 const electronArgs = cliArgs.length > 0 ? cliArgs : ["."];
+const childEnv = {
+  ...process.env
+};
+
+delete childEnv.ELECTRON_RUN_AS_NODE;
 
 const child = spawn(binaryPath, electronArgs, {
   cwd: workingDirectory,
-  stdio: "inherit"
+  stdio: "inherit",
+  env: childEnv
 });
 
 child.on("error", (error) => {

@@ -3,12 +3,14 @@ package com.exam.service;
 import com.exam.dao.QuestionDao;
 import com.exam.exception.BusinessException;
 import com.exam.model.Question;
+import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.ArrayList;
 
 /**
  * 题目服务类
  */
+@Service
 public class QuestionService {
     private final QuestionDao questionDao;
 

@@ -161,6 +161,18 @@ function createWindow() {
     }
   });
 
+  const rendererUrl = process.env.ELECTRON_RENDERER_URL;
+  if (rendererUrl) {
+    mainWindow.loadURL(rendererUrl);
+    return;
+  }
+
+  const builtRendererIndex = path.join(projectRoot, "desktop", "dist", "renderer", "index.html");
+  if (fs.existsSync(builtRendererIndex)) {
+    mainWindow.loadFile(builtRendererIndex);
+    return;
+  }
+
   mainWindow.loadFile(path.join(__dirname, "../renderer/index.html"));
 }
 
@@ -573,6 +585,29 @@ async function pickLegacyArtifact() {
   };
 }
 
+async function pickTeacherImportFile() {
+  const result = await dialog.showOpenDialog({
+    title: "选择题目导入文件",
+    properties: ["openFile"],
+    filters: [
+      { name: "TXT 文件", extensions: ["txt"] },
+      { name: "所有文件", extensions: ["*"] }
+    ]
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return {
+      canceled: true
+    };
+  }
+
+  return {
+    canceled: false,
+    path: result.filePaths[0],
+    name: path.basename(result.filePaths[0])
+  };
+}
+
 function openTarget(target) {
   const targetMap = {
     projectRoot,
@@ -619,6 +654,12 @@ ipcMain.handle("desktop:bridge-student-papers", async (_event, payload) => {
 ipcMain.handle("desktop:bridge-student-records", async (_event, payload) => {
   return runBridgeCommand(["student-records", String(payload.userId)]);
 });
+ipcMain.handle("desktop:bridge-teacher-papers", async (_event, payload) => {
+  return runBridgeCommand(["teacher-papers", String(payload.userId)]);
+});
+ipcMain.handle("desktop:bridge-teacher-students", async (_event, payload) => {
+  return runBridgeCommand(["teacher-students", String(payload.userId)]);
+});
 ipcMain.handle("desktop:bridge-paper-detail", async (_event, payload) => {
   return runBridgeCommand(["paper-detail", String(payload.paperId)]);
 });
@@ -627,6 +668,90 @@ ipcMain.handle("desktop:bridge-record-detail", async (_event, payload) => {
     "record-detail",
     String(payload.userId),
     String(payload.recordId)
+  ]);
+});
+ipcMain.handle("desktop:bridge-teacher-record-detail", async (_event, payload) => {
+  return runBridgeCommand([
+    "teacher-record-detail",
+    String(payload.userId),
+    String(payload.studentId),
+    String(payload.recordId)
+  ]);
+});
+ipcMain.handle("desktop:bridge-teacher-student-detail", async (_event, payload) => {
+  return runBridgeCommand([
+    "teacher-student-detail",
+    String(payload.userId),
+    String(payload.studentId)
+  ]);
+});
+ipcMain.handle("desktop:bridge-toggle-paper-publish", async (_event, payload) => {
+  return runBridgeCommand([
+    "toggle-paper-publish",
+    String(payload.userId),
+    String(payload.paperId)
+  ]);
+});
+ipcMain.handle("desktop:bridge-delete-paper", async (_event, payload) => {
+  return runBridgeCommand([
+    "delete-paper",
+    String(payload.userId),
+    String(payload.paperId)
+  ]);
+});
+ipcMain.handle("desktop:bridge-update-paper", async (_event, payload) => {
+  return runBridgeCommand([
+    "update-paper",
+    String(payload.userId),
+    String(payload.paperId),
+    payload.paperName ?? "",
+    payload.subject ?? "",
+    String(payload.passScore ?? ""),
+    String(payload.duration ?? ""),
+    payload.description ?? ""
+  ]);
+});
+ipcMain.handle("desktop:bridge-create-student", async (_event, payload) => {
+  return runBridgeCommand([
+    "create-student",
+    String(payload.userId),
+    payload.realName ?? "",
+    payload.studentNumber ?? "",
+    payload.password ?? "",
+    payload.email ?? "",
+    payload.phone ?? "",
+    payload.gender ?? ""
+  ]);
+});
+ipcMain.handle("desktop:bridge-update-student", async (_event, payload) => {
+  return runBridgeCommand([
+    "update-student",
+    String(payload.userId),
+    String(payload.studentId),
+    payload.realName ?? "",
+    payload.password ?? "",
+    payload.email ?? "",
+    payload.phone ?? "",
+    payload.gender ?? ""
+  ]);
+});
+ipcMain.handle("desktop:bridge-delete-student", async (_event, payload) => {
+  return runBridgeCommand([
+    "delete-student",
+    String(payload.userId),
+    String(payload.studentId)
+  ]);
+});
+ipcMain.handle("desktop:bridge-import-paper", async (_event, payload) => {
+  return runBridgeCommand([
+    "import-paper",
+    String(payload.userId),
+    payload.filePath ?? "",
+    payload.paperName ?? "",
+    payload.subject ?? "",
+    String(payload.passScore ?? ""),
+    String(payload.duration ?? ""),
+    payload.description ?? ""
   ]);
 });
 ipcMain.handle("desktop:bridge-start-exam", async (_event, payload) => {
@@ -649,6 +774,7 @@ ipcMain.handle("desktop:bridge-submit-exam", async (_event, payload) => {
 ipcMain.handle("desktop:compile-java", async () => startCompileTask());
 ipcMain.handle("desktop:build-legacy-artifacts", async () => startPackageTask());
 ipcMain.handle("desktop:pick-legacy-artifact", async () => pickLegacyArtifact());
+ipcMain.handle("desktop:pick-teacher-import-file", async () => pickTeacherImportFile());
 ipcMain.handle("desktop:launch-legacy-app", async (_event, payload) => {
   return launchLegacyApp(payload.role, payload.artifactPath);
 });

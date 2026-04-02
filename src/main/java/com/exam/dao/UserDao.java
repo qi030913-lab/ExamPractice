@@ -38,12 +38,13 @@ public class UserDao {
     /**
      * 根据姓名和密码查询用户（教师登录）
      */
-    public User findByNameAndPassword(String realName, String password) {
-        String sql = "SELECT * FROM user WHERE real_name = ? AND role = 'TEACHER'";
+    public User findTeacherByNameAndNumber(String realName, String teacherNumber) {
+        String sql = "SELECT * FROM user WHERE real_name = ? AND student_number = ? AND role = 'TEACHER'";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setString(1, realName);
+            pstmt.setString(2, teacherNumber);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     return extractUser(rs);

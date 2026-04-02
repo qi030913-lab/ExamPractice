@@ -63,7 +63,7 @@ public class PaperButtonEditor extends DefaultCellEditor {
         editButton = new JButton("编辑");
         editButton.setFont(new Font("微软雅黑", Font.PLAIN, 11));
         editButton.setBackground(UIUtil.PRIMARY_COLOR);
-        editButton.setForeground(Color.BLACK);
+            editButton.setForeground(Color.BLACK);
         editButton.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(200, 200, 200), 1), // 外边框
                 BorderFactory.createEmptyBorder(4, 9, 4, 9) // 内边距
