@@ -3,11 +3,14 @@
     <div class="page-copy">
       <p class="page-tag">考试中心</p>
       <h2>可参加试卷</h2>
-      <p>这里展示学生当前可参加的试卷，并直接提供开始考试、断点恢复和查看最近记录的入口。</p>
+      <p>这里展示学生当前可参加的试卷，并直接提供科目筛选、自动刷新、开始考试和断点恢复入口。</p>
     </div>
 
     <StatusBanner v-if="errorMessage" tone="danger">
       {{ errorMessage }}
+    </StatusBanner>
+    <StatusBanner v-if="successMessage" tone="info">
+      {{ successMessage }}
     </StatusBanner>
 
     <div v-if="summary" class="summary-row compact-summary">
@@ -29,14 +32,43 @@
       <div class="section-head">
         <div>
           <h3>试卷列表</h3>
-          <p class="section-copy">已发布试卷会在这里集中展示，点击按钮即可进入桌面端考试页。</p>
+          <p class="section-copy">
+            已发布试卷会在这里集中展示。支持按科目筛选，并会在页面聚焦时和每 30 秒自动刷新一次。
+          </p>
         </div>
-        <RouterLink class="text-link" to="/student/records">查看我的记录</RouterLink>
+        <div class="section-tools">
+          <span class="refresh-meta">最近同步：{{ formatDateTime(lastUpdatedAt) }}</span>
+          <button class="ghost-button" type="button" :disabled="loading" @click="handleManualRefresh">
+            {{ loading ? "刷新中..." : "刷新列表" }}
+          </button>
+          <RouterLink class="text-link" to="/student/records">查看我的记录</RouterLink>
+        </div>
+      </div>
+
+      <div v-if="subjectFilters.length > 1" class="subject-filter-wrap">
+        <button
+          v-for="subject in subjectFilters"
+          :key="subject"
+          type="button"
+          :class="['subject-chip', activeSubject === subject ? 'subject-chip-active' : '']"
+          @click="activeSubject = subject"
+        >
+          {{ subject }}
+        </button>
+      </div>
+
+      <div class="detail-tips">
+        <p>
+          当前分类：{{ activeSubject }}
+          / 试卷 {{ filteredPapers.length }} 张
+          / 进行中 {{ filteredInProgressCount }} 张
+          / 已完成 {{ filteredCompletedCount }} 张
+        </p>
       </div>
 
       <div v-if="loading" class="empty-copy">正在加载试卷数据...</div>
-      <div v-else-if="papers.length" class="record-list">
-        <article v-for="paper in papers" :key="paper.paperId" class="record-card">
+      <div v-else-if="filteredPapers.length" class="record-list">
+        <article v-for="paper in filteredPapers" :key="paper.paperId" class="record-card">
           <div class="record-card-head">
             <strong>{{ paper.paperName }}</strong>
             <span :class="['pill', paper.hasInProgressRecord ? 'pill-accent' : 'pill-success']">
@@ -74,13 +106,13 @@
           </div>
         </article>
       </div>
-      <p v-else class="empty-copy">当前暂无可参加试卷。</p>
+      <p v-else class="empty-copy">当前分类下暂无可参加试卷。</p>
     </article>
   </section>
 </template>
 
 <script setup>
-import { onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 import StatusBanner from "@/components/StatusBanner.vue";
 import { useSessionStore } from "@/stores/session";
@@ -91,14 +123,56 @@ const loading = ref(false);
 const summary = ref(null);
 const papers = ref([]);
 const errorMessage = ref("");
+const successMessage = ref("");
+const activeSubject = ref("全部");
+const lastUpdatedAt = ref(null);
+let refreshTimer = null;
+let focusHandler = null;
 
-async function loadPapers() {
+const subjectFilters = computed(() => {
+  const subjectSet = new Set(["全部"]);
+  for (const paper of papers.value) {
+    subjectSet.add(normalizeSubject(paper.subject));
+  }
+  return Array.from(subjectSet);
+});
+
+const filteredPapers = computed(() => {
+  if (activeSubject.value === "全部") {
+    return papers.value;
+  }
+  return papers.value.filter((paper) => normalizeSubject(paper.subject) === activeSubject.value);
+});
+
+const filteredInProgressCount = computed(() =>
+  filteredPapers.value.filter((paper) => Boolean(paper.hasInProgressRecord)).length
+);
+
+const filteredCompletedCount = computed(() =>
+  filteredPapers.value.filter((paper) =>
+    ["SUBMITTED", "TIMEOUT"].includes(String(paper.latestRecord?.status || ""))
+  ).length
+);
+
+watch(subjectFilters, (subjects) => {
+  if (!subjects.includes(activeSubject.value)) {
+    activeSubject.value = "全部";
+  }
+});
+
+async function loadPapers(options = {}) {
+  const { silent = false, showSuccessMessage = false } = options;
   if (!sessionStore.user?.userId) {
     return;
   }
 
-  loading.value = true;
+  if (!silent) {
+    loading.value = true;
+  }
   errorMessage.value = "";
+  if (showSuccessMessage) {
+    successMessage.value = "";
+  }
 
   try {
     const result = await getStudentPapers(sessionStore.user.userId);
@@ -108,11 +182,53 @@ async function loadPapers() {
 
     summary.value = result.data?.summary || null;
     papers.value = result.data?.papers || [];
+    lastUpdatedAt.value = new Date();
+
+    if (showSuccessMessage) {
+      successMessage.value = "试卷列表已刷新，已同步最新发布和作答状态。";
+    }
   } catch (error) {
     errorMessage.value = error?.response?.data?.message || error?.message || "加载试卷数据失败";
   } finally {
-    loading.value = false;
+    if (!silent) {
+      loading.value = false;
+    }
   }
+}
+
+function handleManualRefresh() {
+  loadPapers({ silent: false, showSuccessMessage: true });
+}
+
+function bindAutoRefresh() {
+  focusHandler = () => {
+    loadPapers({ silent: true }).catch(() => undefined);
+  };
+  window.addEventListener("focus", focusHandler);
+
+  refreshTimer = window.setInterval(() => {
+    if (document.visibilityState === "visible") {
+      loadPapers({ silent: true }).catch(() => undefined);
+    }
+  }, 30000);
+}
+
+function unbindAutoRefresh() {
+  if (focusHandler) {
+    window.removeEventListener("focus", focusHandler);
+    focusHandler = null;
+  }
+  if (refreshTimer) {
+    window.clearInterval(refreshTimer);
+    refreshTimer = null;
+  }
+}
+
+function normalizeSubject(value) {
+  if (!value || !String(value).trim()) {
+    return "未分类";
+  }
+  return String(value).trim();
 }
 
 function formatNullableScore(value) {
@@ -142,5 +258,12 @@ function formatDateTime(value) {
   return date.toLocaleString("zh-CN", { hour12: false });
 }
 
-onMounted(loadPapers);
+onMounted(async () => {
+  await loadPapers();
+  bindAutoRefresh();
+});
+
+onBeforeUnmount(() => {
+  unbindAutoRefresh();
+});
 </script>
