@@ -2,6 +2,7 @@ const { app, BrowserWindow, dialog, ipcMain, shell } = require("electron");
 const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
+const http = require("http");
 
 const desktopEventChannel = "desktop:event";
 const projectRoot = path.resolve(__dirname, "../../..");
@@ -9,6 +10,7 @@ const legacyArtifacts = {
   student: path.join(projectRoot, "target", "exam-student.jar"),
   teacher: path.join(projectRoot, "target", "exam-teacher.jar"),
   bridge: path.join(projectRoot, "target", "exam-electron-bridge.jar"),
+  serverHeadless: path.join(projectRoot, "target", "exam-server-headless.jar"),
   studentExe: path.join(projectRoot, "target", "在线考试系统-学生端.exe"),
   teacherExe: path.join(projectRoot, "target", "在线考试系统-教师端.exe"),
   compiledClasses: path.join(projectRoot, "target", "classes"),
@@ -19,6 +21,8 @@ const legacyArtifacts = {
 let mainWindow = null;
 let compileProcess = null;
 let packageProcess = null;
+let serverProcess = null;
+let serverReadyPromise = null;
 const activeLegacyProcesses = new Map();
 
 function getLegacyRoleLabel(role) {
@@ -173,7 +177,13 @@ function createWindow() {
     return;
   }
 
-  mainWindow.loadFile(path.join(__dirname, "../renderer/index.html"));
+  const sourceRendererIndex = path.join(projectRoot, "desktop", "src", "renderer-vue", "index.html");
+  if (fs.existsSync(sourceRendererIndex)) {
+    mainWindow.loadFile(sourceRendererIndex);
+    return;
+  }
+
+  throw new Error("未找到 Vue 桌面端入口，请先执行 npm run build:renderer 或使用 npm run dev。");
 }
 
 async function collectStatus() {
@@ -197,6 +207,7 @@ async function collectStatus() {
       studentJar: inspectPath(legacyArtifacts.student),
       teacherJar: inspectPath(legacyArtifacts.teacher),
       bridgeJar: inspectPath(legacyArtifacts.bridge),
+      serverHeadlessJar: inspectPath(legacyArtifacts.serverHeadless),
       studentExe: inspectPath(legacyArtifacts.studentExe),
       teacherExe: inspectPath(legacyArtifacts.teacherExe),
       compiledClasses: inspectPath(legacyArtifacts.compiledClasses),
@@ -209,6 +220,10 @@ async function collectStatus() {
       artifactPath: info.artifactPath,
       startedAt: info.startedAt
     })),
+    backendServer: serverProcess ? {
+      pid: serverProcess.pid,
+      artifactPath: legacyArtifacts.serverHeadless
+    } : null,
     compileTaskRunning: Boolean(compileProcess),
     packageTaskRunning: Boolean(packageProcess)
   };
@@ -284,6 +299,151 @@ function summarizeProcessError(stderr, fallbackMessage) {
   }
 
   return lines[lines.length - 1];
+}
+
+function waitForApiHealth(timeoutMs = 25000) {
+  return new Promise((resolve) => {
+    const startedAt = Date.now();
+
+    function probe() {
+      const request = http.get("http://127.0.0.1:8080/api/health", (response) => {
+        if (response.statusCode && response.statusCode >= 200 && response.statusCode < 300) {
+          response.resume();
+          resolve(true);
+          return;
+        }
+
+        response.resume();
+        if (Date.now() - startedAt >= timeoutMs) {
+          resolve(false);
+          return;
+        }
+        setTimeout(probe, 600);
+      });
+
+      request.on("error", () => {
+        if (Date.now() - startedAt >= timeoutMs) {
+          resolve(false);
+          return;
+        }
+        setTimeout(probe, 600);
+      });
+
+      request.setTimeout(3000, () => {
+        request.destroy();
+      });
+    }
+
+    probe();
+  });
+}
+
+async function ensureBackendServer() {
+  if (serverReadyPromise) {
+    return serverReadyPromise;
+  }
+
+  serverReadyPromise = (async () => {
+    const serverAlreadyReady = await waitForApiHealth(1500);
+    if (serverAlreadyReady) {
+      broadcastDesktopEvent({
+        type: "server-ready",
+        text: "检测到 Spring Boot API 已经在运行。"
+      });
+      return {
+        ok: true,
+        reused: true
+      };
+    }
+
+    if (!fs.existsSync(legacyArtifacts.serverHeadless)) {
+      broadcastDesktopEvent({
+        type: "server-missing",
+        text: "未找到 exam-server-headless.jar，请先执行 mvn -q -Dmaven.test.skip=true package。"
+      });
+      return {
+        ok: false,
+        message: "未找到 headless 后端产物。"
+      };
+    }
+
+    serverProcess = spawn("java", ["-Dfile.encoding=UTF-8", "-jar", legacyArtifacts.serverHeadless], {
+      cwd: projectRoot,
+      windowsHide: true,
+      env: buildJavaRuntimeEnv()
+    });
+
+    broadcastDesktopEvent({
+      type: "server-started",
+      text: "正在启动 Spring Boot API 服务。"
+    });
+
+    serverProcess.stdout.on("data", (chunk) => {
+      broadcastDesktopEvent({
+        type: "server-log",
+        stream: "stdout",
+        text: chunk.toString()
+      });
+    });
+
+    serverProcess.stderr.on("data", (chunk) => {
+      broadcastDesktopEvent({
+        type: "server-log",
+        stream: "stderr",
+        text: chunk.toString()
+      });
+    });
+
+    serverProcess.on("error", (error) => {
+      broadcastDesktopEvent({
+        type: "server-error",
+        text: error.message
+      });
+    });
+
+    serverProcess.on("close", (code) => {
+      serverProcess = null;
+      serverReadyPromise = null;
+      broadcastDesktopEvent({
+        type: "server-exited",
+        code,
+        text: `Spring Boot API 已退出，退出码为 ${code}。`
+      });
+    });
+
+    const healthy = await waitForApiHealth();
+    if (!healthy) {
+      const runningProcess = serverProcess;
+      if (runningProcess && !runningProcess.killed) {
+        runningProcess.kill();
+      }
+      serverProcess = null;
+      serverReadyPromise = null;
+      broadcastDesktopEvent({
+        type: "server-timeout",
+        text: "Spring Boot API 启动超时，请检查数据库配置或后端日志。"
+      });
+      return {
+        ok: false,
+        message: "Spring Boot API 启动超时。"
+      };
+    }
+
+    broadcastDesktopEvent({
+      type: "server-ready",
+      text: "Spring Boot API 已就绪，Electron 现在使用统一桌面入口。"
+    });
+    return {
+      ok: true,
+      reused: false
+    };
+  })();
+
+  const result = await serverReadyPromise;
+  if (!result.ok) {
+    serverReadyPromise = null;
+  }
+  return result;
 }
 
 function startCompileTask() {
@@ -825,17 +985,36 @@ ipcMain.handle("desktop:launch-legacy-app", async (_event, payload) => {
 ipcMain.handle("desktop:open-target", async (_event, target) => openTarget(target));
 
 app.whenReady().then(() => {
-  createWindow();
+  ensureBackendServer()
+    .then((result) => {
+      if (!result?.ok) {
+        dialog.showErrorBox("桌面端启动失败", result?.message || "Spring Boot API 未能成功启动。");
+        app.quit();
+        return;
+      }
 
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
-    }
-  });
+
+      app.on("activate", () => {
+        if (BrowserWindow.getAllWindows().length === 0) {
+          createWindow();
+        }
+      });
+    })
+    .catch((error) => {
+      dialog.showErrorBox("桌面端启动失败", error?.message || "Electron 初始化失败。");
+      app.quit();
+    });
 });
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
+  }
+});
+
+app.on("before-quit", () => {
+  if (serverProcess && !serverProcess.killed) {
+    serverProcess.kill();
   }
 });

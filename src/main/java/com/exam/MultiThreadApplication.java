@@ -6,8 +6,8 @@ import com.exam.view.teacher.TeacherLoginFrame;
 import javax.swing.*;
 
 /**
- * 多线程启动类
- * 使用多线程同时启动学生端和教师端
+ * Swing 双端兼容启动类
+ * 当前正式桌面入口已迁移到 Electron + Vue3，此类仅保留给旧版联调场景使用。
  */
 public class MultiThreadApplication {
     

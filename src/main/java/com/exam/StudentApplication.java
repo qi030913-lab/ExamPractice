@@ -6,8 +6,8 @@ import org.slf4j.LoggerFactory;
 import javax.swing.*;
 
 /**
- * 学生端启动类
- * 独立启动学生登录界面
+ * 学生端 Swing 兼容启动类
+ * 当前正式桌面入口已迁移到 Electron + Vue3，此类仅保留给旧版兼容场景使用。
  * 
  * @author 在线考试系统开发组
  * @version 1.0
