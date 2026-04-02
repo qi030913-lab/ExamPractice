@@ -3,188 +3,181 @@
     <div ref="threeMountRef" class="login-stage__three"></div>
     <div class="login-stage__overlay"></div>
 
-    <section class="login-card">
-      <header class="login-card__header">
-        <p class="login-card__tag">Exam Practice Desktop</p>
-        <h2>{{ isRegisterMode ? registerTitle : loginTitle }}</h2>
-        <p class="login-card__copy">
-          {{ isRegisterMode ? "注册成功后会自动回填到登录表单。" : "背景复用 login 目录下旧版云层动画，表单继续使用当前项目字段与接口。" }}
-        </p>
-      </header>
+    <section class="auth-shell">
+      <article :class="['auth-card', { 'auth-card--register': isRegisterMode }]">
+        <aside :class="['auth-card__welcome', { 'auth-card__welcome--right': isRegisterMode }]">
+          <p class="auth-card__eyebrow">{{ welcomeEyebrow }}</p>
+          <h2>{{ welcomeTitle }}</h2>
+          <p class="auth-card__welcome-copy">{{ welcomeCopy }}</p>
 
-      <div class="mode-tabs">
-        <button
-          type="button"
-          :class="{ active: !isRegisterMode }"
-          :disabled="sessionStore.loading"
-          @click="switchToLogin"
-        >
-          登录
-        </button>
-        <button
-          type="button"
-          :class="{ active: isRegisterMode }"
-          :disabled="sessionStore.loading"
-          @click="switchToRegister"
-        >
-          注册
-        </button>
-      </div>
-
-      <form v-if="!isRegisterMode" class="login-form" @submit.prevent="handleSubmit">
-        <StatusBanner v-if="sessionStore.errorMessage" tone="danger">
-          {{ sessionStore.errorMessage }}
-        </StatusBanner>
-        <StatusBanner v-if="successMessage" tone="info">
-          {{ successMessage }}
-        </StatusBanner>
-
-        <div class="role-switch">
           <button
+            class="auth-card__switch"
             type="button"
-            :class="{ active: form.role === 'STUDENT' }"
             :disabled="sessionStore.loading"
-            @click="form.role = 'STUDENT'"
+            @click="isRegisterMode ? switchToLogin() : switchToRegister()"
           >
-            学生
+            {{ switchButtonText }}
           </button>
-          <button
-            type="button"
-            :class="{ active: form.role === 'TEACHER' }"
-            :disabled="sessionStore.loading"
-            @click="form.role = 'TEACHER'"
-          >
-            教师
-          </button>
+
+          <div class="auth-card__welcome-tags">
+            <span v-for="tag in welcomeTags" :key="tag">{{ tag }}</span>
+          </div>
+        </aside>
+
+        <div class="auth-card__panel">
+          <form v-if="!isRegisterMode" class="auth-form" @submit.prevent="handleSubmit">
+            <StatusBanner v-if="sessionStore.errorMessage" tone="danger">
+              {{ sessionStore.errorMessage }}
+            </StatusBanner>
+            <StatusBanner v-if="successMessage" tone="info">
+              {{ successMessage }}
+            </StatusBanner>
+
+            <div class="role-switch">
+              <button
+                type="button"
+                :class="{ active: form.role === 'STUDENT' }"
+                :disabled="sessionStore.loading"
+                @click="form.role = 'STUDENT'"
+              >
+                学生
+              </button>
+              <button
+                type="button"
+                :class="{ active: form.role === 'TEACHER' }"
+                :disabled="sessionStore.loading"
+                @click="form.role = 'TEACHER'"
+              >
+                教师
+              </button>
+            </div>
+
+            <label class="auth-field">
+              <span class="auth-field__label">姓名</span>
+              <div class="auth-field__control">
+                <input
+                  v-model="form.realName"
+                  type="text"
+                  placeholder="请输入姓名"
+                  autocomplete="name"
+                />
+                <img class="auth-field__icon" :src="userIcon" alt="" />
+              </div>
+            </label>
+
+            <label class="auth-field">
+              <span class="auth-field__label">{{ loginIdLabel }}</span>
+              <div class="auth-field__control">
+                <input
+                  v-model="form.loginId"
+                  type="text"
+                  :placeholder="loginIdPlaceholder"
+                  autocomplete="username"
+                />
+                <img class="auth-field__icon" :src="keyIcon" alt="" />
+              </div>
+            </label>
+
+            <label class="auth-field">
+              <span class="auth-field__label">密码</span>
+              <div class="auth-field__control">
+                <input
+                  v-model="form.password"
+                  type="password"
+                  placeholder="请输入密码"
+                  autocomplete="current-password"
+                />
+                <img class="auth-field__icon" :src="lockIcon" alt="" />
+              </div>
+            </label>
+
+            <button class="auth-form__primary" type="submit" :disabled="sessionStore.loading">
+              {{ sessionStore.loading ? "登录中..." : "登录" }}
+            </button>
+          </form>
+
+          <form v-else class="auth-form" @submit.prevent="handleRegister">
+            <StatusBanner v-if="registerErrorMessage" tone="danger">
+              {{ registerErrorMessage }}
+            </StatusBanner>
+
+            <div class="role-switch">
+              <button
+                type="button"
+                :class="{ active: registerForm.role === 'STUDENT' }"
+                :disabled="sessionStore.loading"
+                @click="registerForm.role = 'STUDENT'"
+              >
+                学生
+              </button>
+              <button
+                type="button"
+                :class="{ active: registerForm.role === 'TEACHER' }"
+                :disabled="sessionStore.loading"
+                @click="registerForm.role = 'TEACHER'"
+              >
+                教师
+              </button>
+            </div>
+
+            <label class="auth-field">
+              <span class="auth-field__label">姓名</span>
+              <div class="auth-field__control">
+                <input
+                  v-model="registerForm.realName"
+                  type="text"
+                  placeholder="请输入姓名"
+                  autocomplete="name"
+                />
+                <img class="auth-field__icon" :src="userIcon" alt="" />
+              </div>
+            </label>
+
+            <label class="auth-field">
+              <span class="auth-field__label">{{ registerLoginIdLabel }}</span>
+              <div class="auth-field__control">
+                <input
+                  v-model="registerForm.loginId"
+                  type="text"
+                  :placeholder="registerLoginIdPlaceholder"
+                  autocomplete="username"
+                />
+                <img class="auth-field__icon" :src="keyIcon" alt="" />
+              </div>
+            </label>
+
+            <label class="auth-field">
+              <span class="auth-field__label">密码</span>
+              <div class="auth-field__control">
+                <input
+                  v-model="registerForm.password"
+                  type="password"
+                  placeholder="请设置密码"
+                  autocomplete="new-password"
+                />
+                <img class="auth-field__icon" :src="lockIcon" alt="" />
+              </div>
+            </label>
+
+            <label class="auth-field">
+              <span class="auth-field__label">确认密码</span>
+              <div class="auth-field__control">
+                <input
+                  v-model="registerForm.confirmPassword"
+                  type="password"
+                  placeholder="请再次输入密码"
+                  autocomplete="new-password"
+                />
+                <img class="auth-field__icon" :src="lockIcon" alt="" />
+              </div>
+            </label>
+
+            <button class="auth-form__primary" type="submit" :disabled="sessionStore.loading">
+              {{ sessionStore.loading ? "注册中..." : "注册" }}
+            </button>
+          </form>
         </div>
-
-        <label class="login-field">
-          <img class="login-field__icon" :src="userIcon" alt="" />
-          <input
-            v-model="form.realName"
-            type="text"
-            placeholder="姓名"
-            autocomplete="name"
-          />
-        </label>
-
-        <label class="login-field">
-          <img class="login-field__icon" :src="keyIcon" alt="" />
-          <input
-            v-model="form.loginId"
-            type="text"
-            :placeholder="loginIdPlaceholder"
-            autocomplete="username"
-          />
-        </label>
-
-        <label class="login-field">
-          <img class="login-field__icon" :src="lockIcon" alt="" />
-          <input
-            v-model="form.password"
-            type="password"
-            placeholder="密码"
-            autocomplete="current-password"
-          />
-        </label>
-
-        <div class="login-card__actions">
-          <button class="primary-button" type="submit" :disabled="sessionStore.loading">
-            {{ sessionStore.loading ? "登录中..." : "登录" }}
-          </button>
-          <button
-            class="ghost-button"
-            type="button"
-            :disabled="sessionStore.loading"
-            @click="switchToRegister"
-          >
-            去注册
-          </button>
-        </div>
-      </form>
-
-      <form v-else class="login-form" @submit.prevent="handleRegister">
-        <StatusBanner v-if="registerErrorMessage" tone="danger">
-          {{ registerErrorMessage }}
-        </StatusBanner>
-
-        <div class="role-switch">
-          <button
-            type="button"
-            :class="{ active: registerForm.role === 'STUDENT' }"
-            :disabled="sessionStore.loading"
-            @click="registerForm.role = 'STUDENT'"
-          >
-            学生
-          </button>
-          <button
-            type="button"
-            :class="{ active: registerForm.role === 'TEACHER' }"
-            :disabled="sessionStore.loading"
-            @click="registerForm.role = 'TEACHER'"
-          >
-            教师
-          </button>
-        </div>
-
-        <label class="login-field">
-          <img class="login-field__icon" :src="userIcon" alt="" />
-          <input
-            v-model="registerForm.realName"
-            type="text"
-            placeholder="姓名"
-            autocomplete="name"
-          />
-        </label>
-
-        <label class="login-field">
-          <img class="login-field__icon" :src="keyIcon" alt="" />
-          <input
-            v-model="registerForm.loginId"
-            type="text"
-            :placeholder="registerLoginIdPlaceholder"
-            autocomplete="username"
-          />
-        </label>
-
-        <label class="login-field">
-          <img class="login-field__icon" :src="lockIcon" alt="" />
-          <input
-            v-model="registerForm.password"
-            type="password"
-            placeholder="密码"
-            autocomplete="new-password"
-          />
-        </label>
-
-        <label class="login-field">
-          <img class="login-field__icon" :src="lockIcon" alt="" />
-          <input
-            v-model="registerForm.confirmPassword"
-            type="password"
-            placeholder="确认密码"
-            autocomplete="new-password"
-          />
-        </label>
-
-        <div class="login-card__actions">
-          <button class="primary-button" type="submit" :disabled="sessionStore.loading">
-            {{ sessionStore.loading ? "注册中..." : "完成注册" }}
-          </button>
-          <button
-            class="ghost-button"
-            type="button"
-            :disabled="sessionStore.loading"
-            @click="fillLoginFromRegister"
-          >
-            回填到登录
-          </button>
-        </div>
-      </form>
-
-      <footer class="login-card__footer">
-        <p>{{ footerCopy }}</p>
-      </footer>
+      </article>
     </section>
   </section>
 </template>
@@ -231,16 +224,28 @@ const backgroundState = {
   cleanup: null
 };
 
-const loginIdPlaceholder = computed(() => form.role === "TEACHER" ? "教工号" : "学号");
-const registerLoginIdPlaceholder = computed(() => registerForm.role === "TEACHER" ? "教工号" : "学号");
-const loginTitle = computed(() => form.role === "TEACHER" ? "教师登录" : "学生登录");
-const registerTitle = computed(() => registerForm.role === "TEACHER" ? "教师注册" : "学生注册");
-const footerCopy = computed(() => {
+const activeRole = computed(() => isRegisterMode.value ? registerForm.role : form.role);
+const activeRoleLabel = computed(() => activeRole.value === "TEACHER" ? "教师" : "学生");
+const loginIdLabel = computed(() => form.role === "TEACHER" ? "教工号" : "学号");
+const registerLoginIdLabel = computed(() => registerForm.role === "TEACHER" ? "教工号" : "学号");
+const loginIdPlaceholder = computed(() => form.role === "TEACHER" ? "请输入教工号" : "请输入学号");
+const registerLoginIdPlaceholder = computed(() => registerForm.role === "TEACHER" ? "请设置教工号" : "请设置学号");
+const welcomeEyebrow = computed(() => isRegisterMode.value ? "已有账号" : "在线考试练习平台");
+const welcomeTitle = computed(() => isRegisterMode.value ? "欢迎回来" : "你好，欢迎使用");
+const welcomeCopy = computed(() => {
   if (isRegisterMode.value) {
-    return "注册后将自动回填到登录表单，背景继续保留旧版动态云层效果。";
+    return "如果你已经拥有学生或教师账号，可以直接返回登录页，进入对应工作台。";
   }
 
-  return "当前背景直接复用 login 目录里的旧版 Three.js 云层方案。";
+  return "使用当前项目的学生或教师账号登录，进入桌面端在线考试练习平台。";
+});
+const switchButtonText = computed(() => isRegisterMode.value ? "去登录" : "去注册");
+const welcomeTags = computed(() => {
+  if (isRegisterMode.value) {
+    return ["返回登录", "继续使用", "身份切换"];
+  }
+
+  return ["学生入口", "教师入口", "在线练习"];
 });
 
 function injectLegacyThree() {
@@ -280,7 +285,7 @@ function mountLegacyBackground() {
   let meshFront;
   let meshBack;
   let frameId = 0;
-  let startTime = Date.now();
+  const startTime = Date.now();
   let mouseX = 0;
   let mouseY = 0;
   let container;
@@ -411,9 +416,14 @@ function switchToRegister() {
   registerForm.confirmPassword = "";
 }
 
-function switchToLogin() {
+function switchToLogin(options = {}) {
+  sessionStore.errorMessage = "";
   isRegisterMode.value = false;
   registerErrorMessage.value = "";
+
+  if (!options.preserveSuccess) {
+    successMessage.value = "";
+  }
 }
 
 function fillLoginFromRegister() {
@@ -422,20 +432,24 @@ function fillLoginFromRegister() {
   form.loginId = registerForm.loginId.trim();
   form.password = registerForm.password;
   successMessage.value = "注册信息已回填到登录表单，可以直接登录。";
-  switchToLogin();
+  switchToLogin({ preserveSuccess: true });
 }
 
 async function handleSubmit() {
   successMessage.value = "";
 
-  await sessionStore.loginWithPassword({
-    role: form.role,
-    realName: form.realName.trim(),
-    loginId: form.loginId.trim(),
-    password: form.password
-  });
+  try {
+    await sessionStore.loginWithPassword({
+      role: form.role,
+      realName: form.realName.trim(),
+      loginId: form.loginId.trim(),
+      password: form.password
+    });
 
-  router.push(form.role === "TEACHER" ? "/teacher" : "/student");
+    router.push(form.role === "TEACHER" ? "/teacher" : "/student");
+  } catch (_error) {
+    // Error state is already handled by the session store.
+  }
 }
 
 async function handleRegister() {
@@ -444,7 +458,7 @@ async function handleRegister() {
   successMessage.value = "";
 
   if (registerForm.password !== registerForm.confirmPassword) {
-    registerErrorMessage.value = "两次输入的密码不一致";
+    registerErrorMessage.value = "两次输入的密码不一致。";
     return;
   }
 
@@ -457,7 +471,6 @@ async function handleRegister() {
     });
 
     fillLoginFromRegister();
-    successMessage.value = "注册成功，登录表单已自动回填。";
   } catch (error) {
     registerErrorMessage.value = error?.message || "注册失败";
   }
@@ -477,7 +490,10 @@ onBeforeUnmount(() => {
   position: relative;
   display: grid;
   place-items: center;
+  height: 100vh;
   min-height: 100vh;
+  padding: 16px;
+  box-sizing: border-box;
   overflow: hidden;
   background: #3f76a8;
 }
@@ -494,207 +510,363 @@ onBeforeUnmount(() => {
 
 .login-stage__overlay {
   z-index: 1;
+  pointer-events: none;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 28%),
     linear-gradient(180deg, rgba(6, 16, 30, 0.06), transparent 22%, transparent 72%, rgba(255, 255, 255, 0.04) 100%);
-  pointer-events: none;
 }
 
-.login-card {
+.auth-shell {
   position: relative;
   z-index: 2;
-  width: min(430px, calc(100% - 32px));
-  padding: 34px 34px 28px;
-  border: 1px solid rgba(136, 178, 217, 0.16);
-  background:
-    linear-gradient(210deg, rgba(27, 64, 105, 0.6), rgba(8, 10, 14, 0.72)),
-    rgba(10, 15, 24, 0.62);
+  display: flex;
+  align-items: center;
+  width: min(940px, 100%);
+  height: 100%;
+  padding: 0;
+}
+
+.auth-card {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.92fr) minmax(420px, 1.08fr);
+  grid-template-areas: "welcome panel";
+  width: 100%;
+  height: min(568px, calc(100vh - 28px));
+  border-radius: 34px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.04);
   box-shadow:
-    -20px 20px 24px rgba(11, 24, 47, 0.42),
-    0 22px 28px rgba(11, 24, 47, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(12px);
+    0 38px 80px rgba(12, 31, 63, 0.3),
+    0 16px 30px rgba(40, 68, 132, 0.16);
+  backdrop-filter: blur(22px) saturate(1.12);
+  animation: card-rise 420ms ease;
 }
 
-.login-card__header {
+.auth-card--register {
+  grid-template-columns: minmax(420px, 1.08fr) minmax(320px, 0.92fr);
+  grid-template-areas: "panel welcome";
+}
+
+.auth-card__welcome {
+  grid-area: welcome;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  padding: 42px 34px;
   text-align: center;
+  color: #ffffff;
+  background:
+    linear-gradient(160deg, rgba(126, 156, 244, 0.18), rgba(95, 124, 220, 0.26)),
+    rgba(111, 140, 232, 0.09);
+  border-right: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset -18px 0 34px rgba(66, 92, 177, 0.08);
+  border-radius: 34px 150px 150px 34px;
+  backdrop-filter: blur(28px) saturate(1.15);
 }
 
-.login-card__tag {
+.auth-card__welcome--right {
+  border-right: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 150px 34px 34px 150px;
+}
+
+.auth-card__eyebrow,
+.auth-panel__tag {
   margin: 0;
-  font-size: 0.76rem;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: rgba(195, 215, 239, 0.62);
 }
 
-.login-card__header h2 {
-  margin: 18px 0 10px;
-  font-size: 2rem;
-  font-weight: 500;
-  color: rgba(230, 235, 246, 0.94);
+.auth-card__eyebrow {
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.78);
 }
 
-.login-card__copy {
+.auth-card__welcome h2,
+.auth-panel__header h1 {
   margin: 0;
-  line-height: 1.7;
-  color: rgba(210, 218, 233, 0.72);
+  font-family: "Trebuchet MS", "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-weight: 700;
+  line-height: 1.08;
 }
 
-.mode-tabs {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin: 24px 0 18px;
-  padding: 6px;
-  border: 1px solid rgba(125, 167, 210, 0.18);
-  background: rgba(15, 28, 49, 0.42);
+.auth-card__welcome h2 {
+  font-size: clamp(2rem, 3.4vw, 2.8rem);
 }
 
-.mode-tabs button,
-.role-switch button {
-  border: 0;
-  background: transparent;
-  color: rgba(210, 221, 239, 0.76);
+.auth-card__welcome-copy {
+  max-width: 280px;
+  margin: 0;
+  line-height: 1.68;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.auth-card__switch {
+  min-width: 168px;
+  min-height: 52px;
+  padding: 0 28px;
+  border: 1.5px solid rgba(255, 255, 255, 0.72);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease;
 }
 
-.mode-tabs button {
-  padding: 10px 12px;
+.auth-card__switch:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 12px 20px rgba(60, 80, 160, 0.18);
 }
 
-.mode-tabs button.active,
-.role-switch button.active {
-  color: #eef6ff;
-  background: rgba(78, 160, 227, 0.22);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+.auth-card__welcome-tags,
+.auth-form__badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
 }
 
-.mode-tabs button:disabled,
-.role-switch button:disabled,
-.primary-button:disabled,
-.ghost-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.auth-card__welcome-tags span,
+.auth-form__badges span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 86px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 14px;
+  font-size: 0.88rem;
 }
 
-.login-form {
+.auth-card__welcome-tags span {
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.auth-card__panel {
+  grid-area: panel;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 18px 34px 30px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(250, 250, 254, 0.1)),
+    rgba(255, 255, 255, 0.06);
+  border-left: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(30px) saturate(1.16);
+}
+
+.auth-form {
   display: grid;
-  gap: 16px;
+  gap: 12px;
+  width: min(100%, 360px);
+  margin: 0 auto;
 }
 
 .role-switch {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  padding: 6px;
-  border: 1px solid rgba(125, 167, 210, 0.14);
-  background: rgba(12, 22, 39, 0.42);
+  padding: 5px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(16px);
 }
 
 .role-switch button {
-  padding: 10px 12px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: #707899;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
 }
 
-.login-field {
+.role-switch button.active {
+  background: linear-gradient(135deg, #8ea6f6, #748be6);
+  color: #ffffff;
+  box-shadow: 0 10px 18px rgba(120, 141, 226, 0.28);
+}
+
+.auth-field {
+  display: grid;
+  gap: 6px;
+}
+
+.auth-field__label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #3e455f;
+}
+
+.auth-field__control {
   position: relative;
   display: flex;
   align-items: center;
-  min-height: 58px;
-  border-bottom: 1px solid rgba(143, 170, 203, 0.18);
-  background: rgba(12, 18, 28, 0.08);
+  min-height: 50px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 10px 18px rgba(27, 56, 116, 0.1);
+  backdrop-filter: blur(20px) saturate(1.12);
 }
 
-.login-field__icon {
-  width: 18px;
-  height: 18px;
-  margin: 0 18px 0 8px;
-  opacity: 0.62;
-}
-
-.login-field input {
+.auth-field__control input {
   width: 100%;
-  padding: 16px 12px 16px 0;
+  padding: 0 50px 0 15px;
   border: 0;
   outline: none;
   background: transparent;
-  color: #49b3ff;
-  font-size: 1rem;
-}
-
-.login-field input::placeholder {
-  color: rgba(231, 235, 244, 0.76);
-}
-
-.login-card__actions {
-  display: grid;
-  gap: 12px;
-  margin-top: 10px;
-}
-
-.primary-button,
-.ghost-button {
-  min-height: 54px;
-  border-radius: 999px;
-  font-size: 1rem;
-}
-
-.primary-button {
-  border: 2px solid #4fa1d9;
-  background: rgba(79, 161, 217, 0.1);
-  color: #46aef9;
-  cursor: pointer;
-}
-
-.primary-button:hover:not(:disabled) {
-  background: rgba(79, 161, 217, 0.18);
-}
-
-.ghost-button {
-  border: 1px solid rgba(128, 177, 222, 0.24);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(221, 232, 248, 0.88);
-  cursor: pointer;
-}
-
-.ghost-button:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.login-card__footer {
-  margin-top: 22px;
-  text-align: center;
-}
-
-.login-card__footer p {
-  margin: 0;
+  color: #2d3145;
   font-size: 0.96rem;
-  color: rgba(229, 235, 244, 0.84);
+}
+
+.auth-field__control input::placeholder {
+  color: rgba(72, 84, 116, 0.68);
+}
+
+.auth-field__icon {
+  position: absolute;
+  right: 16px;
+  width: 16px;
+  height: 16px;
+  opacity: 0.48;
+  filter: grayscale(1);
+}
+
+.auth-form__primary {
+  min-height: 50px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #8ea6f6, #748be6);
+  color: #ffffff;
+  font-size: 0.98rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 14px 24px rgba(118, 140, 227, 0.28);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.auth-form__primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 28px rgba(118, 140, 227, 0.32);
+  filter: saturate(1.06);
+}
+
+.role-switch button:disabled,
+.auth-card__switch:disabled,
+.auth-form__primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 :deep(.status-banner) {
-  border-radius: 0;
-  background: rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 14px 16px;
+  font-size: 0.95rem;
 }
 
 :deep(.status-banner.info) {
-  background: rgba(74, 163, 226, 0.16);
-  color: #d7efff;
+  background: rgba(116, 139, 230, 0.12);
+  color: #4d63b9;
 }
 
 :deep(.status-banner.danger) {
-  background: rgba(173, 54, 54, 0.18);
-  color: #ffd8d8;
+  background: rgba(214, 91, 91, 0.14);
+  color: #b64242;
 }
 
-@media (max-width: 640px) {
-  .login-card {
-    padding: 26px 22px 22px;
+@keyframes card-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
   }
 
-  .login-card__header h2 {
-    font-size: 1.72rem;
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 900px) {
+  .login-stage {
+    height: auto;
+    padding: 12px;
+  }
+
+  .auth-shell {
+    height: auto;
+  }
+
+  .auth-card,
+  .auth-card--register {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "panel"
+      "welcome";
+    height: auto;
+  }
+
+  .auth-card__welcome,
+  .auth-card__welcome--right {
+    min-height: 240px;
+    border-radius: 150px 150px 34px 34px;
+  }
+
+  .auth-card__panel {
+    padding: 18px 26px 24px;
+    border-left: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  }
+}
+
+@media (max-width: 560px) {
+  .auth-shell {
+    width: 100%;
+  }
+
+  .auth-card__panel {
+    padding: 16px 18px 22px;
+  }
+
+  .auth-card__welcome,
+  .auth-card__welcome--right {
+    min-height: 220px;
+    padding: 32px 22px;
+    border-radius: 120px 120px 28px 28px;
+  }
+
+  .auth-card__welcome h2 {
+    font-size: 2rem;
+  }
+
+  .auth-card__welcome-tags span,
+  .auth-form__badges span {
+    min-width: calc(50% - 6px);
   }
 }
 </style>
