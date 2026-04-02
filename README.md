@@ -118,8 +118,6 @@ src/main/java/com/exam/
 2. 桌面端统一由 Electron 承载，渲染层统一为 Vue3。
 3. 后端统一由 Spring Boot API 提供能力。
 
-## 注意事项
+## 运行效果
 
-- 数据库配置仍位于 `src/main/resources/db.properties`
-- Electron 启动时会把数据库配置映射为后端进程环境变量
-- 若后端启动失败，优先检查数据库连接、`target/exam-desktop-api.jar` 是否存在，以及 `8080` 端口是否被占用
+![1775138912496](image/README/1775138912496.png)
