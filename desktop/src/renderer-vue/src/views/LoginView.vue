@@ -637,8 +637,10 @@ function fillLoginFromRegister() {
   form.role = registerForm.role;
   form.realName = registerForm.realName.trim();
   form.loginId = registerForm.loginId.trim();
-  form.password = registerForm.password;
-  successMessage.value = "注册信息已回填到登录表单，可以直接登录。";
+  form.password = "";
+  registerForm.password = "";
+  registerForm.confirmPassword = "";
+  successMessage.value = "注册信息已回填到登录表单，请重新输入密码后登录。";
   switchToLogin({ preserveSuccess: true });
 }
 
