@@ -5,7 +5,7 @@
         <p class="page-tag">学生工作台</p>
         <h2>集中进入考试、记录与成绩分析</h2>
         <p>
-          这里汇总了学生端最常用的入口，你可以从这里开始考试、继续未完成作答、
+          这里汇总了学生端最常用的入口，你可以从这里开始考试、继续未完成作答，
           查看历史记录，并通过图表复盘学习表现。
         </p>
       </div>
@@ -58,43 +58,6 @@
         <p>使用图表查看成绩走势、题型准确率和各学科表现，方便长期复盘自己的考试状态。</p>
       </RouterLink>
     </div>
-
-    <div class="list-grid">
-      <article class="list-card">
-        <h3>最近可参加试卷</h3>
-        <div v-if="availablePapers.length" class="list-stack">
-          <RouterLink
-            v-for="paper in availablePapers"
-            :key="paper.paperId"
-            class="list-row"
-            :to="`/student/papers/${paper.paperId}/exam`"
-          >
-            <strong>{{ paper.paperName }}</strong>
-            <span>{{ paper.subject || "-" }} / {{ paper.questionCount ?? 0 }} 题 / {{ paper.totalScore ?? 0 }} 分</span>
-          </RouterLink>
-        </div>
-        <p v-else class="empty-copy">当前暂无试卷数据。</p>
-      </article>
-
-      <article class="list-card">
-        <h3>最近考试记录</h3>
-        <div v-if="recentRecords.length" class="list-stack">
-          <RouterLink
-            v-for="record in recentRecords"
-            :key="record.recordId"
-            class="list-row"
-            :to="record.resumeAvailable ? `/student/papers/${record.paperId}/exam` : `/student/records/${record.recordId}`"
-          >
-            <strong>{{ record.paperName || "未命名试卷" }}</strong>
-            <span>
-              {{ formatStatus(record.status) }}
-              / {{ record.resumeAvailable ? "可继续作答" : formatNullableScore(record.score) }}
-            </span>
-          </RouterLink>
-        </div>
-        <p v-else class="empty-copy">当前暂无考试记录。</p>
-      </article>
-    </div>
   </section>
 </template>
 
@@ -106,29 +69,11 @@ import { useSessionStore } from "@/stores/session";
 const sessionStore = useSessionStore();
 
 const stats = computed(() => sessionStore.workbench?.stats || {});
-const availablePapers = computed(() => sessionStore.workbench?.availablePapers || []);
-const recentRecords = computed(() => sessionStore.workbench?.recentRecords || []);
-const ongoingRecord = computed(() =>
-  recentRecords.value.find((record) => record.resumeAvailable || record.status === "IN_PROGRESS") || null
-);
+const ongoingRecord = computed(() => sessionStore.workbench?.ongoingRecord || null);
 const averageScoreCopy = computed(() => {
   const value = Number(stats.value?.averageScore);
   return Number.isFinite(value) ? value.toFixed(1) : "0.0";
 });
-
-function formatNullableScore(value) {
-  return value === null || value === undefined || value === "" ? "暂未评分" : value;
-}
-
-function formatStatus(status) {
-  const statusMap = {
-    IN_PROGRESS: "进行中",
-    SUBMITTED: "已提交",
-    TIMEOUT: "超时提交",
-    NOT_STARTED: "未开始"
-  };
-  return statusMap[status] || status || "未知状态";
-}
 
 onMounted(() => {
   if (sessionStore.isStudent) {

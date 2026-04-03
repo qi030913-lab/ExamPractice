@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 @RestController
@@ -92,15 +93,11 @@ public class WorkbenchController {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("user", AuthUserResponse.from(student));
         payload.put("stats", stats);
-        payload.put("availablePapers", publishedPapers.stream()
-                .limit(DEFAULT_LIST_LIMIT)
-                .map(this::toStudentPaperCard)
-                .collect(Collectors.toList()));
-        payload.put("recentRecords", records.stream()
-                .sorted((left, right) -> compareRecordOrder(right, left))
-                .limit(DEFAULT_LIST_LIMIT)
+        payload.put("ongoingRecord", records.stream()
+                .filter(record -> record.getStatus() == ExamStatus.IN_PROGRESS)
+                .max(Comparator.comparing(ExamRecord::getRecordId, Comparator.nullsFirst(Integer::compareTo)))
                 .map(this::toStudentRecordCard)
-                .collect(Collectors.toList()));
+                .orElse(null));
 
         return ApiResponse.success("学生工作台加载成功", payload);
     }
@@ -134,18 +131,6 @@ public class WorkbenchController {
         return item;
     }
 
-    private Map<String, Object> toStudentPaperCard(Paper paper) {
-        Map<String, Object> item = new LinkedHashMap<>();
-        item.put("paperId", paper.getPaperId());
-        item.put("paperName", paper.getPaperName());
-        item.put("subject", paper.getSubject());
-        item.put("duration", paper.getDuration());
-        item.put("totalScore", paper.getTotalScore());
-        item.put("passScore", paper.getPassScore());
-        item.put("questionCount", resolveQuestionCount(paper));
-        return item;
-    }
-
     private Map<String, Object> toStudentRecordCard(ExamRecord record) {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("recordId", record.getRecordId());
@@ -158,21 +143,6 @@ public class WorkbenchController {
         item.put("durationSeconds", calculateDurationSeconds(record));
         item.put("resumeAvailable", record.getStatus() == ExamStatus.IN_PROGRESS);
         return item;
-    }
-
-    private int compareRecordOrder(ExamRecord left, ExamRecord right) {
-        Integer leftId = left.getRecordId();
-        Integer rightId = right.getRecordId();
-        if (leftId == null && rightId == null) {
-            return 0;
-        }
-        if (leftId == null) {
-            return -1;
-        }
-        if (rightId == null) {
-            return 1;
-        }
-        return Integer.compare(leftId, rightId);
     }
 
     private int resolveQuestionCount(Paper paper) {
