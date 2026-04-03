@@ -54,41 +54,74 @@
 
             <label class="auth-field">
               <span class="auth-field__label">姓名</span>
-              <div class="auth-field__control">
+              <div :class="['auth-field__control', { 'auth-field__control--invalid': loginErrors.realName }]">
                 <input
+                  ref="loginRealNameRef"
                   v-model="form.realName"
                   type="text"
                   placeholder="请输入姓名"
                   autocomplete="name"
+                  :aria-invalid="Boolean(loginErrors.realName)"
+                  :aria-describedby="loginErrors.realName ? 'login-real-name-error' : undefined"
                 />
                 <img class="auth-field__icon" :src="userIcon" alt="" />
               </div>
+              <span
+                v-if="loginErrors.realName"
+                id="login-real-name-error"
+                class="auth-field__error"
+                role="alert"
+              >
+                {{ loginErrors.realName }}
+              </span>
             </label>
 
             <label class="auth-field">
               <span class="auth-field__label">{{ loginIdLabel }}</span>
-              <div class="auth-field__control">
+              <div :class="['auth-field__control', { 'auth-field__control--invalid': loginErrors.loginId }]">
                 <input
+                  ref="loginLoginIdRef"
                   v-model="form.loginId"
                   type="text"
                   :placeholder="loginIdPlaceholder"
                   autocomplete="username"
+                  :aria-invalid="Boolean(loginErrors.loginId)"
+                  :aria-describedby="loginErrors.loginId ? 'login-id-error' : undefined"
                 />
                 <img class="auth-field__icon" :src="keyIcon" alt="" />
               </div>
+              <span
+                v-if="loginErrors.loginId"
+                id="login-id-error"
+                class="auth-field__error"
+                role="alert"
+              >
+                {{ loginErrors.loginId }}
+              </span>
             </label>
 
             <label class="auth-field">
               <span class="auth-field__label">密码</span>
-              <div class="auth-field__control">
+              <div :class="['auth-field__control', { 'auth-field__control--invalid': loginErrors.password }]">
                 <input
+                  ref="loginPasswordRef"
                   v-model="form.password"
                   type="password"
                   placeholder="请输入密码"
                   autocomplete="current-password"
+                  :aria-invalid="Boolean(loginErrors.password)"
+                  :aria-describedby="loginErrors.password ? 'login-password-error' : undefined"
                 />
                 <img class="auth-field__icon" :src="lockIcon" alt="" />
               </div>
+              <span
+                v-if="loginErrors.password"
+                id="login-password-error"
+                class="auth-field__error"
+                role="alert"
+              >
+                {{ loginErrors.password }}
+              </span>
             </label>
 
             <button class="auth-form__primary" type="submit" :disabled="sessionStore.loading">
@@ -99,6 +132,9 @@
           <form v-else class="auth-form" @submit.prevent="handleRegister">
             <StatusBanner v-if="registerErrorMessage" tone="danger">
               {{ registerErrorMessage }}
+            </StatusBanner>
+            <StatusBanner v-if="successMessage" tone="info">
+              {{ successMessage }}
             </StatusBanner>
 
             <div class="role-switch">
@@ -122,54 +158,98 @@
 
             <label class="auth-field">
               <span class="auth-field__label">姓名</span>
-              <div class="auth-field__control">
+              <div :class="['auth-field__control', { 'auth-field__control--invalid': registerErrors.realName }]">
                 <input
+                  ref="registerRealNameRef"
                   v-model="registerForm.realName"
                   type="text"
                   placeholder="请输入姓名"
                   autocomplete="name"
+                  :aria-invalid="Boolean(registerErrors.realName)"
+                  :aria-describedby="registerErrors.realName ? 'register-real-name-error' : undefined"
                 />
                 <img class="auth-field__icon" :src="userIcon" alt="" />
               </div>
+              <span
+                v-if="registerErrors.realName"
+                id="register-real-name-error"
+                class="auth-field__error"
+                role="alert"
+              >
+                {{ registerErrors.realName }}
+              </span>
             </label>
 
             <label class="auth-field">
               <span class="auth-field__label">{{ registerLoginIdLabel }}</span>
-              <div class="auth-field__control">
+              <div :class="['auth-field__control', { 'auth-field__control--invalid': registerErrors.loginId }]">
                 <input
+                  ref="registerLoginIdRef"
                   v-model="registerForm.loginId"
                   type="text"
                   :placeholder="registerLoginIdPlaceholder"
                   autocomplete="username"
+                  :aria-invalid="Boolean(registerErrors.loginId)"
+                  :aria-describedby="registerErrors.loginId ? 'register-id-error' : undefined"
                 />
                 <img class="auth-field__icon" :src="keyIcon" alt="" />
               </div>
+              <span
+                v-if="registerErrors.loginId"
+                id="register-id-error"
+                class="auth-field__error"
+                role="alert"
+              >
+                {{ registerErrors.loginId }}
+              </span>
             </label>
 
             <label class="auth-field">
               <span class="auth-field__label">密码</span>
-              <div class="auth-field__control">
+              <div :class="['auth-field__control', { 'auth-field__control--invalid': registerErrors.password }]">
                 <input
+                  ref="registerPasswordRef"
                   v-model="registerForm.password"
                   type="password"
                   placeholder="请设置密码"
                   autocomplete="new-password"
+                  :aria-invalid="Boolean(registerErrors.password)"
+                  :aria-describedby="registerErrors.password ? 'register-password-error' : undefined"
                 />
                 <img class="auth-field__icon" :src="lockIcon" alt="" />
               </div>
+              <span
+                v-if="registerErrors.password"
+                id="register-password-error"
+                class="auth-field__error"
+                role="alert"
+              >
+                {{ registerErrors.password }}
+              </span>
             </label>
 
             <label class="auth-field">
               <span class="auth-field__label">确认密码</span>
-              <div class="auth-field__control">
+              <div :class="['auth-field__control', { 'auth-field__control--invalid': registerErrors.confirmPassword }]">
                 <input
+                  ref="registerConfirmPasswordRef"
                   v-model="registerForm.confirmPassword"
                   type="password"
                   placeholder="请再次输入密码"
                   autocomplete="new-password"
+                  :aria-invalid="Boolean(registerErrors.confirmPassword)"
+                  :aria-describedby="registerErrors.confirmPassword ? 'register-confirm-password-error' : undefined"
                 />
                 <img class="auth-field__icon" :src="lockIcon" alt="" />
               </div>
+              <span
+                v-if="registerErrors.confirmPassword"
+                id="register-confirm-password-error"
+                class="auth-field__error"
+                role="alert"
+              >
+                {{ registerErrors.confirmPassword }}
+              </span>
             </label>
 
             <button class="auth-form__primary" type="submit" :disabled="sessionStore.loading">
@@ -201,6 +281,13 @@ const sessionStore = useSessionStore();
 
 const sceneRef = ref(null);
 const threeMountRef = ref(null);
+const loginRealNameRef = ref(null);
+const loginLoginIdRef = ref(null);
+const loginPasswordRef = ref(null);
+const registerRealNameRef = ref(null);
+const registerLoginIdRef = ref(null);
+const registerPasswordRef = ref(null);
+const registerConfirmPasswordRef = ref(null);
 const successMessage = ref("");
 const isRegisterMode = ref(false);
 const registerErrorMessage = ref("");
@@ -223,6 +310,19 @@ const registerForm = reactive({
 const backgroundState = {
   cleanup: null
 };
+
+const loginErrors = reactive({
+  realName: "",
+  loginId: "",
+  password: ""
+});
+
+const registerErrors = reactive({
+  realName: "",
+  loginId: "",
+  password: "",
+  confirmPassword: ""
+});
 
 const activeRole = computed(() => isRegisterMode.value ? registerForm.role : form.role);
 const activeRoleLabel = computed(() => activeRole.value === "TEACHER" ? "教师" : "学生");
@@ -247,6 +347,84 @@ const welcomeTags = computed(() => {
 
   return ["学生入口", "教师入口", "在线练习"];
 });
+
+function clearLoginErrors() {
+  loginErrors.realName = "";
+  loginErrors.loginId = "";
+  loginErrors.password = "";
+}
+
+function clearRegisterErrors() {
+  registerErrors.realName = "";
+  registerErrors.loginId = "";
+  registerErrors.password = "";
+  registerErrors.confirmPassword = "";
+}
+
+function focusFirstInvalidField(errorMap, refs) {
+  for (const key of Object.keys(refs)) {
+    if (errorMap[key]) {
+      refs[key]?.value?.focus?.();
+      break;
+    }
+  }
+}
+
+function validateLoginForm() {
+  clearLoginErrors();
+
+  if (!form.realName.trim()) {
+    loginErrors.realName = "请输入姓名。";
+  }
+  if (!form.loginId.trim()) {
+    loginErrors.loginId = `请输入${loginIdLabel.value}。`;
+  }
+  if (!form.password) {
+    loginErrors.password = "请输入密码。";
+  }
+
+  const hasError = Object.values(loginErrors).some(Boolean);
+  if (hasError) {
+    focusFirstInvalidField(loginErrors, {
+      realName: loginRealNameRef,
+      loginId: loginLoginIdRef,
+      password: loginPasswordRef
+    });
+  }
+
+  return !hasError;
+}
+
+function validateRegisterForm() {
+  clearRegisterErrors();
+
+  if (!registerForm.realName.trim()) {
+    registerErrors.realName = "请输入姓名。";
+  }
+  if (!registerForm.loginId.trim()) {
+    registerErrors.loginId = `请输入${registerLoginIdLabel.value}。`;
+  }
+  if (!registerForm.password) {
+    registerErrors.password = "请设置密码。";
+  }
+  if (!registerForm.confirmPassword) {
+    registerErrors.confirmPassword = "请再次输入密码。";
+  } else if (registerForm.password && registerForm.password !== registerForm.confirmPassword) {
+    registerErrors.confirmPassword = "两次输入的密码不一致。";
+  }
+
+  const hasError = Object.values(registerErrors).some(Boolean);
+  if (hasError) {
+    focusFirstInvalidField(registerErrors, {
+      realName: registerRealNameRef,
+      loginId: registerLoginIdRef,
+      password: registerPasswordRef,
+      confirmPassword: registerConfirmPasswordRef
+    });
+  }
+
+  return !hasError;
+}
 
 function injectLegacyThree() {
   if (window.__legacyLoginThreeLoaded) {
@@ -408,6 +586,8 @@ function switchToRegister() {
   sessionStore.errorMessage = "";
   registerErrorMessage.value = "";
   successMessage.value = "";
+  clearLoginErrors();
+  clearRegisterErrors();
   isRegisterMode.value = true;
   registerForm.role = form.role;
   registerForm.realName = form.realName;
@@ -420,6 +600,8 @@ function switchToLogin(options = {}) {
   sessionStore.errorMessage = "";
   isRegisterMode.value = false;
   registerErrorMessage.value = "";
+  clearLoginErrors();
+  clearRegisterErrors();
 
   if (!options.preserveSuccess) {
     successMessage.value = "";
@@ -437,6 +619,12 @@ function fillLoginFromRegister() {
 
 async function handleSubmit() {
   successMessage.value = "";
+  registerErrorMessage.value = "";
+  sessionStore.errorMessage = "";
+
+  if (!validateLoginForm()) {
+    return;
+  }
 
   try {
     await sessionStore.loginWithPassword({
@@ -457,8 +645,7 @@ async function handleRegister() {
   registerErrorMessage.value = "";
   successMessage.value = "";
 
-  if (registerForm.password !== registerForm.confirmPassword) {
-    registerErrorMessage.value = "两次输入的密码不一致。";
+  if (!validateRegisterForm()) {
     return;
   }
 
@@ -490,11 +677,11 @@ onBeforeUnmount(() => {
   position: relative;
   display: grid;
   place-items: center;
-  height: 100vh;
   min-height: 100vh;
   padding: 16px;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: #3f76a8;
 }
 
@@ -522,7 +709,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   width: min(940px, 100%);
-  height: 100%;
+  min-height: calc(100vh - 32px);
   padding: 0;
 }
 
@@ -531,7 +718,7 @@ onBeforeUnmount(() => {
   grid-template-columns: minmax(320px, 0.92fr) minmax(420px, 1.08fr);
   grid-template-areas: "welcome panel";
   width: 100%;
-  height: min(568px, calc(100vh - 28px));
+  min-height: 568px;
   border-radius: 34px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.24);
@@ -546,6 +733,11 @@ onBeforeUnmount(() => {
 .auth-card--register {
   grid-template-columns: minmax(420px, 1.08fr) minmax(320px, 0.92fr);
   grid-template-areas: "panel welcome";
+}
+
+.auth-card--register .auth-card__panel {
+  border-left: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.16);
 }
 
 .auth-card__welcome {
@@ -575,8 +767,7 @@ onBeforeUnmount(() => {
   border-radius: 150px 34px 34px 150px;
 }
 
-.auth-card__eyebrow,
-.auth-panel__tag {
+.auth-card__eyebrow {
   margin: 0;
   letter-spacing: 0.24em;
   text-transform: uppercase;
@@ -629,16 +820,19 @@ onBeforeUnmount(() => {
   box-shadow: 0 12px 20px rgba(60, 80, 160, 0.18);
 }
 
-.auth-card__welcome-tags,
-.auth-form__badges {
+.auth-card__switch:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.78);
+  outline-offset: 3px;
+}
+
+.auth-card__welcome-tags {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 10px;
 }
 
-.auth-card__welcome-tags span,
-.auth-form__badges span {
+.auth-card__welcome-tags span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -707,6 +901,11 @@ onBeforeUnmount(() => {
   box-shadow: 0 10px 18px rgba(120, 141, 226, 0.28);
 }
 
+.role-switch button:focus-visible {
+  outline: 3px solid rgba(103, 126, 223, 0.42);
+  outline-offset: 2px;
+}
+
 .auth-field {
   display: grid;
   gap: 6px;
@@ -732,6 +931,22 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(20px) saturate(1.12);
 }
 
+.auth-field__control:focus-within {
+  border-color: rgba(103, 126, 223, 0.48);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 0 0 4px rgba(116, 139, 230, 0.12),
+    0 12px 22px rgba(27, 56, 116, 0.12);
+}
+
+.auth-field__control--invalid {
+  border-color: rgba(191, 74, 74, 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 0 0 4px rgba(214, 91, 91, 0.08),
+    0 10px 18px rgba(143, 42, 42, 0.12);
+}
+
 .auth-field__control input {
   width: 100%;
   padding: 0 50px 0 15px;
@@ -740,6 +955,10 @@ onBeforeUnmount(() => {
   background: transparent;
   color: #2d3145;
   font-size: 0.96rem;
+}
+
+.auth-field__control input:focus-visible {
+  outline: none;
 }
 
 .auth-field__control input::placeholder {
@@ -753,6 +972,12 @@ onBeforeUnmount(() => {
   height: 16px;
   opacity: 0.48;
   filter: grayscale(1);
+}
+
+.auth-field__error {
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: #b64242;
 }
 
 .auth-form__primary {
@@ -775,6 +1000,11 @@ onBeforeUnmount(() => {
   transform: translateY(-1px);
   box-shadow: 0 18px 28px rgba(118, 140, 227, 0.32);
   filter: saturate(1.06);
+}
+
+.auth-form__primary:focus-visible {
+  outline: 3px solid rgba(103, 126, 223, 0.42);
+  outline-offset: 3px;
 }
 
 .role-switch button:disabled,
@@ -814,12 +1044,11 @@ onBeforeUnmount(() => {
 
 @media (max-width: 900px) {
   .login-stage {
-    height: auto;
     padding: 12px;
   }
 
   .auth-shell {
-    height: auto;
+    min-height: auto;
   }
 
   .auth-card,
@@ -840,6 +1069,7 @@ onBeforeUnmount(() => {
   .auth-card__panel {
     padding: 18px 26px 24px;
     border-left: 0;
+    border-right: 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.14);
   }
 }
@@ -864,8 +1094,7 @@ onBeforeUnmount(() => {
     font-size: 2rem;
   }
 
-  .auth-card__welcome-tags span,
-  .auth-form__badges span {
+  .auth-card__welcome-tags span {
     min-width: calc(50% - 6px);
   }
 }

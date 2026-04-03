@@ -1,5 +1,10 @@
 <template>
-  <div :class="['status-banner', tone]">
+  <div
+    :class="['status-banner', tone]"
+    :role="tone === 'danger' ? 'alert' : 'status'"
+    :aria-live="tone === 'danger' ? 'assertive' : 'polite'"
+    aria-atomic="true"
+  >
     <slot />
   </div>
 </template>
