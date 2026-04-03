@@ -375,6 +375,7 @@ const welcomeTags = computed(() => {
 
   return ["学生入口", "教师入口", "在线练习"];
 });
+const requiredFieldMessage = "请填入此字段";
 
 function clearLoginErrors() {
   loginErrors.realName = "";
@@ -403,13 +404,13 @@ function validateLoginForm() {
   clearLoginErrors();
 
   if (!form.realName.trim()) {
-    return showSingleFieldError(loginErrors, "realName", "请输入姓名。", loginRealNameRef);
+    return showSingleFieldError(loginErrors, "realName", requiredFieldMessage, loginRealNameRef);
   }
   if (!form.loginId.trim()) {
-    return showSingleFieldError(loginErrors, "loginId", `请输入${loginIdLabel.value}。`, loginLoginIdRef);
+    return showSingleFieldError(loginErrors, "loginId", requiredFieldMessage, loginLoginIdRef);
   }
   if (!form.password) {
-    return showSingleFieldError(loginErrors, "password", "请输入密码。", loginPasswordRef);
+    return showSingleFieldError(loginErrors, "password", requiredFieldMessage, loginPasswordRef);
   }
 
   return true;
@@ -419,16 +420,16 @@ function validateRegisterForm() {
   clearRegisterErrors();
 
   if (!registerForm.realName.trim()) {
-    return showSingleFieldError(registerErrors, "realName", "请输入姓名。", registerRealNameRef);
+    return showSingleFieldError(registerErrors, "realName", requiredFieldMessage, registerRealNameRef);
   }
   if (!registerForm.loginId.trim()) {
-    return showSingleFieldError(registerErrors, "loginId", `请输入${registerLoginIdLabel.value}。`, registerLoginIdRef);
+    return showSingleFieldError(registerErrors, "loginId", requiredFieldMessage, registerLoginIdRef);
   }
   if (!registerForm.password) {
-    return showSingleFieldError(registerErrors, "password", "请设置密码。", registerPasswordRef);
+    return showSingleFieldError(registerErrors, "password", requiredFieldMessage, registerPasswordRef);
   }
   if (!registerForm.confirmPassword) {
-    return showSingleFieldError(registerErrors, "confirmPassword", "请再次输入密码。", registerConfirmPasswordRef);
+    return showSingleFieldError(registerErrors, "confirmPassword", requiredFieldMessage, registerConfirmPasswordRef);
   } else if (registerForm.password && registerForm.password !== registerForm.confirmPassword) {
     return showSingleFieldError(registerErrors, "confirmPassword", "两次输入的密码不一致。", registerConfirmPasswordRef);
   }
@@ -1016,7 +1017,7 @@ onBeforeUnmount(() => {
 .auth-field__error-bubble::after {
   content: "";
   position: absolute;
-  left: 22px;
+  left: calc(50% - 24px);
   top: 100%;
   width: 14px;
   height: 14px;
