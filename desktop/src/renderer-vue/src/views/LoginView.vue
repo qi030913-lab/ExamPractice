@@ -702,11 +702,12 @@ onBeforeUnmount(() => {
   position: relative;
   display: grid;
   place-items: center;
+  height: 100vh;
   min-height: 100vh;
   padding: 16px;
   box-sizing: border-box;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: hidden;
   background: #3f76a8;
 }
 
@@ -734,7 +735,8 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   width: min(940px, 100%);
-  min-height: calc(100vh - 32px);
+  height: calc(100vh - 32px);
+  min-height: 0;
   padding: 0;
 }
 
@@ -743,7 +745,8 @@ onBeforeUnmount(() => {
   grid-template-columns: minmax(320px, 0.92fr) minmax(420px, 1.08fr);
   grid-template-areas: "welcome panel";
   width: 100%;
-  min-height: 568px;
+  height: min(540px, 100%);
+  min-height: 0;
   border-radius: 34px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.24);
@@ -772,7 +775,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   align-items: center;
   gap: 18px;
-  padding: 42px 34px;
+  padding: 36px 30px;
   text-align: center;
   color: #000000;
   opacity: 0.5;
@@ -880,7 +883,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 18px 34px 30px;
+  padding: 16px 30px 22px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(250, 250, 254, 0)),
     rgba(255, 255, 255, 0.06);
@@ -890,7 +893,7 @@ onBeforeUnmount(() => {
 
 .auth-form {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   width: min(100%, 360px);
   margin: 0 auto;
 }
@@ -907,7 +910,7 @@ onBeforeUnmount(() => {
 }
 
 .role-switch button {
-  min-height: 44px;
+  min-height: 42px;
   border: 0;
   border-radius: 14px;
   background: transparent;
@@ -951,7 +954,7 @@ onBeforeUnmount(() => {
   position: relative;
   display: flex;
   align-items: center;
-  min-height: 50px;
+  min-height: 46px;
   border: 1px solid rgba(255, 255, 255, 0.26);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0);
@@ -1064,7 +1067,7 @@ onBeforeUnmount(() => {
 }
 
 .auth-form__primary {
-  min-height: 50px;
+  min-height: 46px;
   border: 0;
   border-radius: 14px;
   background: linear-gradient(135deg, #8ea6f6, #748be6);
@@ -1127,10 +1130,14 @@ onBeforeUnmount(() => {
 
 @media (max-width: 900px) {
   .login-stage {
+    height: auto;
+    min-height: 100vh;
     padding: 12px;
+    overflow-y: auto;
   }
 
   .auth-shell {
+    height: auto;
     min-height: auto;
   }
 
@@ -1145,12 +1152,12 @@ onBeforeUnmount(() => {
 
   .auth-card__welcome,
   .auth-card__welcome--right {
-    min-height: 240px;
+    min-height: 220px;
     border-radius: 150px 150px 34px 34px;
   }
 
   .auth-card__panel {
-    padding: 18px 26px 24px;
+    padding: 16px 24px 22px;
     border-left: 0;
     border-right: 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.14);
@@ -1163,13 +1170,13 @@ onBeforeUnmount(() => {
   }
 
   .auth-card__panel {
-    padding: 16px 18px 22px;
+    padding: 14px 18px 20px;
   }
 
   .auth-card__welcome,
   .auth-card__welcome--right {
-    min-height: 220px;
-    padding: 32px 22px;
+    min-height: 200px;
+    padding: 28px 20px;
     border-radius: 120px 120px 28px 28px;
   }
 
