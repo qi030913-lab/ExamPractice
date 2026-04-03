@@ -732,7 +732,7 @@ onBeforeUnmount(() => {
   border-radius: 34px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.24);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0);
   box-shadow:
     0 38px 80px rgba(12, 31, 63, 0.3),
     0 16px 30px rgba(40, 68, 132, 0.16);
@@ -866,7 +866,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   padding: 18px 34px 30px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(250, 250, 254, 0.1)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(250, 250, 254, 0)),
     rgba(255, 255, 255, 0.06);
   border-left: 1px solid rgba(255, 255, 255, 0.16);
   backdrop-filter: blur(30px) saturate(1.16);
@@ -938,7 +938,7 @@ onBeforeUnmount(() => {
   min-height: 50px;
   border: 1px solid rgba(255, 255, 255, 0.26);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.24),
     0 10px 18px rgba(27, 56, 116, 0.1);
@@ -1002,8 +1002,8 @@ onBeforeUnmount(() => {
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 14px;
   background:
-    linear-gradient(180deg, rgba(54, 59, 70, 0.78), rgba(38, 42, 52, 0.88)),
-    rgba(27, 31, 39, 0.72);
+    linear-gradient(180deg, rgba(54, 59, 70, 0.1), rgba(38, 42, 52, 0.1)),
+    rgba(27, 31, 39, 0.5);
   box-shadow:
     0 18px 30px rgba(10, 16, 26, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
@@ -1022,7 +1022,7 @@ onBeforeUnmount(() => {
   height: 14px;
   border-right: 1px solid rgba(255, 255, 255, 0.14);
   border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(40, 44, 54, 0.92);
+  background: rgba(40, 44, 54, 0.6);
   transform: translateY(-8px) rotate(45deg);
 }
 
@@ -1072,7 +1072,7 @@ onBeforeUnmount(() => {
 .auth-card__switch:disabled,
 .auth-form__primary:disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.2;
 }
 
 :deep(.status-banner) {
