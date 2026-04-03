@@ -120,4 +120,5 @@ src/main/java/com/exam/
 
 ## 运行效果
 
-![1775138912496](image/README/1775138912496.png)
+<img width="1658" height="941" alt="image" src="https://github.com/user-attachments/assets/04a29ada-a56f-4d73-93ee-54c4e85ed475" />
+
