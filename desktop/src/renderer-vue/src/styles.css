@@ -81,12 +81,6 @@ textarea {
   line-height: 1.2;
 }
 
-.shell-subcopy {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.7;
-}
-
 .shell-eyebrow,
 .page-tag,
 .action-tag {

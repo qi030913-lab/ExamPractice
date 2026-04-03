@@ -5,9 +5,6 @@
       <div class="shell-brand">
         <p class="shell-eyebrow">桌面考试平台</p>
         <h1>在线考试系统桌面端</h1>
-        <p class="shell-subcopy">
-          {{ sidebarCopy }}
-        </p>
       </div>
 
       <nav class="shell-nav">
@@ -141,18 +138,6 @@ const headerCopy = computed(() => {
   }
 
   return `${displayName.value} 已登录，当前角色为 ${roleName.value}。`;
-});
-
-const sidebarCopy = computed(() => {
-  if (sessionStore.isTeacher) {
-    return "左侧集中放置教师端导航，右侧保留内容工作区，切换试卷、导题和学生管理会更顺手。";
-  }
-
-  if (sessionStore.isStudent) {
-    return "左侧集中放置学生端导航，右侧用于考试、记录和成就内容展示，减少来回跳转。";
-  }
-
-  return "登录后可直接进入对应角色工作区，完成出卷、考试与成绩查看。";
 });
 
 const roleName = computed(() => (sessionStore.isTeacher ? "教师" : sessionStore.isStudent ? "学生" : "未登录"));
