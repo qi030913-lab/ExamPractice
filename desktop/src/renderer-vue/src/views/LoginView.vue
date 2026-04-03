@@ -774,7 +774,8 @@ onBeforeUnmount(() => {
   gap: 18px;
   padding: 42px 34px;
   text-align: center;
-  color: #ffffff;
+  color: #000000;
+  opacity: 0.5;
   background:
     linear-gradient(160deg, rgba(126, 156, 244, 0.18), rgba(95, 124, 220, 0.26)),
     rgba(111, 140, 232, 0.09);
@@ -800,7 +801,7 @@ onBeforeUnmount(() => {
 
 .auth-card__eyebrow {
   font-size: 0.74rem;
-  color: rgba(255, 255, 255, 0.78);
+  color: rgba(0, 0, 0, 0.78);
 }
 
 .auth-card__welcome h2,
@@ -819,7 +820,7 @@ onBeforeUnmount(() => {
   max-width: 280px;
   margin: 0;
   line-height: 1.68;
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(0, 0, 0, 0.88);
 }
 
 .auth-card__switch {
@@ -829,7 +830,7 @@ onBeforeUnmount(() => {
   border: 1.5px solid rgba(255, 255, 255, 0.72);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  color: #000000;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -871,7 +872,7 @@ onBeforeUnmount(() => {
 .auth-card__welcome-tags span {
   border: 1px solid rgba(255, 255, 255, 0.24);
   background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.86);
+  color: rgba(0, 0, 0);
 }
 
 .auth-card__panel {
@@ -922,7 +923,7 @@ onBeforeUnmount(() => {
 
 .role-switch button.active {
   background: linear-gradient(135deg, #8ea6f6, #748be6);
-  color: #ffffff;
+  color: #000000;
   box-shadow: 0 10px 18px rgba(120, 141, 226, 0.28);
 }
 
@@ -1041,7 +1042,7 @@ onBeforeUnmount(() => {
   box-shadow:
     0 18px 30px rgba(10, 16, 26, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.96);
+  color: rgba(0, 0, 0, 0.96);
   font-size: 0.92rem;
   line-height: 1.5;
   backdrop-filter: blur(18px) saturate(1.08);
@@ -1056,7 +1057,7 @@ onBeforeUnmount(() => {
   height: 28px;
   border-radius: 8px;
   background: linear-gradient(180deg, #ffa62c, #ff8d10);
-  color: #ffffff;
+  color: #000000;
   font-size: 1.1rem;
   font-weight: 800;
   box-shadow: 0 8px 14px rgba(255, 149, 25, 0.24);
@@ -1067,7 +1068,7 @@ onBeforeUnmount(() => {
   border: 0;
   border-radius: 14px;
   background: linear-gradient(135deg, #8ea6f6, #748be6);
-  color: #ffffff;
+  color: #000000;
   font-size: 0.98rem;
   font-weight: 700;
   cursor: pointer;
