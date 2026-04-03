@@ -74,8 +74,10 @@
                   class="auth-field__error-bubble"
                   role="alert"
                 >
-                  <span class="auth-field__error-icon" aria-hidden="true">!</span>
-                  <span>{{ loginErrors.realName }}</span>
+                  <span class="auth-field__error-panel">
+                    <span class="auth-field__error-icon" aria-hidden="true">!</span>
+                    <span>{{ loginErrors.realName }}</span>
+                  </span>
                 </span>
               </div>
             </label>
@@ -102,8 +104,10 @@
                   class="auth-field__error-bubble"
                   role="alert"
                 >
-                  <span class="auth-field__error-icon" aria-hidden="true">!</span>
-                  <span>{{ loginErrors.loginId }}</span>
+                  <span class="auth-field__error-panel">
+                    <span class="auth-field__error-icon" aria-hidden="true">!</span>
+                    <span>{{ loginErrors.loginId }}</span>
+                  </span>
                 </span>
               </div>
             </label>
@@ -130,8 +134,10 @@
                   class="auth-field__error-bubble"
                   role="alert"
                 >
-                  <span class="auth-field__error-icon" aria-hidden="true">!</span>
-                  <span>{{ loginErrors.password }}</span>
+                  <span class="auth-field__error-panel">
+                    <span class="auth-field__error-icon" aria-hidden="true">!</span>
+                    <span>{{ loginErrors.password }}</span>
+                  </span>
                 </span>
               </div>
             </label>
@@ -190,8 +196,10 @@
                   class="auth-field__error-bubble"
                   role="alert"
                 >
-                  <span class="auth-field__error-icon" aria-hidden="true">!</span>
-                  <span>{{ registerErrors.realName }}</span>
+                  <span class="auth-field__error-panel">
+                    <span class="auth-field__error-icon" aria-hidden="true">!</span>
+                    <span>{{ registerErrors.realName }}</span>
+                  </span>
                 </span>
               </div>
             </label>
@@ -218,8 +226,10 @@
                   class="auth-field__error-bubble"
                   role="alert"
                 >
-                  <span class="auth-field__error-icon" aria-hidden="true">!</span>
-                  <span>{{ registerErrors.loginId }}</span>
+                  <span class="auth-field__error-panel">
+                    <span class="auth-field__error-icon" aria-hidden="true">!</span>
+                    <span>{{ registerErrors.loginId }}</span>
+                  </span>
                 </span>
               </div>
             </label>
@@ -246,8 +256,10 @@
                   class="auth-field__error-bubble"
                   role="alert"
                 >
-                  <span class="auth-field__error-icon" aria-hidden="true">!</span>
-                  <span>{{ registerErrors.password }}</span>
+                  <span class="auth-field__error-panel">
+                    <span class="auth-field__error-icon" aria-hidden="true">!</span>
+                    <span>{{ registerErrors.password }}</span>
+                  </span>
                 </span>
               </div>
             </label>
@@ -274,8 +286,10 @@
                   class="auth-field__error-bubble"
                   role="alert"
                 >
-                  <span class="auth-field__error-icon" aria-hidden="true">!</span>
-                  <span>{{ registerErrors.confirmPassword }}</span>
+                  <span class="auth-field__error-panel">
+                    <span class="auth-field__error-icon" aria-hidden="true">!</span>
+                    <span>{{ registerErrors.confirmPassword }}</span>
+                  </span>
                 </span>
               </div>
             </label>
@@ -994,26 +1008,9 @@ onBeforeUnmount(() => {
   left: 50%;
   bottom: calc(100% + 10px);
   z-index: 5;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
   width: max-content;
   max-width: min(252px, calc(100% - 12px));
-  min-height: 54px;
-  padding: 10px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 14px;
-  background:
-    linear-gradient(180deg, rgba(54, 59, 70, 0.1), rgba(38, 42, 52, 0.1)),
-    rgba(27, 31, 39, 0.5);
-  box-shadow:
-    0 18px 30px rgba(10, 16, 26, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.96);
-  font-size: 0.92rem;
-  line-height: 1.5;
-  transform: translateX(-42%);
-  backdrop-filter: blur(18px) saturate(1.08);
+  transform: translateX(-30%);
 }
 
 .auth-field__error-bubble::after {
@@ -1027,6 +1024,26 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(40, 44, 54, 0.6);
   transform: translateY(-8px) rotate(45deg);
+}
+
+.auth-field__error-panel {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(54, 59, 70, 0.1), rgba(38, 42, 52, 0.1)),
+    rgba(27, 31, 39, 0.5);
+  box-shadow:
+    0 18px 30px rgba(10, 16, 26, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.96);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  backdrop-filter: blur(18px) saturate(1.08);
 }
 
 .auth-field__error-icon {
@@ -1164,6 +1181,9 @@ onBeforeUnmount(() => {
 
   .auth-field__error-bubble {
     max-width: min(230px, calc(100% - 8px));
+  }
+
+  .auth-field__error-panel {
     font-size: 0.88rem;
   }
 }
