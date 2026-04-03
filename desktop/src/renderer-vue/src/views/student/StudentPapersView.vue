@@ -60,52 +60,67 @@
       <div class="detail-tips">
         <p>
           当前分类：{{ activeSubject }}
-          / 试卷 {{ filteredPapers.length }} 张
+          / 试卷 {{ totalFilteredPapers }} 张
           / 进行中 {{ filteredInProgressCount }} 张
           / 已完成 {{ filteredCompletedCount }} 张
         </p>
       </div>
 
       <div v-if="loading" class="empty-copy">正在加载试卷数据...</div>
-      <div v-else-if="filteredPapers.length" class="record-list">
-        <article v-for="paper in filteredPapers" :key="paper.paperId" class="record-card">
-          <div class="record-card-head">
-            <strong>{{ paper.paperName }}</strong>
-            <span :class="['pill', paper.hasInProgressRecord ? 'pill-accent' : 'pill-success']">
-              {{ paper.hasInProgressRecord ? "进行中" : "已发布" }}
-            </span>
-          </div>
-          <div class="record-card-meta">
-            <span>科目：{{ paper.subject || "-" }}</span>
-            <span>题量：{{ paper.questionCount ?? 0 }}</span>
-            <span>总分：{{ paper.totalScore ?? 0 }}</span>
-            <span>及格分：{{ paper.passScore ?? 0 }}</span>
-            <span>时长：{{ paper.duration ?? 0 }} 分钟</span>
-            <span>说明：{{ paper.description || "暂无说明" }}</span>
-          </div>
+      <template v-else-if="totalFilteredPapers">
+        <WorkspacePagination
+          :current-page="currentPage"
+          :page-size="pageSize"
+          :page-size-options="pageSizeOptions"
+          :start="pageSummary.start"
+          :end="pageSummary.end"
+          :total-pages="totalPages"
+          :total-items="totalFilteredPapers"
+          item-label="张试卷"
+          @change-page="goToPage"
+          @update:page-size="pageSize = $event"
+        />
 
-          <div v-if="paper.latestRecord" class="detail-tips">
-            <p>
-              最近记录：{{ formatStatus(paper.latestRecord.status) }}
-              / {{ paper.latestRecord.resumeAvailable ? "可继续作答" : `成绩 ${formatNullableScore(paper.latestRecord.score)}` }}
-              / {{ formatDateTime(paper.latestRecord.submitTime || paper.latestRecord.startTime) }}
-            </p>
-          </div>
+        <div class="record-list">
+          <article v-for="paper in paginatedPapers" :key="paper.paperId" class="record-card">
+            <div class="record-card-head">
+              <strong>{{ paper.paperName }}</strong>
+              <span :class="['pill', paper.hasInProgressRecord ? 'pill-accent' : 'pill-success']">
+                {{ paper.hasInProgressRecord ? "进行中" : "已发布" }}
+              </span>
+            </div>
+            <div class="record-card-meta">
+              <span>科目：{{ paper.subject || "-" }}</span>
+              <span>题量：{{ paper.questionCount ?? 0 }}</span>
+              <span>总分：{{ paper.totalScore ?? 0 }}</span>
+              <span>及格分：{{ paper.passScore ?? 0 }}</span>
+              <span>时长：{{ paper.duration ?? 0 }} 分钟</span>
+              <span>说明：{{ paper.description || "暂无说明" }}</span>
+            </div>
 
-          <div class="action-row">
-            <RouterLink class="ghost-link-button" :to="`/student/papers/${paper.paperId}/exam`">
-              {{ paper.hasInProgressRecord ? "继续作答" : "开始考试" }}
-            </RouterLink>
-            <RouterLink
-              v-if="paper.latestRecord?.recordId"
-              class="ghost-link-button"
-              :to="paper.latestRecord.resumeAvailable ? `/student/papers/${paper.paperId}/exam` : `/student/records/${paper.latestRecord.recordId}`"
-            >
-              {{ paper.latestRecord.resumeAvailable ? "重新进入进行中考试" : "查看最近记录" }}
-            </RouterLink>
-          </div>
-        </article>
-      </div>
+            <div v-if="paper.latestRecord" class="detail-tips">
+              <p>
+                最近记录：{{ formatStatus(paper.latestRecord.status) }}
+                / {{ paper.latestRecord.resumeAvailable ? "可继续作答" : `成绩 ${formatNullableScore(paper.latestRecord.score)}` }}
+                / {{ formatDateTime(paper.latestRecord.submitTime || paper.latestRecord.startTime) }}
+              </p>
+            </div>
+
+            <div class="action-row">
+              <RouterLink class="ghost-link-button" :to="`/student/papers/${paper.paperId}/exam`">
+                {{ paper.hasInProgressRecord ? "继续作答" : "开始考试" }}
+              </RouterLink>
+              <RouterLink
+                v-if="paper.latestRecord?.recordId"
+                class="ghost-link-button"
+                :to="paper.latestRecord.resumeAvailable ? `/student/papers/${paper.paperId}/exam` : `/student/records/${paper.latestRecord.recordId}`"
+              >
+                {{ paper.latestRecord.resumeAvailable ? "重新进入进行中考试" : "查看最近记录" }}
+              </RouterLink>
+            </div>
+          </article>
+        </div>
+      </template>
       <p v-else class="empty-copy">当前分类下暂无可参加试卷。</p>
     </article>
   </section>
@@ -115,6 +130,8 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 import StatusBanner from "@/components/StatusBanner.vue";
+import WorkspacePagination from "@/components/WorkspacePagination.vue";
+import { usePagination } from "@/composables/usePagination";
 import { useSessionStore } from "@/stores/session";
 import { getStudentPapers } from "@/services/student-api";
 
@@ -126,6 +143,7 @@ const errorMessage = ref("");
 const successMessage = ref("");
 const activeSubject = ref("全部");
 const lastUpdatedAt = ref(null);
+const pageSizeOptions = [6, 9, 12];
 let refreshTimer = null;
 let focusHandler = null;
 
@@ -153,6 +171,15 @@ const filteredCompletedCount = computed(() =>
     ["SUBMITTED", "TIMEOUT"].includes(String(paper.latestRecord?.status || ""))
   ).length
 );
+const {
+  currentPage,
+  pageSize,
+  totalItems: totalFilteredPapers,
+  totalPages,
+  paginatedItems: paginatedPapers,
+  pageSummary,
+  goToPage
+} = usePagination(filteredPapers, { initialPageSize: 6 });
 
 watch(subjectFilters, (subjects) => {
   if (!subjects.includes(activeSubject.value)) {

@@ -10,8 +10,17 @@
     </div>
     <div class="card-grid">
       <article class="mini-card">
-        <h3>当前用户</h3>
-        <p>{{ userCopy }}</p>
+        <h3>{{ accountLabel }}</h3>
+        <p>{{ displayName }}</p>
+        <span class="overview-meta">{{ loginIdCopy }}</span>
+        <button
+          v-if="sessionStore.isLoggedIn"
+          class="overview-logout"
+          type="button"
+          @click="handleLogout"
+        >
+          退出登录
+        </button>
       </article>
       <article class="mini-card">
         <h3>建议入口</h3>
@@ -27,17 +36,26 @@
 
 <script setup>
 import { computed } from "vue";
+import { useRouter } from "vue-router";
 import { useSessionStore } from "@/stores/session";
 
+const router = useRouter();
 const sessionStore = useSessionStore();
 
-const userCopy = computed(() => {
-  if (!sessionStore.user) {
-    return "当前尚未登录";
+const accountLabel = computed(() => {
+  if (sessionStore.isTeacher) {
+    return "教师账号";
   }
 
-  return `${sessionStore.user.realName} / ${sessionStore.isTeacher ? "教师" : "学生"}`;
+  if (sessionStore.isStudent) {
+    return "学生账号";
+  }
+
+  return "当前账号";
 });
+
+const displayName = computed(() => sessionStore.user?.realName || "当前尚未登录");
+const loginIdCopy = computed(() => sessionStore.user?.loginId || "未检测到账号信息");
 
 const nextCopy = computed(() => {
   if (!sessionStore.isLoggedIn) {
@@ -48,4 +66,9 @@ const nextCopy = computed(() => {
     ? "进入教师工作区：试卷中心、导题建卷、学生中心"
     : "进入学生工作区：考试中心、成绩中心、记录详情";
 });
+
+function handleLogout() {
+  sessionStore.logout();
+  router.push("/login");
+}
 </script>

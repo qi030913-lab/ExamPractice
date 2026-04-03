@@ -49,28 +49,40 @@ textarea {
 }
 
 .shell-layout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 24px;
+  min-height: 100vh;
   padding: 24px;
 }
 
-.shell-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
+.shell-sidebar {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 18px;
   padding: 28px;
   border: 1px solid var(--line);
   border-radius: 24px;
   background: var(--panel);
   box-shadow: var(--shadow);
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 48px);
 }
 
-.shell-header h1 {
+.shell-brand {
+  display: grid;
+  gap: 8px;
+}
+
+.shell-brand h1 {
   margin: 6px 0 0;
-  font-size: 2rem;
+  font-size: 1.85rem;
+  line-height: 1.2;
 }
 
 .shell-subcopy {
-  margin: 10px 0 0;
+  margin: 0;
   color: var(--muted);
   line-height: 1.7;
 }
@@ -87,34 +99,97 @@ textarea {
 }
 
 .shell-nav {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  align-content: start;
   gap: 10px;
 }
 
-.shell-nav a {
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: rgba(32, 26, 21, 0.06);
+.shell-nav-link {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid rgba(92, 72, 56, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.6);
   color: var(--muted);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease;
 }
 
-.shell-nav a.router-link-active {
-  background: var(--primary);
-  color: #fff;
+.shell-nav-link strong {
+  font-size: 1rem;
+  color: var(--text);
 }
 
-.shell-logout {
-  border: 0;
-  border-radius: 999px;
-  padding: 10px 14px;
-  background: rgba(204, 107, 29, 0.14);
-  color: #8f4f1b;
-  cursor: pointer;
+.shell-nav-link span {
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.shell-nav-link:hover {
+  transform: translateX(2px);
+  border-color: rgba(15, 118, 110, 0.2);
+  box-shadow: 0 10px 22px rgba(15, 118, 110, 0.08);
+}
+
+.shell-nav-link-active {
+  border-color: transparent;
+  background:
+    linear-gradient(135deg, rgba(15, 118, 110, 0.96), rgba(16, 146, 133, 0.9)),
+    #0f766e;
+  box-shadow: 0 16px 28px rgba(15, 118, 110, 0.2);
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.shell-nav-link-active strong,
+.shell-nav-link-active span {
+  color: inherit;
+}
+
+.shell-stage {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.shell-topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.7fr);
+  gap: 20px;
+  align-items: end;
+  padding: 24px 28px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.shell-topbar-tag {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: 0.82rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.shell-topbar h2 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.shell-topbar-copy {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
 }
 
 .shell-main {
-  margin-top: 22px;
+  min-width: 0;
 }
 
 .page-card,
@@ -141,6 +216,23 @@ textarea {
   margin: 0;
   color: var(--muted);
   line-height: 1.75;
+}
+
+.overview-meta {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.overview-logout {
+  border: 0;
+  border-radius: 14px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: rgba(204, 107, 29, 0.16);
+  color: #8f4f1b;
+  cursor: pointer;
 }
 
 .page-form,
@@ -407,6 +499,15 @@ textarea {
   gap: 12px;
 }
 
+.pager-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-left: auto;
+}
+
 .page-size-control {
   display: inline-flex;
   align-items: center;
@@ -572,6 +673,7 @@ textarea {
   gap: 6px;
   text-align: left;
   cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
 .student-card strong {
@@ -585,6 +687,12 @@ textarea {
 .student-card-active {
   border-color: rgba(15, 118, 110, 0.35);
   background: rgba(15, 118, 110, 0.08);
+}
+
+.student-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(15, 118, 110, 0.24);
+  box-shadow: 0 14px 28px rgba(15, 118, 110, 0.08);
 }
 
 .compact-summary {
@@ -1029,6 +1137,16 @@ textarea {
 }
 
 @media (max-width: 1100px) {
+  .shell-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .shell-sidebar {
+    position: static;
+    max-height: none;
+  }
+
+  .shell-topbar,
   .workspace-hero,
   .students-layout,
   .import-layout,
@@ -1051,14 +1169,9 @@ textarea {
 }
 
 @media (max-width: 900px) {
-  .shell-header,
   .page-card {
     grid-template-columns: 1fr;
     display: grid;
-  }
-
-  .shell-header {
-    align-items: stretch;
   }
 
   .list-grid,
@@ -1088,6 +1201,11 @@ textarea {
   }
 
   .pager-controls {
+    justify-content: flex-start;
+  }
+
+  .pager-actions {
+    margin-left: 0;
     justify-content: flex-start;
   }
 

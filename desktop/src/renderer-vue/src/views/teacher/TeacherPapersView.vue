@@ -38,7 +38,21 @@
       </div>
 
       <div v-if="loading" class="empty-copy">正在加载试卷数据...</div>
-      <div v-else-if="papers.length" class="table-wrap">
+      <template v-else-if="totalPapers">
+        <WorkspacePagination
+          :current-page="currentPage"
+          :page-size="pageSize"
+          :page-size-options="pageSizeOptions"
+          :start="pageSummary.start"
+          :end="pageSummary.end"
+          :total-pages="totalPages"
+          :total-items="totalPapers"
+          item-label="份试卷"
+          @change-page="goToPage"
+          @update:page-size="pageSize = $event"
+        />
+
+        <div class="table-wrap">
         <table class="workspace-table">
           <thead>
             <tr>
@@ -53,7 +67,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="paper in papers" :key="paper.paperId">
+            <tr v-for="paper in paginatedPapers" :key="paper.paperId">
               <td>
                 <RouterLink class="inline-link" :to="`/teacher/papers/${paper.paperId}`">
                   {{ paper.paperName }}
@@ -95,7 +109,8 @@
             </tr>
           </tbody>
         </table>
-      </div>
+        </div>
+      </template>
       <p v-else class="empty-copy">暂无试卷数据。</p>
     </article>
   </section>
@@ -105,6 +120,8 @@
 import { onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
 import StatusBanner from "@/components/StatusBanner.vue";
+import WorkspacePagination from "@/components/WorkspacePagination.vue";
+import { usePagination } from "@/composables/usePagination";
 import { useSessionStore } from "@/stores/session";
 import {
   deleteTeacherPaper,
@@ -120,6 +137,16 @@ const papers = ref([]);
 const summary = ref(null);
 const errorMessage = ref("");
 const successMessage = ref("");
+const pageSizeOptions = [6, 10, 15];
+const {
+  currentPage,
+  pageSize,
+  totalItems: totalPapers,
+  totalPages,
+  paginatedItems: paginatedPapers,
+  pageSummary,
+  goToPage
+} = usePagination(papers, { initialPageSize: 6 });
 
 async function loadPapers() {
   if (!sessionStore.user?.userId) {

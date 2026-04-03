@@ -20,20 +20,35 @@
       </div>
 
       <div v-if="loading" class="empty-copy">正在加载学生数据...</div>
-      <div v-else-if="students.length" class="student-list">
-        <RouterLink
-          v-for="student in students"
-          :key="student.userId"
-          class="student-card"
-          :to="`/teacher/students/${student.userId}`"
-        >
-          <strong>{{ student.realName }}</strong>
-          <span>{{ student.loginId }}</span>
-          <span v-if="student.email">{{ student.email }}</span>
-          <span>考试 {{ student.recordCount ?? 0 }} 次 / 已提交 {{ student.submittedCount ?? 0 }} 次</span>
-          <span>平均分 {{ formatScore(student.averageScore) }}</span>
-        </RouterLink>
-      </div>
+      <template v-else-if="totalStudents">
+        <WorkspacePagination
+          :current-page="currentPage"
+          :page-size="pageSize"
+          :page-size-options="pageSizeOptions"
+          :start="pageSummary.start"
+          :end="pageSummary.end"
+          :total-pages="totalPages"
+          :total-items="totalStudents"
+          item-label="位学生"
+          @change-page="goToPage"
+          @update:page-size="pageSize = $event"
+        />
+
+        <div class="student-list">
+          <RouterLink
+            v-for="student in paginatedStudents"
+            :key="student.userId"
+            class="student-card"
+            :to="`/teacher/students/${student.userId}`"
+          >
+            <strong>{{ student.realName }}</strong>
+            <span>{{ student.loginId }}</span>
+            <span v-if="student.email">{{ student.email }}</span>
+            <span>考试 {{ student.recordCount ?? 0 }} 次 / 已提交 {{ student.submittedCount ?? 0 }} 次</span>
+            <span>平均分 {{ formatScore(student.averageScore) }}</span>
+          </RouterLink>
+        </div>
+      </template>
       <p v-else class="empty-copy">暂无学生数据。</p>
     </article>
   </section>
@@ -43,6 +58,8 @@
 import { onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
 import StatusBanner from "@/components/StatusBanner.vue";
+import WorkspacePagination from "@/components/WorkspacePagination.vue";
+import { usePagination } from "@/composables/usePagination";
 import { useSessionStore } from "@/stores/session";
 import { getTeacherStudents } from "@/services/teacher-api";
 
@@ -51,6 +68,16 @@ const loading = ref(false);
 const students = ref([]);
 const summary = ref(null);
 const errorMessage = ref("");
+const pageSizeOptions = [6, 10, 12];
+const {
+  currentPage,
+  pageSize,
+  totalItems: totalStudents,
+  totalPages,
+  paginatedItems: paginatedStudents,
+  pageSummary,
+  goToPage
+} = usePagination(students, { initialPageSize: 6 });
 
 async function loadStudents() {
   if (!sessionStore.user?.userId) {

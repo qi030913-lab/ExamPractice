@@ -83,30 +83,45 @@
             <h3>考试记录</h3>
             <p class="section-copy">点击某条记录，继续查看试卷结果与逐题作答详情。</p>
           </div>
-          <span class="pill pill-muted">共 {{ records.length }} 条</span>
+          <span class="pill pill-muted">共 {{ totalRecords }} 条</span>
         </div>
 
-        <div v-if="records.length" class="record-list">
-          <RouterLink
-            v-for="record in records"
-            :key="record.recordId"
-            class="record-card"
-            :to="`/teacher/students/${student.userId}/records/${record.recordId}`"
-          >
-            <div class="record-card-head">
-              <strong>{{ record.paperName || "未命名试卷" }}</strong>
-              <span :class="['pill', isSubmitted(record.status) ? 'pill-success' : 'pill-muted']">
-                {{ formatStatus(record.status) }}
-              </span>
-            </div>
-            <div class="record-card-meta">
-              <span>成绩：{{ formatNullableScore(record.score) }}</span>
-              <span>开始：{{ formatDateTime(record.startTime) }}</span>
-              <span>提交：{{ formatDateTime(record.submitTime) }}</span>
-              <span>耗时：{{ formatDuration(record.durationSeconds) }}</span>
-            </div>
-          </RouterLink>
-        </div>
+        <template v-if="totalRecords">
+          <WorkspacePagination
+            :current-page="currentPage"
+            :page-size="pageSize"
+            :page-size-options="pageSizeOptions"
+            :start="pageSummary.start"
+            :end="pageSummary.end"
+            :total-pages="totalPages"
+            :total-items="totalRecords"
+            item-label="条记录"
+            @change-page="goToPage"
+            @update:page-size="pageSize = $event"
+          />
+
+          <div class="record-list">
+            <RouterLink
+              v-for="record in paginatedRecords"
+              :key="record.recordId"
+              class="record-card"
+              :to="`/teacher/students/${student.userId}/records/${record.recordId}`"
+            >
+              <div class="record-card-head">
+                <strong>{{ record.paperName || "未命名试卷" }}</strong>
+                <span :class="['pill', isSubmitted(record.status) ? 'pill-success' : 'pill-muted']">
+                  {{ formatStatus(record.status) }}
+                </span>
+              </div>
+              <div class="record-card-meta">
+                <span>成绩：{{ formatNullableScore(record.score) }}</span>
+                <span>开始：{{ formatDateTime(record.startTime) }}</span>
+                <span>提交：{{ formatDateTime(record.submitTime) }}</span>
+                <span>耗时：{{ formatDuration(record.durationSeconds) }}</span>
+              </div>
+            </RouterLink>
+          </div>
+        </template>
         <p v-else class="empty-copy">该学生暂时还没有考试记录。</p>
       </article>
     </template>
@@ -118,6 +133,8 @@
 import { onMounted, ref } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 import StatusBanner from "@/components/StatusBanner.vue";
+import WorkspacePagination from "@/components/WorkspacePagination.vue";
+import { usePagination } from "@/composables/usePagination";
 import { useSessionStore } from "@/stores/session";
 import { getTeacherStudentDetail } from "@/services/teacher-api";
 
@@ -129,6 +146,16 @@ const student = ref(null);
 const summary = ref(null);
 const records = ref([]);
 const errorMessage = ref("");
+const pageSizeOptions = [5, 10, 15];
+const {
+  currentPage,
+  pageSize,
+  totalItems: totalRecords,
+  totalPages,
+  paginatedItems: paginatedRecords,
+  pageSummary,
+  goToPage
+} = usePagination(records, { initialPageSize: 5 });
 
 async function loadStudentDetail() {
   if (!sessionStore.user?.userId || !route.params.studentId) {

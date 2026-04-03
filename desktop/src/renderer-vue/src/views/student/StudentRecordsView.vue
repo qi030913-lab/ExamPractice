@@ -36,50 +36,18 @@
 
       <div v-if="loading" class="empty-copy">正在加载考试记录...</div>
       <template v-else-if="records.length">
-        <div class="pager-bar">
-          <p class="pager-info">
-            第 {{ currentPage }} / {{ totalPages }} 页
-            · 当前显示 {{ pageSummary.start }}-{{ pageSummary.end }} 条
-            · 共 {{ totalRecords }} 条记录
-          </p>
-          <div class="pager-controls">
-            <label class="page-size-control">
-              <span>每页</span>
-              <select v-model.number="pageSize">
-                <option v-for="size in pageSizeOptions" :key="size" :value="size">
-                  {{ size }} 条
-                </option>
-              </select>
-            </label>
-            <button
-              class="ghost-button"
-              type="button"
-              :disabled="currentPage <= 1"
-              @click="goToPage(currentPage - 1)"
-            >
-              上一页
-            </button>
-            <div class="pager-pages">
-              <button
-                v-for="page in visiblePages"
-                :key="page"
-                type="button"
-                :class="['pager-button', currentPage === page ? 'pager-button-active' : '']"
-                @click="goToPage(page)"
-              >
-                {{ page }}
-              </button>
-            </div>
-            <button
-              class="ghost-button"
-              type="button"
-              :disabled="currentPage >= totalPages"
-              @click="goToPage(currentPage + 1)"
-            >
-              下一页
-            </button>
-          </div>
-        </div>
+        <WorkspacePagination
+          :current-page="currentPage"
+          :page-size="pageSize"
+          :page-size-options="pageSizeOptions"
+          :start="pageSummary.start"
+          :end="pageSummary.end"
+          :total-pages="totalPages"
+          :total-items="totalRecords"
+          item-label="条记录"
+          @change-page="goToPage"
+          @update:page-size="pageSize = $event"
+        />
 
         <div class="record-list">
           <article
@@ -138,9 +106,11 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
 import StatusBanner from "@/components/StatusBanner.vue";
+import WorkspacePagination from "@/components/WorkspacePagination.vue";
+import { usePagination } from "@/composables/usePagination";
 import { useSessionStore } from "@/stores/session";
 import { getStudentRecords } from "@/services/student-api";
 
@@ -149,61 +119,16 @@ const loading = ref(false);
 const summary = ref(null);
 const records = ref([]);
 const errorMessage = ref("");
-const currentPage = ref(1);
-const pageSize = ref(6);
 const pageSizeOptions = [6, 10, 20];
-
-const totalRecords = computed(() => records.value.length);
-
-const totalPages = computed(() => {
-  return Math.max(1, Math.ceil(totalRecords.value / pageSize.value));
-});
-
-const paginatedRecords = computed(() => {
-  const startIndex = (currentPage.value - 1) * pageSize.value;
-  return records.value.slice(startIndex, startIndex + pageSize.value);
-});
-
-const pageSummary = computed(() => {
-  if (!totalRecords.value) {
-    return {
-      start: 0,
-      end: 0
-    };
-  }
-
-  const start = (currentPage.value - 1) * pageSize.value + 1;
-  const end = Math.min(currentPage.value * pageSize.value, totalRecords.value);
-  return { start, end };
-});
-
-const visiblePages = computed(() => {
-  const pages = [];
-  const maxVisible = 5;
-  const half = Math.floor(maxVisible / 2);
-  let start = Math.max(1, currentPage.value - half);
-  let end = Math.min(totalPages.value, start + maxVisible - 1);
-
-  if (end - start + 1 < maxVisible) {
-    start = Math.max(1, end - maxVisible + 1);
-  }
-
-  for (let page = start; page <= end; page += 1) {
-    pages.push(page);
-  }
-
-  return pages;
-});
-
-watch(pageSize, () => {
-  currentPage.value = 1;
-});
-
-watch(totalPages, (pageCount) => {
-  if (currentPage.value > pageCount) {
-    currentPage.value = pageCount;
-  }
-});
+const {
+  currentPage,
+  pageSize,
+  totalItems: totalRecords,
+  totalPages,
+  paginatedItems: paginatedRecords,
+  pageSummary,
+  goToPage
+} = usePagination(records, { initialPageSize: 6 });
 
 async function loadRecords() {
   if (!sessionStore.user?.userId) {
@@ -221,7 +146,6 @@ async function loadRecords() {
 
     summary.value = result.data?.summary || null;
     records.value = result.data?.records || [];
-    currentPage.value = 1;
   } catch (error) {
     errorMessage.value = error?.response?.data?.message || error?.message || "加载考试记录失败";
   } finally {
@@ -277,14 +201,6 @@ function formatDuration(value) {
     return `${seconds} 秒`;
   }
   return `${minutes} 分 ${seconds} 秒`;
-}
-
-function goToPage(page) {
-  if (!Number.isFinite(page)) {
-    return;
-  }
-
-  currentPage.value = Math.min(Math.max(1, page), totalPages.value);
 }
 
 onMounted(loadRecords);
