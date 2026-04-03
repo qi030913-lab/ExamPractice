@@ -29,9 +29,6 @@
             <StatusBanner v-if="sessionStore.errorMessage" tone="danger">
               {{ sessionStore.errorMessage }}
             </StatusBanner>
-            <StatusBanner v-if="successMessage" tone="info">
-              {{ successMessage }}
-            </StatusBanner>
 
             <div class="role-switch">
               <button
@@ -150,9 +147,6 @@
           <form v-else class="auth-form" @submit.prevent="handleRegister">
             <StatusBanner v-if="registerErrorMessage" tone="danger">
               {{ registerErrorMessage }}
-            </StatusBanner>
-            <StatusBanner v-if="successMessage" tone="info">
-              {{ successMessage }}
             </StatusBanner>
 
             <div class="role-switch">
@@ -330,7 +324,6 @@ const registerRealNameRef = ref(null);
 const registerLoginIdRef = ref(null);
 const registerPasswordRef = ref(null);
 const registerConfirmPasswordRef = ref(null);
-const successMessage = ref("");
 const isRegisterMode = ref(false);
 const registerErrorMessage = ref("");
 
@@ -610,7 +603,6 @@ function mountLegacyBackground() {
 function switchToRegister() {
   sessionStore.errorMessage = "";
   registerErrorMessage.value = "";
-  successMessage.value = "";
   clearLoginErrors();
   clearRegisterErrors();
   isRegisterMode.value = true;
@@ -621,16 +613,12 @@ function switchToRegister() {
   registerForm.confirmPassword = "";
 }
 
-function switchToLogin(options = {}) {
+function switchToLogin() {
   sessionStore.errorMessage = "";
   isRegisterMode.value = false;
   registerErrorMessage.value = "";
   clearLoginErrors();
   clearRegisterErrors();
-
-  if (!options.preserveSuccess) {
-    successMessage.value = "";
-  }
 }
 
 function fillLoginFromRegister() {
@@ -640,12 +628,10 @@ function fillLoginFromRegister() {
   form.password = "";
   registerForm.password = "";
   registerForm.confirmPassword = "";
-  successMessage.value = "注册信息已回填到登录表单，请重新输入密码后登录。";
-  switchToLogin({ preserveSuccess: true });
+  switchToLogin();
 }
 
 async function handleSubmit() {
-  successMessage.value = "";
   registerErrorMessage.value = "";
   sessionStore.errorMessage = "";
 
@@ -670,7 +656,6 @@ async function handleSubmit() {
 async function handleRegister() {
   sessionStore.errorMessage = "";
   registerErrorMessage.value = "";
-  successMessage.value = "";
 
   if (!validateRegisterForm()) {
     return;
