@@ -1018,12 +1018,12 @@ onBeforeUnmount(() => {
   position: absolute;
   left: 38%;
   top: 100%;
-  width: 14px;
-  height: 14px;
-  border-right: 1px solid rgba(255, 255, 255, 0.14);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  width: 18px;
+  height: 10px;
   background: rgba(40, 44, 54, 0.6);
-  transform: translateY(-8px) rotate(45deg);
+  clip-path: polygon(50% 100%, 0 0, 100% 0);
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.14));
+  transform: translateY(-1px);
 }
 
 .auth-field__error-panel {
