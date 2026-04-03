@@ -991,13 +991,14 @@ onBeforeUnmount(() => {
 
 .auth-field__error-bubble {
   position: absolute;
-  left: 8px;
-  right: 8px;
+  left: 50%;
   bottom: calc(100% + 10px);
   z-index: 5;
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  width: max-content;
+  max-width: min(252px, calc(100% - 12px));
   min-height: 54px;
   padding: 10px 14px;
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -1011,13 +1012,14 @@ onBeforeUnmount(() => {
   color: rgba(255, 255, 255, 0.96);
   font-size: 0.92rem;
   line-height: 1.5;
+  transform: translateX(-42%);
   backdrop-filter: blur(18px) saturate(1.08);
 }
 
 .auth-field__error-bubble::after {
   content: "";
   position: absolute;
-  left: calc(50% - 24px);
+  left: 38%;
   top: 100%;
   width: 14px;
   height: 14px;
@@ -1161,8 +1163,7 @@ onBeforeUnmount(() => {
   }
 
   .auth-field__error-bubble {
-    left: 0;
-    right: 0;
+    max-width: min(230px, calc(100% - 8px));
     font-size: 0.88rem;
   }
 }
