@@ -54,74 +54,83 @@
 
             <label class="auth-field">
               <span class="auth-field__label">姓名</span>
-              <div :class="['auth-field__control', { 'auth-field__control--invalid': loginErrors.realName }]">
-                <input
-                  ref="loginRealNameRef"
-                  v-model="form.realName"
-                  type="text"
-                  placeholder="请输入姓名"
-                  autocomplete="name"
-                  :aria-invalid="Boolean(loginErrors.realName)"
-                  :aria-describedby="loginErrors.realName ? 'login-real-name-error' : undefined"
-                />
-                <img class="auth-field__icon" :src="userIcon" alt="" />
+              <div class="auth-field__box">
+                <div :class="['auth-field__control', { 'auth-field__control--invalid': loginErrors.realName }]">
+                  <input
+                    ref="loginRealNameRef"
+                    v-model="form.realName"
+                    type="text"
+                    placeholder="请输入姓名"
+                    autocomplete="name"
+                    :aria-invalid="Boolean(loginErrors.realName)"
+                    :aria-describedby="loginErrors.realName ? 'login-real-name-error' : undefined"
+                  />
+                  <img class="auth-field__icon" :src="userIcon" alt="" />
+                </div>
+                <span
+                  v-if="loginErrors.realName"
+                  id="login-real-name-error"
+                  class="auth-field__error-bubble"
+                  role="alert"
+                >
+                  <span class="auth-field__error-icon" aria-hidden="true">!</span>
+                  <span>{{ loginErrors.realName }}</span>
+                </span>
               </div>
-              <span
-                v-if="loginErrors.realName"
-                id="login-real-name-error"
-                class="auth-field__error"
-                role="alert"
-              >
-                {{ loginErrors.realName }}
-              </span>
             </label>
 
             <label class="auth-field">
               <span class="auth-field__label">{{ loginIdLabel }}</span>
-              <div :class="['auth-field__control', { 'auth-field__control--invalid': loginErrors.loginId }]">
-                <input
-                  ref="loginLoginIdRef"
-                  v-model="form.loginId"
-                  type="text"
-                  :placeholder="loginIdPlaceholder"
-                  autocomplete="username"
-                  :aria-invalid="Boolean(loginErrors.loginId)"
-                  :aria-describedby="loginErrors.loginId ? 'login-id-error' : undefined"
-                />
-                <img class="auth-field__icon" :src="keyIcon" alt="" />
+              <div class="auth-field__box">
+                <div :class="['auth-field__control', { 'auth-field__control--invalid': loginErrors.loginId }]">
+                  <input
+                    ref="loginLoginIdRef"
+                    v-model="form.loginId"
+                    type="text"
+                    :placeholder="loginIdPlaceholder"
+                    autocomplete="username"
+                    :aria-invalid="Boolean(loginErrors.loginId)"
+                    :aria-describedby="loginErrors.loginId ? 'login-id-error' : undefined"
+                  />
+                  <img class="auth-field__icon" :src="keyIcon" alt="" />
+                </div>
+                <span
+                  v-if="loginErrors.loginId"
+                  id="login-id-error"
+                  class="auth-field__error-bubble"
+                  role="alert"
+                >
+                  <span class="auth-field__error-icon" aria-hidden="true">!</span>
+                  <span>{{ loginErrors.loginId }}</span>
+                </span>
               </div>
-              <span
-                v-if="loginErrors.loginId"
-                id="login-id-error"
-                class="auth-field__error"
-                role="alert"
-              >
-                {{ loginErrors.loginId }}
-              </span>
             </label>
 
             <label class="auth-field">
               <span class="auth-field__label">密码</span>
-              <div :class="['auth-field__control', { 'auth-field__control--invalid': loginErrors.password }]">
-                <input
-                  ref="loginPasswordRef"
-                  v-model="form.password"
-                  type="password"
-                  placeholder="请输入密码"
-                  autocomplete="current-password"
-                  :aria-invalid="Boolean(loginErrors.password)"
-                  :aria-describedby="loginErrors.password ? 'login-password-error' : undefined"
-                />
-                <img class="auth-field__icon" :src="lockIcon" alt="" />
+              <div class="auth-field__box">
+                <div :class="['auth-field__control', { 'auth-field__control--invalid': loginErrors.password }]">
+                  <input
+                    ref="loginPasswordRef"
+                    v-model="form.password"
+                    type="password"
+                    placeholder="请输入密码"
+                    autocomplete="current-password"
+                    :aria-invalid="Boolean(loginErrors.password)"
+                    :aria-describedby="loginErrors.password ? 'login-password-error' : undefined"
+                  />
+                  <img class="auth-field__icon" :src="lockIcon" alt="" />
+                </div>
+                <span
+                  v-if="loginErrors.password"
+                  id="login-password-error"
+                  class="auth-field__error-bubble"
+                  role="alert"
+                >
+                  <span class="auth-field__error-icon" aria-hidden="true">!</span>
+                  <span>{{ loginErrors.password }}</span>
+                </span>
               </div>
-              <span
-                v-if="loginErrors.password"
-                id="login-password-error"
-                class="auth-field__error"
-                role="alert"
-              >
-                {{ loginErrors.password }}
-              </span>
             </label>
 
             <button class="auth-form__primary" type="submit" :disabled="sessionStore.loading">
@@ -158,98 +167,110 @@
 
             <label class="auth-field">
               <span class="auth-field__label">姓名</span>
-              <div :class="['auth-field__control', { 'auth-field__control--invalid': registerErrors.realName }]">
-                <input
-                  ref="registerRealNameRef"
-                  v-model="registerForm.realName"
-                  type="text"
-                  placeholder="请输入姓名"
-                  autocomplete="name"
-                  :aria-invalid="Boolean(registerErrors.realName)"
-                  :aria-describedby="registerErrors.realName ? 'register-real-name-error' : undefined"
-                />
-                <img class="auth-field__icon" :src="userIcon" alt="" />
+              <div class="auth-field__box">
+                <div :class="['auth-field__control', { 'auth-field__control--invalid': registerErrors.realName }]">
+                  <input
+                    ref="registerRealNameRef"
+                    v-model="registerForm.realName"
+                    type="text"
+                    placeholder="请输入姓名"
+                    autocomplete="name"
+                    :aria-invalid="Boolean(registerErrors.realName)"
+                    :aria-describedby="registerErrors.realName ? 'register-real-name-error' : undefined"
+                  />
+                  <img class="auth-field__icon" :src="userIcon" alt="" />
+                </div>
+                <span
+                  v-if="registerErrors.realName"
+                  id="register-real-name-error"
+                  class="auth-field__error-bubble"
+                  role="alert"
+                >
+                  <span class="auth-field__error-icon" aria-hidden="true">!</span>
+                  <span>{{ registerErrors.realName }}</span>
+                </span>
               </div>
-              <span
-                v-if="registerErrors.realName"
-                id="register-real-name-error"
-                class="auth-field__error"
-                role="alert"
-              >
-                {{ registerErrors.realName }}
-              </span>
             </label>
 
             <label class="auth-field">
               <span class="auth-field__label">{{ registerLoginIdLabel }}</span>
-              <div :class="['auth-field__control', { 'auth-field__control--invalid': registerErrors.loginId }]">
-                <input
-                  ref="registerLoginIdRef"
-                  v-model="registerForm.loginId"
-                  type="text"
-                  :placeholder="registerLoginIdPlaceholder"
-                  autocomplete="username"
-                  :aria-invalid="Boolean(registerErrors.loginId)"
-                  :aria-describedby="registerErrors.loginId ? 'register-id-error' : undefined"
-                />
-                <img class="auth-field__icon" :src="keyIcon" alt="" />
+              <div class="auth-field__box">
+                <div :class="['auth-field__control', { 'auth-field__control--invalid': registerErrors.loginId }]">
+                  <input
+                    ref="registerLoginIdRef"
+                    v-model="registerForm.loginId"
+                    type="text"
+                    :placeholder="registerLoginIdPlaceholder"
+                    autocomplete="username"
+                    :aria-invalid="Boolean(registerErrors.loginId)"
+                    :aria-describedby="registerErrors.loginId ? 'register-id-error' : undefined"
+                  />
+                  <img class="auth-field__icon" :src="keyIcon" alt="" />
+                </div>
+                <span
+                  v-if="registerErrors.loginId"
+                  id="register-id-error"
+                  class="auth-field__error-bubble"
+                  role="alert"
+                >
+                  <span class="auth-field__error-icon" aria-hidden="true">!</span>
+                  <span>{{ registerErrors.loginId }}</span>
+                </span>
               </div>
-              <span
-                v-if="registerErrors.loginId"
-                id="register-id-error"
-                class="auth-field__error"
-                role="alert"
-              >
-                {{ registerErrors.loginId }}
-              </span>
             </label>
 
             <label class="auth-field">
               <span class="auth-field__label">密码</span>
-              <div :class="['auth-field__control', { 'auth-field__control--invalid': registerErrors.password }]">
-                <input
-                  ref="registerPasswordRef"
-                  v-model="registerForm.password"
-                  type="password"
-                  placeholder="请设置密码"
-                  autocomplete="new-password"
-                  :aria-invalid="Boolean(registerErrors.password)"
-                  :aria-describedby="registerErrors.password ? 'register-password-error' : undefined"
-                />
-                <img class="auth-field__icon" :src="lockIcon" alt="" />
+              <div class="auth-field__box">
+                <div :class="['auth-field__control', { 'auth-field__control--invalid': registerErrors.password }]">
+                  <input
+                    ref="registerPasswordRef"
+                    v-model="registerForm.password"
+                    type="password"
+                    placeholder="请设置密码"
+                    autocomplete="new-password"
+                    :aria-invalid="Boolean(registerErrors.password)"
+                    :aria-describedby="registerErrors.password ? 'register-password-error' : undefined"
+                  />
+                  <img class="auth-field__icon" :src="lockIcon" alt="" />
+                </div>
+                <span
+                  v-if="registerErrors.password"
+                  id="register-password-error"
+                  class="auth-field__error-bubble"
+                  role="alert"
+                >
+                  <span class="auth-field__error-icon" aria-hidden="true">!</span>
+                  <span>{{ registerErrors.password }}</span>
+                </span>
               </div>
-              <span
-                v-if="registerErrors.password"
-                id="register-password-error"
-                class="auth-field__error"
-                role="alert"
-              >
-                {{ registerErrors.password }}
-              </span>
             </label>
 
             <label class="auth-field">
               <span class="auth-field__label">确认密码</span>
-              <div :class="['auth-field__control', { 'auth-field__control--invalid': registerErrors.confirmPassword }]">
-                <input
-                  ref="registerConfirmPasswordRef"
-                  v-model="registerForm.confirmPassword"
-                  type="password"
-                  placeholder="请再次输入密码"
-                  autocomplete="new-password"
-                  :aria-invalid="Boolean(registerErrors.confirmPassword)"
-                  :aria-describedby="registerErrors.confirmPassword ? 'register-confirm-password-error' : undefined"
-                />
-                <img class="auth-field__icon" :src="lockIcon" alt="" />
+              <div class="auth-field__box">
+                <div :class="['auth-field__control', { 'auth-field__control--invalid': registerErrors.confirmPassword }]">
+                  <input
+                    ref="registerConfirmPasswordRef"
+                    v-model="registerForm.confirmPassword"
+                    type="password"
+                    placeholder="请再次输入密码"
+                    autocomplete="new-password"
+                    :aria-invalid="Boolean(registerErrors.confirmPassword)"
+                    :aria-describedby="registerErrors.confirmPassword ? 'register-confirm-password-error' : undefined"
+                  />
+                  <img class="auth-field__icon" :src="lockIcon" alt="" />
+                </div>
+                <span
+                  v-if="registerErrors.confirmPassword"
+                  id="register-confirm-password-error"
+                  class="auth-field__error-bubble"
+                  role="alert"
+                >
+                  <span class="auth-field__error-icon" aria-hidden="true">!</span>
+                  <span>{{ registerErrors.confirmPassword }}</span>
+                </span>
               </div>
-              <span
-                v-if="registerErrors.confirmPassword"
-                id="register-confirm-password-error"
-                class="auth-field__error"
-                role="alert"
-              >
-                {{ registerErrors.confirmPassword }}
-              </span>
             </label>
 
             <button class="auth-form__primary" type="submit" :disabled="sessionStore.loading">
@@ -911,6 +932,10 @@ onBeforeUnmount(() => {
   gap: 6px;
 }
 
+.auth-field__box {
+  position: relative;
+}
+
 .auth-field__label {
   font-size: 0.9rem;
   font-weight: 600;
@@ -974,10 +999,57 @@ onBeforeUnmount(() => {
   filter: grayscale(1);
 }
 
-.auth-field__error {
-  font-size: 0.84rem;
+.auth-field__error-bubble {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: calc(100% + 10px);
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(54, 59, 70, 0.78), rgba(38, 42, 52, 0.88)),
+    rgba(27, 31, 39, 0.72);
+  box-shadow:
+    0 18px 30px rgba(10, 16, 26, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.96);
+  font-size: 0.92rem;
   line-height: 1.5;
-  color: #b64242;
+  backdrop-filter: blur(18px) saturate(1.08);
+}
+
+.auth-field__error-bubble::after {
+  content: "";
+  position: absolute;
+  left: 22px;
+  top: 100%;
+  width: 14px;
+  height: 14px;
+  border-right: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(40, 44, 54, 0.92);
+  transform: translateY(-8px) rotate(45deg);
+}
+
+.auth-field__error-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffa62c, #ff8d10);
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 800;
+  box-shadow: 0 8px 14px rgba(255, 149, 25, 0.24);
 }
 
 .auth-form__primary {
@@ -1096,6 +1168,12 @@ onBeforeUnmount(() => {
 
   .auth-card__welcome-tags span {
     min-width: calc(50% - 6px);
+  }
+
+  .auth-field__error-bubble {
+    left: 0;
+    right: 0;
+    font-size: 0.88rem;
   }
 }
 </style>
