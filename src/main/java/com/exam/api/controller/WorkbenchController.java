@@ -19,17 +19,14 @@ import org.springframework.web.bind.annotation.RestController;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Comparator;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/workbench")
 public class WorkbenchController {
-    private static final int DEFAULT_LIST_LIMIT = 6;
-
     private final UserService userService;
     private final PaperService paperService;
     private final ExamService examService;
@@ -57,14 +54,6 @@ public class WorkbenchController {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("user", AuthUserResponse.from(teacher));
         payload.put("stats", stats);
-        payload.put("recentPapers", papers.stream()
-                .limit(DEFAULT_LIST_LIMIT)
-                .map(this::toTeacherPaperCard)
-                .collect(Collectors.toList()));
-        payload.put("recentStudents", students.stream()
-                .limit(DEFAULT_LIST_LIMIT)
-                .map(this::toTeacherStudentCard)
-                .collect(Collectors.toList()));
 
         return ApiResponse.success("教师工作台加载成功", payload);
     }
@@ -110,27 +99,6 @@ public class WorkbenchController {
         return user;
     }
 
-    private Map<String, Object> toTeacherPaperCard(Paper paper) {
-        Map<String, Object> item = new LinkedHashMap<>();
-        item.put("paperId", paper.getPaperId());
-        item.put("paperName", paper.getPaperName());
-        item.put("subject", paper.getSubject());
-        item.put("questionCount", resolveQuestionCount(paper));
-        item.put("duration", paper.getDuration());
-        item.put("published", Boolean.TRUE.equals(paper.getIsPublished()));
-        return item;
-    }
-
-    private Map<String, Object> toTeacherStudentCard(User student) {
-        Map<String, Object> item = new LinkedHashMap<>();
-        item.put("userId", student.getUserId());
-        item.put("realName", student.getRealName());
-        item.put("loginId", student.getLoginId());
-        item.put("email", student.getEmail());
-        item.put("phone", student.getPhone());
-        return item;
-    }
-
     private Map<String, Object> toStudentRecordCard(ExamRecord record) {
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("recordId", record.getRecordId());
@@ -143,14 +111,6 @@ public class WorkbenchController {
         item.put("durationSeconds", calculateDurationSeconds(record));
         item.put("resumeAvailable", record.getStatus() == ExamStatus.IN_PROGRESS);
         return item;
-    }
-
-    private int resolveQuestionCount(Paper paper) {
-        int optimizedCount = paper.getSingleCount() + paper.getMultipleCount() + paper.getJudgeCount() + paper.getBlankCount();
-        if (optimizedCount > 0) {
-            return optimizedCount;
-        }
-        return paper.getQuestions() == null ? 0 : paper.getQuestions().size();
     }
 
     private long calculateDurationSeconds(ExamRecord record) {
