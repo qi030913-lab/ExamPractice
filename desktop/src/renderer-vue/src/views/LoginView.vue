@@ -38,7 +38,7 @@
                 type="button"
                 :class="{ active: form.role === 'STUDENT' }"
                 :disabled="sessionStore.loading"
-                @click="form.role = 'STUDENT'"
+                @click="form.role = 'STUDENT'; clearLoginErrors()"
               >
                 学生
               </button>
@@ -46,7 +46,7 @@
                 type="button"
                 :class="{ active: form.role === 'TEACHER' }"
                 :disabled="sessionStore.loading"
-                @click="form.role = 'TEACHER'"
+                @click="form.role = 'TEACHER'; clearLoginErrors()"
               >
                 教师
               </button>
@@ -58,13 +58,14 @@
                 <div :class="['auth-field__control', { 'auth-field__control--invalid': loginErrors.realName }]">
                   <input
                     ref="loginRealNameRef"
-                    v-model="form.realName"
-                    type="text"
-                    placeholder="请输入姓名"
-                    autocomplete="name"
-                    :aria-invalid="Boolean(loginErrors.realName)"
-                    :aria-describedby="loginErrors.realName ? 'login-real-name-error' : undefined"
-                  />
+                  v-model="form.realName"
+                  type="text"
+                  placeholder="请输入姓名"
+                  autocomplete="name"
+                  @input="loginErrors.realName = ''"
+                  :aria-invalid="Boolean(loginErrors.realName)"
+                  :aria-describedby="loginErrors.realName ? 'login-real-name-error' : undefined"
+                />
                   <img class="auth-field__icon" :src="userIcon" alt="" />
                 </div>
                 <span
@@ -89,6 +90,7 @@
                     type="text"
                     :placeholder="loginIdPlaceholder"
                     autocomplete="username"
+                    @input="loginErrors.loginId = ''"
                     :aria-invalid="Boolean(loginErrors.loginId)"
                     :aria-describedby="loginErrors.loginId ? 'login-id-error' : undefined"
                   />
@@ -116,6 +118,7 @@
                     type="password"
                     placeholder="请输入密码"
                     autocomplete="current-password"
+                    @input="loginErrors.password = ''"
                     :aria-invalid="Boolean(loginErrors.password)"
                     :aria-describedby="loginErrors.password ? 'login-password-error' : undefined"
                   />
@@ -151,7 +154,7 @@
                 type="button"
                 :class="{ active: registerForm.role === 'STUDENT' }"
                 :disabled="sessionStore.loading"
-                @click="registerForm.role = 'STUDENT'"
+                @click="registerForm.role = 'STUDENT'; clearRegisterErrors()"
               >
                 学生
               </button>
@@ -159,7 +162,7 @@
                 type="button"
                 :class="{ active: registerForm.role === 'TEACHER' }"
                 :disabled="sessionStore.loading"
-                @click="registerForm.role = 'TEACHER'"
+                @click="registerForm.role = 'TEACHER'; clearRegisterErrors()"
               >
                 教师
               </button>
@@ -175,6 +178,7 @@
                     type="text"
                     placeholder="请输入姓名"
                     autocomplete="name"
+                    @input="registerErrors.realName = ''"
                     :aria-invalid="Boolean(registerErrors.realName)"
                     :aria-describedby="registerErrors.realName ? 'register-real-name-error' : undefined"
                   />
@@ -202,6 +206,7 @@
                     type="text"
                     :placeholder="registerLoginIdPlaceholder"
                     autocomplete="username"
+                    @input="registerErrors.loginId = ''"
                     :aria-invalid="Boolean(registerErrors.loginId)"
                     :aria-describedby="registerErrors.loginId ? 'register-id-error' : undefined"
                   />
@@ -229,6 +234,7 @@
                     type="password"
                     placeholder="请设置密码"
                     autocomplete="new-password"
+                    @input="registerErrors.password = ''"
                     :aria-invalid="Boolean(registerErrors.password)"
                     :aria-describedby="registerErrors.password ? 'register-password-error' : undefined"
                   />
@@ -256,6 +262,7 @@
                     type="password"
                     placeholder="请再次输入密码"
                     autocomplete="new-password"
+                    @input="registerErrors.confirmPassword = ''"
                     :aria-invalid="Boolean(registerErrors.confirmPassword)"
                     :aria-describedby="registerErrors.confirmPassword ? 'register-confirm-password-error' : undefined"
                   />
@@ -382,69 +389,51 @@ function clearRegisterErrors() {
   registerErrors.confirmPassword = "";
 }
 
-function focusFirstInvalidField(errorMap, refs) {
-  for (const key of Object.keys(refs)) {
-    if (errorMap[key]) {
-      refs[key]?.value?.focus?.();
-      break;
-    }
+function showSingleFieldError(errorMap, field, message, targetRef) {
+  for (const key of Object.keys(errorMap)) {
+    errorMap[key] = "";
   }
+
+  errorMap[field] = message;
+  targetRef?.value?.focus?.();
+  return false;
 }
 
 function validateLoginForm() {
   clearLoginErrors();
 
   if (!form.realName.trim()) {
-    loginErrors.realName = "请输入姓名。";
+    return showSingleFieldError(loginErrors, "realName", "请输入姓名。", loginRealNameRef);
   }
   if (!form.loginId.trim()) {
-    loginErrors.loginId = `请输入${loginIdLabel.value}。`;
+    return showSingleFieldError(loginErrors, "loginId", `请输入${loginIdLabel.value}。`, loginLoginIdRef);
   }
   if (!form.password) {
-    loginErrors.password = "请输入密码。";
+    return showSingleFieldError(loginErrors, "password", "请输入密码。", loginPasswordRef);
   }
 
-  const hasError = Object.values(loginErrors).some(Boolean);
-  if (hasError) {
-    focusFirstInvalidField(loginErrors, {
-      realName: loginRealNameRef,
-      loginId: loginLoginIdRef,
-      password: loginPasswordRef
-    });
-  }
-
-  return !hasError;
+  return true;
 }
 
 function validateRegisterForm() {
   clearRegisterErrors();
 
   if (!registerForm.realName.trim()) {
-    registerErrors.realName = "请输入姓名。";
+    return showSingleFieldError(registerErrors, "realName", "请输入姓名。", registerRealNameRef);
   }
   if (!registerForm.loginId.trim()) {
-    registerErrors.loginId = `请输入${registerLoginIdLabel.value}。`;
+    return showSingleFieldError(registerErrors, "loginId", `请输入${registerLoginIdLabel.value}。`, registerLoginIdRef);
   }
   if (!registerForm.password) {
-    registerErrors.password = "请设置密码。";
+    return showSingleFieldError(registerErrors, "password", "请设置密码。", registerPasswordRef);
   }
   if (!registerForm.confirmPassword) {
-    registerErrors.confirmPassword = "请再次输入密码。";
+    return showSingleFieldError(registerErrors, "confirmPassword", "请再次输入密码。", registerConfirmPasswordRef);
   } else if (registerForm.password && registerForm.password !== registerForm.confirmPassword) {
-    registerErrors.confirmPassword = "两次输入的密码不一致。";
+    return showSingleFieldError(registerErrors, "confirmPassword", "两次输入的密码不一致。", registerConfirmPasswordRef);
   }
 
-  const hasError = Object.values(registerErrors).some(Boolean);
-  if (hasError) {
-    focusFirstInvalidField(registerErrors, {
-      realName: registerRealNameRef,
-      loginId: registerLoginIdRef,
-      password: registerPasswordRef,
-      confirmPassword: registerConfirmPasswordRef
-    });
-  }
-
-  return !hasError;
+  return true;
 }
 
 function injectLegacyThree() {
