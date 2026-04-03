@@ -1027,12 +1027,13 @@ onBeforeUnmount(() => {
 }
 
 .auth-field__error-panel {
+  transform: translateX(50px);
   display: inline-flex;
   align-items: center;
   gap: 10px;
   min-height: 54px;
   padding: 10px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
   background:
     linear-gradient(180deg, rgba(54, 59, 70, 0.1), rgba(38, 42, 52, 0.1)),
