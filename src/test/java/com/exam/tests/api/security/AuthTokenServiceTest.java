@@ -9,11 +9,18 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AuthTokenServiceTest {
     @Test
@@ -44,6 +51,39 @@ class AuthTokenServiceTest {
         assertNotNull(authTokenService.getAuthenticatedUser(secondToken));
         assertNotNull(authTokenService.getAuthenticatedUser(thirdToken));
         assertEquals(2, authTokenService.getActiveSessionCount());
+    }
+
+    @Test
+    void issueTokenShouldNotExceedCapacityUnderConcurrentRequests() throws Exception {
+        AuthTokenService authTokenService = new AuthTokenService(Duration.ofHours(12), 3, Clock.systemUTC());
+        ExecutorService executor = Executors.newFixedThreadPool(6);
+        CountDownLatch ready = new CountDownLatch(6);
+        CountDownLatch start = new CountDownLatch(1);
+
+        try {
+            @SuppressWarnings("unchecked")
+            Future<String>[] futures = new Future[6];
+            for (int i = 0; i < 6; i++) {
+                final int userId = i + 1;
+                futures[i] = executor.submit((Callable<String>) () -> {
+                    ready.countDown();
+                    assertTrue(start.await(5, TimeUnit.SECONDS));
+                    return authTokenService.issueToken(buildUser(userId, UserRole.STUDENT));
+                });
+            }
+
+            assertTrue(ready.await(5, TimeUnit.SECONDS));
+            start.countDown();
+
+            for (Future<String> future : futures) {
+                String token = future.get(5, TimeUnit.SECONDS);
+                assertNotNull(token);
+            }
+
+            assertEquals(3, authTokenService.getActiveSessionCount());
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
     @Test

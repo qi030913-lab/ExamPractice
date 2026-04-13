@@ -23,6 +23,7 @@ public class AuthTokenService {
     private final Clock clock;
     private final SecureRandom secureRandom = new SecureRandom();
     private final Map<String, SessionRecord> sessions = new ConcurrentHashMap<>();
+    private final Object sessionMutationLock = new Object();
 
     @Autowired
     public AuthTokenService(
@@ -44,17 +45,20 @@ public class AuthTokenService {
 
     public String issueToken(User user) {
         validateUser(user);
-        cleanupExpiredSessions();
-        evictOldestSessionIfNecessary();
 
-        byte[] bytes = new byte[32];
-        secureRandom.nextBytes(bytes);
+        synchronized (sessionMutationLock) {
+            cleanupExpiredSessionsInternal();
+            evictOldestSessionIfNecessary();
 
-        String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-        LocalDateTime issuedAt = now();
-        LocalDateTime expiresAt = issuedAt.plus(tokenTtl);
-        sessions.put(token, new SessionRecord(user.getUserId(), user.getRole(), issuedAt, expiresAt));
-        return token;
+            byte[] bytes = new byte[32];
+            secureRandom.nextBytes(bytes);
+
+            String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+            LocalDateTime issuedAt = now();
+            LocalDateTime expiresAt = issuedAt.plus(tokenTtl);
+            sessions.put(token, new SessionRecord(user.getUserId(), user.getRole(), issuedAt, expiresAt));
+            return token;
+        }
     }
 
     public AuthenticatedUser getAuthenticatedUser(String token) {
@@ -69,7 +73,7 @@ public class AuthTokenService {
         }
 
         if (sessionRecord.isExpiredAt(now())) {
-            sessions.remove(normalizedToken);
+            sessions.remove(normalizedToken, sessionRecord);
             return null;
         }
 
@@ -78,10 +82,9 @@ public class AuthTokenService {
 
     @Scheduled(fixedDelayString = "${exam.api.auth.cleanup-interval-ms:300000}")
     public int cleanupExpiredSessions() {
-        LocalDateTime now = now();
-        int before = sessions.size();
-        sessions.entrySet().removeIf(entry -> entry.getValue().isExpiredAt(now));
-        return before - sessions.size();
+        synchronized (sessionMutationLock) {
+            return cleanupExpiredSessionsInternal();
+        }
     }
 
     public int getActiveSessionCount() {
@@ -96,6 +99,13 @@ public class AuthTokenService {
         if (user.getRole() == null) {
             throw new IllegalArgumentException("用户角色不能为空");
         }
+    }
+
+    private int cleanupExpiredSessionsInternal() {
+        LocalDateTime now = now();
+        int before = sessions.size();
+        sessions.entrySet().removeIf(entry -> entry.getValue().isExpiredAt(now));
+        return before - sessions.size();
     }
 
     private void evictOldestSessionIfNecessary() {
