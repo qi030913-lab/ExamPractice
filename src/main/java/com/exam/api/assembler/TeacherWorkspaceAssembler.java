@@ -16,6 +16,11 @@ import java.util.Map;
 
 @Component
 public class TeacherWorkspaceAssembler {
+    private final ExamRecordStatisticsAssembler statisticsAssembler;
+
+    public TeacherWorkspaceAssembler(ExamRecordStatisticsAssembler statisticsAssembler) {
+        this.statisticsAssembler = statisticsAssembler;
+    }
 
     public Map<String, Object> toTeacherPaperItem(Paper paper) {
         Map<String, Object> item = new LinkedHashMap<>();
@@ -90,6 +95,22 @@ public class TeacherWorkspaceAssembler {
     public Map<String, Object> toTeacherStudentRecordDetailItem(
             ExamRecord record,
             Paper paper,
+            List<com.exam.model.AnswerRecord> answerRecords
+    ) {
+        ExamRecordStatisticsAssembler.AnswerSummary answerSummary = statisticsAssembler.summarizeAnswers(answerRecords);
+        return toTeacherStudentRecordDetailItem(
+                record,
+                paper,
+                answerRecords,
+                answerSummary.getAnsweredCount(),
+                answerSummary.getCorrectCount(),
+                answerSummary.getWrongCount()
+        );
+    }
+
+    public Map<String, Object> toTeacherStudentRecordDetailItem(
+            ExamRecord record,
+            Paper paper,
             List<com.exam.model.AnswerRecord> answerRecords,
             long answeredCount,
             long correctCount,
@@ -140,20 +161,12 @@ public class TeacherWorkspaceAssembler {
     }
 
     public Map<String, Object> buildStudentSummary(List<ExamRecord> records) {
-        long submittedCount = records.stream()
-                .filter(record -> record.getStatus() == ExamStatus.SUBMITTED || record.getStatus() == ExamStatus.TIMEOUT)
-                .count();
-        double averageScore = records.stream()
-                .map(ExamRecord::getScore)
-                .filter(score -> score != null)
-                .mapToDouble(BigDecimal::doubleValue)
-                .average()
-                .orElse(0);
+        ExamRecordStatisticsAssembler.RecordSummary recordSummary = statisticsAssembler.summarizeRecords(records);
 
         Map<String, Object> summary = new LinkedHashMap<>();
-        summary.put("recordCount", records.size());
-        summary.put("submittedCount", submittedCount);
-        summary.put("averageScore", averageScore);
+        summary.put("recordCount", recordSummary.getRecordCount());
+        summary.put("submittedCount", recordSummary.getSubmittedCount());
+        summary.put("averageScore", recordSummary.getAverageScore());
         return summary;
     }
 

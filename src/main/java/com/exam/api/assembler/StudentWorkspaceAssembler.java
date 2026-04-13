@@ -16,6 +16,11 @@ import java.util.Map;
 
 @Component
 public class StudentWorkspaceAssembler {
+    private final ExamRecordStatisticsAssembler statisticsAssembler;
+
+    public StudentWorkspaceAssembler(ExamRecordStatisticsAssembler statisticsAssembler) {
+        this.statisticsAssembler = statisticsAssembler;
+    }
 
     public Map<String, Object> buildPaperSummary(List<Paper> papers, List<ExamRecord> records) {
         long completedCount = records.stream()
@@ -33,20 +38,12 @@ public class StudentWorkspaceAssembler {
     }
 
     public Map<String, Object> buildRecordSummary(List<ExamRecord> records) {
-        long submittedCount = records.stream()
-                .filter(record -> record.getStatus() == ExamStatus.SUBMITTED || record.getStatus() == ExamStatus.TIMEOUT)
-                .count();
-        double averageScore = records.stream()
-                .map(ExamRecord::getScore)
-                .filter(score -> score != null)
-                .mapToDouble(BigDecimal::doubleValue)
-                .average()
-                .orElse(0);
+        ExamRecordStatisticsAssembler.RecordSummary recordSummary = statisticsAssembler.summarizeRecords(records);
 
         Map<String, Object> summary = new LinkedHashMap<>();
-        summary.put("recordCount", records.size());
-        summary.put("submittedCount", submittedCount);
-        summary.put("averageScore", averageScore);
+        summary.put("recordCount", recordSummary.getRecordCount());
+        summary.put("submittedCount", recordSummary.getSubmittedCount());
+        summary.put("averageScore", recordSummary.getAverageScore());
         return summary;
     }
 
@@ -110,9 +107,7 @@ public class StudentWorkspaceAssembler {
     }
 
     public Map<String, Object> toStudentScoreRecordItem(ExamRecord record, List<AnswerRecord> answerRecords) {
-        List<AnswerRecord> safeAnswers = answerRecords == null ? List.of() : answerRecords;
-        long correctCount = countCorrectAnswers(safeAnswers);
-        long wrongCount = countWrongAnswers(safeAnswers);
+        ExamRecordStatisticsAssembler.AnswerSummary answerSummary = statisticsAssembler.summarizeAnswers(answerRecords);
 
         Map<String, Object> item = new LinkedHashMap<>();
         item.put("recordId", record.getRecordId());
@@ -124,10 +119,26 @@ public class StudentWorkspaceAssembler {
         item.put("submitTime", record.getSubmitTime());
         item.put("startTime", record.getStartTime());
         item.put("durationSeconds", calculateDurationSeconds(record));
-        item.put("correctCount", correctCount);
-        item.put("wrongCount", wrongCount);
+        item.put("correctCount", answerSummary.getCorrectCount());
+        item.put("wrongCount", answerSummary.getWrongCount());
         item.put("resumeAvailable", record.getStatus() == ExamStatus.IN_PROGRESS);
         return item;
+    }
+
+    public Map<String, Object> toStudentRecordDetailItem(
+            ExamRecord record,
+            Paper paper,
+            List<AnswerRecord> answerRecords
+    ) {
+        ExamRecordStatisticsAssembler.AnswerSummary answerSummary = statisticsAssembler.summarizeAnswers(answerRecords);
+        return toStudentRecordDetailItem(
+                record,
+                paper,
+                answerRecords,
+                answerSummary.getAnsweredCount(),
+                answerSummary.getCorrectCount(),
+                answerSummary.getWrongCount()
+        );
     }
 
     public Map<String, Object> toStudentRecordDetailItem(
@@ -179,6 +190,24 @@ public class StudentWorkspaceAssembler {
         item.put("score", answerRecord.getScore());
         item.put("isCorrect", Boolean.TRUE.equals(answerRecord.getIsCorrect()));
         return item;
+    }
+
+    public Map<String, Object> toSubmitResultItem(
+            ExamRecord record,
+            Paper paper,
+            BigDecimal score,
+            List<AnswerRecord> answerRecords
+    ) {
+        ExamRecordStatisticsAssembler.AnswerSummary answerSummary = statisticsAssembler.summarizeAnswers(answerRecords);
+        return toSubmitResultItem(
+                record,
+                paper,
+                score,
+                answerSummary.getQuestionCount(),
+                answerSummary.getAnsweredCount(),
+                answerSummary.getCorrectCount(),
+                answerSummary.getWrongCount()
+        );
     }
 
     public Map<String, Object> toSubmitResultItem(
@@ -290,16 +319,4 @@ public class StudentWorkspaceAssembler {
                 && score.compareTo(BigDecimal.valueOf(paper.getPassScore())) >= 0;
     }
 
-    private long countCorrectAnswers(List<AnswerRecord> answerRecords) {
-        return answerRecords.stream()
-                .filter(answer -> Boolean.TRUE.equals(answer.getIsCorrect()))
-                .count();
-    }
-
-    private long countWrongAnswers(List<AnswerRecord> answerRecords) {
-        return answerRecords.stream()
-                .filter(answer -> answer.getStudentAnswer() != null && !answer.getStudentAnswer().trim().isEmpty())
-                .filter(answer -> !Boolean.TRUE.equals(answer.getIsCorrect()))
-                .count();
-    }
 }

@@ -219,6 +219,7 @@ public class TeacherWorkspaceController {
     ) {
         requireTeacher(userId);
         User student = requireStudent(studentId);
+        List<ExamRecord> studentRecords = examService.getStudentExamRecordsOptimized(studentId);
         ExamRecord record = examService.getExamRecordById(recordId);
         if (record == null) {
             throw new BusinessException("考试记录不存在");
@@ -229,20 +230,10 @@ public class TeacherWorkspaceController {
 
         Paper paper = record.getPaper() != null ? record.getPaper() : paperService.getPaperById(record.getPaperId());
         List<com.exam.model.AnswerRecord> answerRecords = examService.getAnswerRecords(recordId);
-        long answeredCount = answerRecords.stream()
-                .filter(answer -> answer.getStudentAnswer() != null && !answer.getStudentAnswer().trim().isEmpty())
-                .count();
-        long correctCount = answerRecords.stream()
-                .filter(answer -> Boolean.TRUE.equals(answer.getIsCorrect()))
-                .count();
-        long wrongCount = answerRecords.stream()
-                .filter(answer -> answer.getStudentAnswer() != null && !answer.getStudentAnswer().trim().isEmpty())
-                .filter(answer -> !Boolean.TRUE.equals(answer.getIsCorrect()))
-                .count();
 
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("student", assembler.toTeacherStudentItem(student, examService.getStudentExamRecordsOptimized(student.getUserId())));
-        payload.put("record", assembler.toTeacherStudentRecordDetailItem(record, paper, answerRecords, answeredCount, correctCount, wrongCount));
+        payload.put("student", assembler.toTeacherStudentItem(student, studentRecords));
+        payload.put("record", assembler.toTeacherStudentRecordDetailItem(record, paper, answerRecords));
         payload.put("answers", answerRecords.stream().map(assembler::toAnswerRecordItem).collect(Collectors.toList()));
         return ApiResponse.success("考试记录详情加载成功", payload);
     }

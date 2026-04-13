@@ -1,5 +1,6 @@
 package com.exam.tests.api.assembler;
 
+import com.exam.api.assembler.ExamRecordStatisticsAssembler;
 import com.exam.api.assembler.StudentWorkspaceAssembler;
 import com.exam.model.AnswerRecord;
 import com.exam.model.ExamRecord;
@@ -19,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StudentWorkspaceAssemblerTest {
-    private final StudentWorkspaceAssembler assembler = new StudentWorkspaceAssembler();
+    private final StudentWorkspaceAssembler assembler = new StudentWorkspaceAssembler(new ExamRecordStatisticsAssembler());
 
     @Test
     void buildPaperSummaryShouldCountCompletedAndInProgressRecords() {

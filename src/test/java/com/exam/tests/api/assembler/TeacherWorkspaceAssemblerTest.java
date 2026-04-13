@@ -1,5 +1,6 @@
 package com.exam.tests.api.assembler;
 
+import com.exam.api.assembler.ExamRecordStatisticsAssembler;
 import com.exam.api.assembler.TeacherWorkspaceAssembler;
 import com.exam.model.ExamRecord;
 import com.exam.model.Paper;
@@ -18,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TeacherWorkspaceAssemblerTest {
-    private final TeacherWorkspaceAssembler assembler = new TeacherWorkspaceAssembler();
+    private final TeacherWorkspaceAssembler assembler = new TeacherWorkspaceAssembler(new ExamRecordStatisticsAssembler());
 
     @Test
     void toTeacherStudentItemShouldIncludeSummaryFields() {

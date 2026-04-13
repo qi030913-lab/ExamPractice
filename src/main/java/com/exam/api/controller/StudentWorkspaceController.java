@@ -131,20 +131,10 @@ public class StudentWorkspaceController {
         ExamRecord record = requireOwnedRecord(userId, recordId);
         Paper paper = record.getPaper() != null ? record.getPaper() : paperService.getPaperById(record.getPaperId());
         List<AnswerRecord> answerRecords = examService.getAnswerRecords(recordId);
-        long correctCount = answerRecords.stream()
-                .filter(answer -> Boolean.TRUE.equals(answer.getIsCorrect()))
-                .count();
-        long answeredCount = answerRecords.stream()
-                .filter(answer -> answer.getStudentAnswer() != null && !answer.getStudentAnswer().trim().isEmpty())
-                .count();
-        long wrongCount = answerRecords.stream()
-                .filter(answer -> answer.getStudentAnswer() != null && !answer.getStudentAnswer().trim().isEmpty())
-                .filter(answer -> !Boolean.TRUE.equals(answer.getIsCorrect()))
-                .count();
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("user", AuthUserResponse.from(student));
-        payload.put("record", assembler.toStudentRecordDetailItem(record, paper, answerRecords, answeredCount, correctCount, wrongCount));
+        payload.put("record", assembler.toStudentRecordDetailItem(record, paper, answerRecords));
         payload.put("answers", answerRecords.stream().map(assembler::toAnswerRecordItem).collect(Collectors.toList()));
         return ApiResponse.success("考试记录详情加载成功", payload);
     }
@@ -197,20 +187,10 @@ public class StudentWorkspaceController {
                 ? submittedRecord.getPaper()
                 : paperService.getPaperById(submittedRecord.getPaperId());
         List<AnswerRecord> answerRecords = examService.getAnswerRecords(recordId);
-        long answeredCount = answerRecords.stream()
-                .filter(answer -> answer.getStudentAnswer() != null && !answer.getStudentAnswer().trim().isEmpty())
-                .count();
-        long correctCount = answerRecords.stream()
-                .filter(answer -> Boolean.TRUE.equals(answer.getIsCorrect()))
-                .count();
-        long wrongCount = answerRecords.stream()
-                .filter(answer -> answer.getStudentAnswer() != null && !answer.getStudentAnswer().trim().isEmpty())
-                .filter(answer -> !Boolean.TRUE.equals(answer.getIsCorrect()))
-                .count();
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("user", AuthUserResponse.from(student));
-        payload.put("result", assembler.toSubmitResultItem(submittedRecord, paper, score, answerRecords.size(), answeredCount, correctCount, wrongCount));
+        payload.put("result", assembler.toSubmitResultItem(submittedRecord, paper, score, answerRecords));
         return ApiResponse.success("考试提交成功", payload);
     }
 
