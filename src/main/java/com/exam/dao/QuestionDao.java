@@ -262,7 +262,7 @@ public class QuestionDao {
             pstmt.setString(7, question.getOptionD());
             pstmt.setString(8, question.getCorrectAnswer());
             pstmt.setInt(9, question.getScore());
-            pstmt.setString(10, question.getDifficulty().name());
+            pstmt.setString(10, resolveDifficultyName(question));
             pstmt.setString(11, question.getAnalysis());
             pstmt.setInt(12, question.getQuestionId());
 
@@ -328,7 +328,7 @@ public class QuestionDao {
         pstmt.setString(7, question.getOptionD());
         pstmt.setString(8, question.getCorrectAnswer());
         pstmt.setInt(9, question.getScore());
-        pstmt.setString(10, question.getDifficulty() != null ? question.getDifficulty().name() : "MEDIUM");
+        pstmt.setString(10, resolveDifficultyName(question));
         pstmt.setString(11, question.getAnalysis());
 
         if (question.getCreatorId() != null) {
@@ -435,5 +435,9 @@ public class QuestionDao {
         }
 
         return 0;
+    }
+
+    private String resolveDifficultyName(Question question) {
+        return question.getDifficulty() != null ? question.getDifficulty().name() : Difficulty.MEDIUM.name();
     }
 }
