@@ -14,6 +14,13 @@ import java.util.List;
  * 考试记录数据访问对象
  */
 public class ExamRecordDao {
+    private static final String EXAM_RECORD_WITH_PAPER_SELECT = "SELECT er.*, " +
+            "p.paper_id as p_paper_id, p.paper_name, p.subject, p.total_score, " +
+            "p.duration, p.pass_score, p.description, p.is_published, " +
+            "p.creator_id as p_creator_id, p.create_time as p_create_time, " +
+            "p.update_time as p_update_time " +
+            "FROM exam_record er " +
+            "LEFT JOIN paper p ON er.paper_id = p.paper_id ";
 
     /**
      * 根据ID查询考试记录
@@ -56,14 +63,7 @@ public class ExamRecordDao {
     }
 
     public ExamRecord findByIdWithPaper(Integer recordId) {
-        String sql = "SELECT er.*, " +
-                     "p.paper_id as p_paper_id, p.paper_name, p.subject, p.total_score, " +
-                     "p.duration, p.pass_score, p.description, p.is_published, " +
-                     "p.creator_id as p_creator_id, p.create_time as p_create_time, " +
-                     "p.update_time as p_update_time " +
-                     "FROM exam_record er " +
-                     "LEFT JOIN paper p ON er.paper_id = p.paper_id " +
-                     "WHERE er.record_id = ?";
+        String sql = EXAM_RECORD_WITH_PAPER_SELECT + "WHERE er.record_id = ?";
         
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -74,30 +74,7 @@ public class ExamRecordDao {
                 if (rs.next()) {
                     ExamRecord record = extractExamRecord(rs);
                     // 提取试卷信息
-                    if (rs.getObject("p_paper_id") != null) {
-                        com.exam.model.Paper paper = new com.exam.model.Paper();
-                        paper.setPaperId(rs.getInt("p_paper_id"));
-                        paper.setPaperName(rs.getString("paper_name"));
-                        paper.setSubject(rs.getString("subject"));
-                        paper.setTotalScore(rs.getInt("total_score"));
-                        paper.setDuration(rs.getInt("duration"));
-                        paper.setPassScore(rs.getInt("pass_score"));
-                        paper.setDescription(rs.getString("description"));
-                        paper.setIsPublished(rs.getBoolean("is_published"));
-                        paper.setCreatorId(rs.getInt("p_creator_id"));
-                        
-                        Timestamp pCreateTime = rs.getTimestamp("p_create_time");
-                        if (pCreateTime != null) {
-                            paper.setCreateTime(pCreateTime.toLocalDateTime());
-                        }
-                        
-                        Timestamp pUpdateTime = rs.getTimestamp("p_update_time");
-                        if (pUpdateTime != null) {
-                            paper.setUpdateTime(pUpdateTime.toLocalDateTime());
-                        }
-                        
-                        record.setPaper(paper);
-                    }
+                    record.setPaper(extractJoinedPaper(rs));
                     return record;
                 }
             }
@@ -180,14 +157,7 @@ public class ExamRecordDao {
      * 使用LEFT JOIN一次性查询，避免N+1问题
      */
     public List<ExamRecord> findByStudentIdWithPaper(Integer studentId) {
-        String sql = "SELECT er.*, " +
-                     "p.paper_id as p_paper_id, p.paper_name, p.subject, p.total_score, " +
-                     "p.duration, p.pass_score, p.description, p.is_published, " +
-                     "p.creator_id as p_creator_id, p.create_time as p_create_time, " +
-                     "p.update_time as p_update_time " +
-                     "FROM exam_record er " +
-                     "LEFT JOIN paper p ON er.paper_id = p.paper_id " +
-                     "WHERE er.student_id = ? ORDER BY er.create_time DESC";
+        String sql = EXAM_RECORD_WITH_PAPER_SELECT + "WHERE er.student_id = ? ORDER BY er.create_time DESC";
         List<ExamRecord> records = new ArrayList<>();
         
         try (Connection conn = DBUtil.getConnection();
@@ -199,30 +169,7 @@ public class ExamRecordDao {
                 while (rs.next()) {
                     ExamRecord record = extractExamRecord(rs);
                     // 提取试卷信息
-                    if (rs.getObject("p_paper_id") != null) {
-                        com.exam.model.Paper paper = new com.exam.model.Paper();
-                        paper.setPaperId(rs.getInt("p_paper_id"));
-                        paper.setPaperName(rs.getString("paper_name"));
-                        paper.setSubject(rs.getString("subject"));
-                        paper.setTotalScore(rs.getInt("total_score"));
-                        paper.setDuration(rs.getInt("duration"));
-                        paper.setPassScore(rs.getInt("pass_score"));
-                        paper.setDescription(rs.getString("description"));
-                        paper.setIsPublished(rs.getBoolean("is_published"));
-                        paper.setCreatorId(rs.getInt("p_creator_id"));
-                        
-                        Timestamp pCreateTime = rs.getTimestamp("p_create_time");
-                        if (pCreateTime != null) {
-                            paper.setCreateTime(pCreateTime.toLocalDateTime());
-                        }
-                        
-                        Timestamp pUpdateTime = rs.getTimestamp("p_update_time");
-                        if (pUpdateTime != null) {
-                            paper.setUpdateTime(pUpdateTime.toLocalDateTime());
-                        }
-                        
-                        record.setPaper(paper);
-                    }
+                    record.setPaper(extractJoinedPaper(rs));
                     records.add(record);
                 }
             }
@@ -246,13 +193,7 @@ public class ExamRecordDao {
         }
 
         String placeholders = String.join(",", java.util.Collections.nCopies(studentIds.size(), "?"));
-        String sql = "SELECT er.*, " +
-                "p.paper_id as p_paper_id, p.paper_name, p.subject, p.total_score, " +
-                "p.duration, p.pass_score, p.description, p.is_published, " +
-                "p.creator_id as p_creator_id, p.create_time as p_create_time, " +
-                "p.update_time as p_update_time " +
-                "FROM exam_record er " +
-                "LEFT JOIN paper p ON er.paper_id = p.paper_id " +
+        String sql = EXAM_RECORD_WITH_PAPER_SELECT +
                 "WHERE er.student_id IN (" + placeholders + ") " +
                 "ORDER BY er.student_id, er.create_time DESC";
 
@@ -274,30 +215,7 @@ public class ExamRecordDao {
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     ExamRecord record = extractExamRecord(rs);
-                    if (rs.getObject("p_paper_id") != null) {
-                        com.exam.model.Paper paper = new com.exam.model.Paper();
-                        paper.setPaperId(rs.getInt("p_paper_id"));
-                        paper.setPaperName(rs.getString("paper_name"));
-                        paper.setSubject(rs.getString("subject"));
-                        paper.setTotalScore(rs.getInt("total_score"));
-                        paper.setDuration(rs.getInt("duration"));
-                        paper.setPassScore(rs.getInt("pass_score"));
-                        paper.setDescription(rs.getString("description"));
-                        paper.setIsPublished(rs.getBoolean("is_published"));
-                        paper.setCreatorId(rs.getInt("p_creator_id"));
-
-                        Timestamp pCreateTime = rs.getTimestamp("p_create_time");
-                        if (pCreateTime != null) {
-                            paper.setCreateTime(pCreateTime.toLocalDateTime());
-                        }
-
-                        Timestamp pUpdateTime = rs.getTimestamp("p_update_time");
-                        if (pUpdateTime != null) {
-                            paper.setUpdateTime(pUpdateTime.toLocalDateTime());
-                        }
-
-                        record.setPaper(paper);
-                    }
+                    record.setPaper(extractJoinedPaper(rs));
                     resultMap.computeIfAbsent(record.getStudentId(), key -> new ArrayList<>()).add(record);
                 }
             }
@@ -309,13 +227,7 @@ public class ExamRecordDao {
 
     public List<ExamRecord> findByStudentIdWithPaperPaginated(Integer studentId, int pageNum, int pageSize) {
         int offset = (pageNum - 1) * pageSize;
-        String sql = "SELECT er.*, " +
-                     "p.paper_id as p_paper_id, p.paper_name, p.subject, p.total_score, " +
-                     "p.duration, p.pass_score, p.description, p.is_published, " +
-                     "p.creator_id as p_creator_id, p.create_time as p_create_time, " +
-                     "p.update_time as p_update_time " +
-                     "FROM exam_record er " +
-                     "LEFT JOIN paper p ON er.paper_id = p.paper_id " +
+        String sql = EXAM_RECORD_WITH_PAPER_SELECT +
                      "WHERE er.student_id = ? ORDER BY er.create_time DESC " +
                      "LIMIT ? OFFSET ?";
         List<ExamRecord> records = new ArrayList<>();
@@ -331,30 +243,7 @@ public class ExamRecordDao {
                 while (rs.next()) {
                     ExamRecord record = extractExamRecord(rs);
                     // 提取试卷信息
-                    if (rs.getObject("p_paper_id") != null) {
-                        com.exam.model.Paper paper = new com.exam.model.Paper();
-                        paper.setPaperId(rs.getInt("p_paper_id"));
-                        paper.setPaperName(rs.getString("paper_name"));
-                        paper.setSubject(rs.getString("subject"));
-                        paper.setTotalScore(rs.getInt("total_score"));
-                        paper.setDuration(rs.getInt("duration"));
-                        paper.setPassScore(rs.getInt("pass_score"));
-                        paper.setDescription(rs.getString("description"));
-                        paper.setIsPublished(rs.getBoolean("is_published"));
-                        paper.setCreatorId(rs.getInt("p_creator_id"));
-                        
-                        Timestamp pCreateTime = rs.getTimestamp("p_create_time");
-                        if (pCreateTime != null) {
-                            paper.setCreateTime(pCreateTime.toLocalDateTime());
-                        }
-                        
-                        Timestamp pUpdateTime = rs.getTimestamp("p_update_time");
-                        if (pUpdateTime != null) {
-                            paper.setUpdateTime(pUpdateTime.toLocalDateTime());
-                        }
-                        
-                        record.setPaper(paper);
-                    }
+                    record.setPaper(extractJoinedPaper(rs));
                     records.add(record);
                 }
             }
@@ -694,6 +583,35 @@ public class ExamRecordDao {
     /**
      * 从ResultSet提取ExamRecord对象
      */
+    private com.exam.model.Paper extractJoinedPaper(ResultSet rs) throws SQLException {
+        if (rs.getObject("p_paper_id") == null) {
+            return null;
+        }
+
+        com.exam.model.Paper paper = new com.exam.model.Paper();
+        paper.setPaperId(rs.getInt("p_paper_id"));
+        paper.setPaperName(rs.getString("paper_name"));
+        paper.setSubject(rs.getString("subject"));
+        paper.setTotalScore(rs.getInt("total_score"));
+        paper.setDuration(rs.getInt("duration"));
+        paper.setPassScore(rs.getInt("pass_score"));
+        paper.setDescription(rs.getString("description"));
+        paper.setIsPublished(rs.getBoolean("is_published"));
+        paper.setCreatorId(rs.getInt("p_creator_id"));
+
+        Timestamp pCreateTime = rs.getTimestamp("p_create_time");
+        if (pCreateTime != null) {
+            paper.setCreateTime(pCreateTime.toLocalDateTime());
+        }
+
+        Timestamp pUpdateTime = rs.getTimestamp("p_update_time");
+        if (pUpdateTime != null) {
+            paper.setUpdateTime(pUpdateTime.toLocalDateTime());
+        }
+
+        return paper;
+    }
+
     private ExamRecord extractExamRecord(ResultSet rs) throws SQLException {
         ExamRecord record = new ExamRecord();
         record.setRecordId(rs.getInt("record_id"));
