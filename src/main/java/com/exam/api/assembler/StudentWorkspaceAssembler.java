@@ -254,7 +254,7 @@ public class StudentWorkspaceAssembler {
         }
 
         LocalDateTime deadline = record.getStartTime().plusMinutes(paper.getDuration());
-        return Math.max(0, Duration.between(LocalDateTime.now(), deadline).getSeconds());
+        return Math.max(0, Duration.between(currentTime(), deadline).getSeconds());
     }
 
     public LocalDateTime calculateDeadlineTime(ExamRecord record, Paper paper) {
@@ -308,5 +308,9 @@ public class StudentWorkspaceAssembler {
                 && paper != null
                 && paper.getPassScore() != null
                 && score.compareTo(BigDecimal.valueOf(paper.getPassScore())) >= 0;
+    }
+
+    protected LocalDateTime currentTime() {
+        return LocalDateTime.now();
     }
 }

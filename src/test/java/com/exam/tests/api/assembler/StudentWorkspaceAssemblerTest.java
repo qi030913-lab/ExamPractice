@@ -59,7 +59,7 @@ class StudentWorkspaceAssemblerTest {
 
         assertEquals(2001, item.paperId());
         assertEquals(4, item.questionCount());
-        assertEquals(true, item.hasInProgressRecord());
+        assertTrue(item.hasInProgressRecord());
         assertNotNull(item.latestRecord());
     }
 
@@ -92,7 +92,7 @@ class StudentWorkspaceAssemblerTest {
 
         assertEquals(1, item.questionCount());
         assertEquals(1L, item.answeredCount());
-        assertEquals(true, item.passed());
+        assertTrue(item.passed());
     }
 
     @Test
@@ -110,6 +110,28 @@ class StudentWorkspaceAssemblerTest {
         assertTrue(remainingSeconds > 0);
         assertTrue(remainingSeconds <= 20 * 60);
         assertEquals(record.getStartTime().plusMinutes(30), deadline);
+    }
+
+    @Test
+    void calculateRemainingSecondsShouldReturnExactValueAgainstFixedClock() {
+        LocalDateTime fixedNow = LocalDateTime.of(2026, 4, 13, 20, 0, 0);
+        StudentWorkspaceAssembler fixedTimeAssembler = new StudentWorkspaceAssembler(new ExamRecordStatisticsAssembler()) {
+            @Override
+            protected LocalDateTime currentTime() {
+                return fixedNow;
+            }
+        };
+
+        ExamRecord record = new ExamRecord(5, 3001);
+        record.setStatus(ExamStatus.IN_PROGRESS);
+        record.setStartTime(fixedNow.minusMinutes(10));
+
+        Paper paper = new Paper();
+        paper.setDuration(30);
+
+        long remainingSeconds = fixedTimeAssembler.calculateRemainingSeconds(record, paper);
+
+        assertEquals(20 * 60, remainingSeconds);
     }
 
     @Test
