@@ -86,9 +86,14 @@ public class UserService {
             throw new BusinessException("用户ID不能为空");
         }
 
-        if (user.getPassword() != null
-                && !user.getPassword().trim().isEmpty()
-                && PasswordUtil.needsMigration(user.getPassword())) {
+        User existingUser = userDao.findById(user.getUserId());
+        if (existingUser == null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
+            user.setPassword(existingUser.getPassword());
+        } else if (PasswordUtil.needsMigration(user.getPassword())) {
             user.setPassword(PasswordUtil.hashPassword(user.getPassword()));
         }
 

@@ -71,4 +71,46 @@ class UserServiceTest {
         assertTrue(user.getPassword().startsWith("PBKDF2$"));
         verify(userDao).insert(user);
     }
+
+    @Test
+    void updateUserShouldKeepExistingPasswordWhenPasswordIsBlank() {
+        User existingUser = new User("Alice", "2023001", PasswordUtil.hashPassword("old-pass"), UserRole.STUDENT);
+        existingUser.setUserId(101);
+
+        User updateUser = new User();
+        updateUser.setUserId(101);
+        updateUser.setRealName("Alice Updated");
+        updateUser.setEmail("alice@example.com");
+        updateUser.setPhone("13800000000");
+        updateUser.setPassword("   ");
+
+        when(userDao.findById(101)).thenReturn(existingUser);
+        when(userDao.update(updateUser)).thenReturn(1);
+
+        int updated = userService.updateUser(updateUser);
+
+        assertEquals(1, updated);
+        assertEquals(existingUser.getPassword(), updateUser.getPassword());
+        verify(userDao).update(updateUser);
+    }
+
+    @Test
+    void updateUserShouldHashNewPasswordWhenProvided() {
+        User existingUser = new User("Alice", "2023001", PasswordUtil.hashPassword("old-pass"), UserRole.STUDENT);
+        existingUser.setUserId(102);
+
+        User updateUser = new User();
+        updateUser.setUserId(102);
+        updateUser.setRealName("Alice Updated");
+        updateUser.setPassword("new-pass");
+
+        when(userDao.findById(102)).thenReturn(existingUser);
+        when(userDao.update(updateUser)).thenReturn(1);
+
+        int updated = userService.updateUser(updateUser);
+
+        assertEquals(1, updated);
+        assertTrue(updateUser.getPassword().startsWith("PBKDF2$"));
+        verify(userDao).update(updateUser);
+    }
 }
