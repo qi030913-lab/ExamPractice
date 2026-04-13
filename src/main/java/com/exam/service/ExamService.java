@@ -83,46 +83,19 @@ public class ExamService {
             conn.setAutoCommit(false);
             try {
                 ExamRecord record = examRecordDao.findByIdForUpdate(conn, recordId);
-                if (record == null) {
-                    throw new BusinessException("考试记录不存在");
-                }
-                if (record.getStatus() == ExamStatus.SUBMITTED) {
-                    throw new BusinessException("考试已提交，不能重复提交");
-                }
+                requireRecordForSubmit(record);
 
-                List<Question> questions = questionDao.findByPaperId(record.getPaperId());
-                if (questions.isEmpty()) {
-                    throw new BusinessException("试卷没有题目");
-                }
-
-                BigDecimal totalScore = BigDecimal.ZERO;
-                List<AnswerRecord> answerRecords = new ArrayList<>();
-
-                for (Question question : questions) {
-                    String studentAnswer = answerMap.get(question.getQuestionId());
-                    boolean isCorrect = checkAnswer(question, studentAnswer);
-
-                    BigDecimal score = BigDecimal.ZERO;
-                    if (isCorrect) {
-                        score = BigDecimal.valueOf(question.getScore());
-                        totalScore = totalScore.add(score);
-                    }
-
-                    AnswerRecord answerRecord = new AnswerRecord(recordId, question.getQuestionId(), studentAnswer);
-                    answerRecord.setIsCorrect(isCorrect);
-                    answerRecord.setScore(score);
-                    answerRecords.add(answerRecord);
-                }
-
-                examRecordDao.insertAnswerRecordsBatch(conn, answerRecords);
+                List<Question> questions = requireQuestions(record.getPaperId());
+                SettlementResult settlement = buildSettlementResult(recordId, questions, answerMap);
+                examRecordDao.insertAnswerRecordsBatch(conn, settlement.getAnswerRecords());
 
                 record.submitExam();
-                record.setScore(totalScore);
+                record.setScore(settlement.getTotalScore());
                 record.setEndTime(LocalDateTime.now());
                 examRecordDao.update(conn, record);
 
                 conn.commit();
-                return totalScore;
+                return settlement.getTotalScore();
             } catch (Exception e) {
                 conn.rollback();
                 throw e;
@@ -130,7 +103,7 @@ public class ExamService {
                 conn.setAutoCommit(true);
             }
         } catch (SQLException e) {
-            throw new BusinessException("提交考试失败: " + e.getMessage());
+            throw new BusinessException("提交考试失败: " + e.getMessage(), e);
         }
     }
 
@@ -185,10 +158,10 @@ public class ExamService {
             throw new BusinessException("学生ID不能为空");
         }
         if (pageNum <= 0) {
-            throw new BusinessException("页码必须从1开始");
+            throw new BusinessException("页码必须从 1 开始");
         }
         if (pageSize <= 0 || pageSize > 200) {
-            throw new BusinessException("每页大小必须在1-200之间");
+            throw new BusinessException("每页大小必须在 1-200 之间");
         }
         return examRecordDao.findByStudentIdWithPaperPaginated(studentId, pageNum, pageSize);
     }
@@ -282,22 +255,88 @@ public class ExamService {
             throw new BusinessException("考试记录ID不能为空");
         }
 
-        ExamRecord record = examRecordDao.findById(recordId);
-        if (record == null) {
-            throw new BusinessException("考试记录不存在");
-        }
+        try (Connection conn = DBUtil.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                ExamRecord record = examRecordDao.findByIdForUpdate(conn, recordId);
+                if (record == null) {
+                    throw new BusinessException("考试记录不存在");
+                }
+                if (record.getStatus() != ExamStatus.IN_PROGRESS) {
+                    conn.commit();
+                    return;
+                }
 
-        if (record.getStatus() != ExamStatus.IN_PROGRESS) {
-            return;
-        }
+                List<Question> questions = requireQuestions(record.getPaperId());
+                SettlementResult settlement = buildSettlementResult(recordId, questions, Collections.emptyMap());
+                examRecordDao.insertAnswerRecordsBatch(conn, settlement.getAnswerRecords());
 
-        record.setStatus(ExamStatus.TIMEOUT);
-        record.setEndTime(LocalDateTime.now());
-        examRecordDao.update(record);
+                record.setStatus(ExamStatus.TIMEOUT);
+                record.setScore(settlement.getTotalScore());
+                record.setEndTime(LocalDateTime.now());
+                examRecordDao.update(conn, record);
+
+                conn.commit();
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            throw new BusinessException("超时提交考试失败: " + e.getMessage(), e);
+        }
     }
 
     private ExamRecord findExistingInProgressRecord(Integer studentId, Integer paperId) {
         return examRecordDao.findInProgressByStudentIdAndPaperId(studentId, paperId);
+    }
+
+    private void requireRecordForSubmit(ExamRecord record) {
+        if (record == null) {
+            throw new BusinessException("考试记录不存在");
+        }
+        if (record.getStatus() == ExamStatus.IN_PROGRESS) {
+            return;
+        }
+        if (record.getStatus() == ExamStatus.SUBMITTED) {
+            throw new BusinessException("考试已提交，不能重复提交");
+        }
+        if (record.getStatus() == ExamStatus.TIMEOUT) {
+            throw new BusinessException("考试已超时，不能再提交");
+        }
+        throw new BusinessException("当前考试不处于进行中状态，不能提交");
+    }
+
+    private List<Question> requireQuestions(Integer paperId) {
+        List<Question> questions = questionDao.findByPaperId(paperId);
+        if (questions.isEmpty()) {
+            throw new BusinessException("试卷没有题目");
+        }
+        return questions;
+    }
+
+    private SettlementResult buildSettlementResult(Integer recordId, List<Question> questions, Map<Integer, String> answerMap) {
+        BigDecimal totalScore = BigDecimal.ZERO;
+        List<AnswerRecord> answerRecords = new ArrayList<>();
+
+        for (Question question : questions) {
+            String studentAnswer = answerMap.get(question.getQuestionId());
+            boolean isCorrect = checkAnswer(question, studentAnswer);
+
+            BigDecimal score = BigDecimal.ZERO;
+            if (isCorrect) {
+                score = BigDecimal.valueOf(question.getScore());
+                totalScore = totalScore.add(score);
+            }
+
+            AnswerRecord answerRecord = new AnswerRecord(recordId, question.getQuestionId(), studentAnswer);
+            answerRecord.setIsCorrect(isCorrect);
+            answerRecord.setScore(score);
+            answerRecords.add(answerRecord);
+        }
+
+        return new SettlementResult(totalScore, answerRecords);
     }
 
     private Object[] createStartExamLocks() {
@@ -328,6 +367,24 @@ public class ExamService {
 
         public boolean isResumed() {
             return resumed;
+        }
+    }
+
+    private static class SettlementResult {
+        private final BigDecimal totalScore;
+        private final List<AnswerRecord> answerRecords;
+
+        private SettlementResult(BigDecimal totalScore, List<AnswerRecord> answerRecords) {
+            this.totalScore = totalScore;
+            this.answerRecords = answerRecords;
+        }
+
+        private BigDecimal getTotalScore() {
+            return totalScore;
+        }
+
+        private List<AnswerRecord> getAnswerRecords() {
+            return answerRecords;
         }
     }
 }

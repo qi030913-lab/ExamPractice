@@ -102,6 +102,24 @@ class ExamServiceTest {
     }
 
     @Test
+    void submitExamShouldRollbackWhenRecordTimedOut() throws Exception {
+        ExamRecord record = new ExamRecord(11, 101);
+        record.setRecordId(5003);
+        record.setStatus(ExamStatus.TIMEOUT);
+
+        Connection conn = mock(Connection.class);
+        when(examRecordDao.findByIdForUpdate(conn, 5003)).thenReturn(record);
+
+        try (MockedStatic<DBUtil> dbUtil = mockStatic(DBUtil.class)) {
+            dbUtil.when(() -> DBUtil.getConnection()).thenReturn(conn);
+
+            assertThrows(BusinessException.class, () -> examService.submitExam(5003, Map.of()));
+            verify(conn).rollback();
+            verify(examRecordDao, never()).insertAnswerRecordsBatch(eq(conn), any());
+        }
+    }
+
+    @Test
     void getStudentExamRecordsPaginatedShouldValidateInput() {
         assertThrows(BusinessException.class, () -> examService.getStudentExamRecordsPaginated(null, 1, 10));
         assertThrows(BusinessException.class, () -> examService.getStudentExamRecordsPaginated(1, 0, 10));
@@ -159,6 +177,60 @@ class ExamServiceTest {
         assertFalse(result.isResumed());
         assertEquals(8002, result.getRecord().getRecordId());
         verify(examRecordDao).insert(any(ExamRecord.class));
+    }
+
+    @Test
+    void timeoutSubmitShouldSettleBlankAnswersAndUpdateRecord() throws Exception {
+        ExamRecord record = new ExamRecord(11, 101);
+        record.setRecordId(7001);
+        record.setStatus(ExamStatus.IN_PROGRESS);
+
+        Question single = question(1, QuestionType.SINGLE, "A", 5);
+        Question judge = question(2, QuestionType.JUDGE, "T", 5);
+
+        Connection conn = mock(Connection.class);
+        when(examRecordDao.findByIdForUpdate(conn, 7001)).thenReturn(record);
+        when(questionDao.findByPaperId(101)).thenReturn(List.of(single, judge));
+        when(examRecordDao.update(eq(conn), any(ExamRecord.class))).thenReturn(1);
+
+        try (MockedStatic<DBUtil> dbUtil = mockStatic(DBUtil.class)) {
+            dbUtil.when(() -> DBUtil.getConnection()).thenReturn(conn);
+
+            assertDoesNotThrow(() -> examService.timeoutSubmit(7001));
+
+            ArgumentCaptor<List<AnswerRecord>> captor = ArgumentCaptor.forClass(List.class);
+            verify(examRecordDao).insertAnswerRecordsBatch(eq(conn), captor.capture());
+            assertEquals(2, captor.getValue().size());
+            assertTrue(captor.getValue().stream().allMatch(answer -> answer.getStudentAnswer() == null));
+
+            ArgumentCaptor<ExamRecord> recordCaptor = ArgumentCaptor.forClass(ExamRecord.class);
+            verify(examRecordDao).update(eq(conn), recordCaptor.capture());
+            assertEquals(ExamStatus.TIMEOUT, recordCaptor.getValue().getStatus());
+            assertEquals(BigDecimal.ZERO, recordCaptor.getValue().getScore());
+            verify(conn).commit();
+            verify(conn, never()).rollback();
+        }
+    }
+
+    @Test
+    void timeoutSubmitShouldReturnWhenRecordNotInProgress() throws Exception {
+        ExamRecord record = new ExamRecord(11, 101);
+        record.setRecordId(7002);
+        record.setStatus(ExamStatus.SUBMITTED);
+
+        Connection conn = mock(Connection.class);
+        when(examRecordDao.findByIdForUpdate(conn, 7002)).thenReturn(record);
+
+        try (MockedStatic<DBUtil> dbUtil = mockStatic(DBUtil.class)) {
+            dbUtil.when(() -> DBUtil.getConnection()).thenReturn(conn);
+
+            assertDoesNotThrow(() -> examService.timeoutSubmit(7002));
+
+            verify(examRecordDao, never()).insertAnswerRecordsBatch(eq(conn), any());
+            verify(examRecordDao, never()).update(eq(conn), any(ExamRecord.class));
+            verify(conn).commit();
+            verify(conn, never()).rollback();
+        }
     }
 
     private static Question question(int id, QuestionType type, String answer, int score) {
