@@ -1,0 +1,9 @@
+*.java text working-tree-encoding=UTF-8
+*.xml text working-tree-encoding=UTF-8
+*.properties text working-tree-encoding=UTF-8
+*.yml text working-tree-encoding=UTF-8
+*.yaml text working-tree-encoding=UTF-8
+*.md text working-tree-encoding=UTF-8
+*.js text working-tree-encoding=UTF-8
+*.vue text working-tree-encoding=UTF-8
+*.css text working-tree-encoding=UTF-8
