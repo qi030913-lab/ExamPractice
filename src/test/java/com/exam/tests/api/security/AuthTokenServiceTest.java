@@ -37,6 +37,18 @@ class AuthTokenServiceTest {
     }
 
     @Test
+    void tokenShouldExpireExactlyAtExpiryBoundary() {
+        MutableClock clock = new MutableClock("2026-04-13T10:00:00Z");
+        AuthTokenService authTokenService = new AuthTokenService(Duration.ofMinutes(5), 10, clock);
+
+        String token = authTokenService.issueToken(buildUser(8, UserRole.STUDENT));
+        clock.advance(Duration.ofMinutes(5));
+
+        assertNull(authTokenService.getAuthenticatedUser(token));
+        assertEquals(0, authTokenService.getActiveSessionCount());
+    }
+
+    @Test
     void issueTokenShouldEvictOldestSessionWhenCapacityReached() {
         MutableClock clock = new MutableClock("2026-04-13T10:00:00Z");
         AuthTokenService authTokenService = new AuthTokenService(Duration.ofHours(12), 2, clock);

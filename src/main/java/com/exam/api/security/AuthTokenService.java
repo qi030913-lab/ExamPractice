@@ -146,7 +146,7 @@ public class AuthTokenService {
         }
 
         private boolean isExpiredAt(LocalDateTime currentTime) {
-            return expiresAt.isBefore(currentTime);
+            return !expiresAt.isAfter(currentTime);
         }
 
         private AuthenticatedUser toAuthenticatedUser() {
