@@ -4,3 +4,8 @@ server:
 spring:
   application:
     name: exam-api
+
+exam:
+  api:
+    cors:
+      allowed-origin-patterns: "null,http://127.0.0.1:5173,http://localhost:5173"
