@@ -1,9 +1,11 @@
 package com.exam.api.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 public class AuthRegisterRequest {
     @NotBlank(message = "角色不能为空")
+    @Pattern(regexp = "(?i)^(student|teacher)$", message = "角色仅支持 STUDENT 或 TEACHER")
     private String role;
 
     @NotBlank(message = "姓名不能为空")

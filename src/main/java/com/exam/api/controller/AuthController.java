@@ -27,7 +27,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ApiResponse<AuthUserResponse> login(@Valid @RequestBody AuthLoginRequest request) {
-        UserRole role = UserRole.valueOf(request.getRole().trim().toUpperCase());
+        UserRole role = UserRole.fromCode(request.getRole());
         User user = userService.login(
                 request.getRealName(),
                 request.getLoginId(),
@@ -41,7 +41,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public ApiResponse<AuthUserResponse> register(@Valid @RequestBody AuthRegisterRequest request) {
-        UserRole role = UserRole.valueOf(request.getRole().trim().toUpperCase());
+        UserRole role = UserRole.fromCode(request.getRole());
 
         User user = new User();
         user.setRealName(request.getRealName().trim());
