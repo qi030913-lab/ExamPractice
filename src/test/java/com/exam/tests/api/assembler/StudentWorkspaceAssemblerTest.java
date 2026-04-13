@@ -42,7 +42,7 @@ class StudentWorkspaceAssemblerTest {
     void toStudentPaperItemShouldIncludeLatestInProgressRecord() {
         Paper paper = new Paper();
         paper.setPaperId(2001);
-        paper.setPaperName("Java娴嬭瘯");
+        paper.setPaperName("Java测试");
         paper.setSingleCount(2);
         paper.setMultipleCount(1);
         paper.setJudgeCount(1);
@@ -72,7 +72,7 @@ class StudentWorkspaceAssemblerTest {
 
         Paper paper = new Paper();
         paper.setPaperId(101);
-        paper.setPaperName("鏈熶腑鑰冭瘯");
+        paper.setPaperName("期中考试");
         paper.setPassScore(60);
         paper.setTotalScore(100);
         paper.setSubject("Java");
