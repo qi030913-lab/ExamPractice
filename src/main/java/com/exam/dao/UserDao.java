@@ -15,6 +15,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
+@Repository
 public class UserDao {
 
     public User findStudentByLoginId(String realName, String loginId) {

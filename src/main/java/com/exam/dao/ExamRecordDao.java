@@ -14,6 +14,7 @@ import java.util.List;
 /**
  * 考试记录数据访问对象
  */
+@Repository
 public class ExamRecordDao {
     private static final String EXAM_RECORD_WITH_PAPER_SELECT = "SELECT er.*, " +
             "p.paper_id as p_paper_id, p.paper_name, p.subject, p.total_score, " +

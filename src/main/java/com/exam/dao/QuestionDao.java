@@ -15,6 +15,7 @@ import java.util.List;
 /**
  * 题目数据访问对象
  */
+@Repository
 public class QuestionDao {
 
     /**

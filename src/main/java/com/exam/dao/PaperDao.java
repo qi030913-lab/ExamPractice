@@ -11,6 +11,7 @@ import java.util.List;
 /**
  * 试卷数据访问对象
  */
+@Repository
 public class PaperDao {
 
     /**
