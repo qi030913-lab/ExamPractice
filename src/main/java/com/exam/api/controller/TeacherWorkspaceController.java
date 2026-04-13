@@ -5,12 +5,12 @@ import com.exam.api.common.ApiResponse;
 import com.exam.api.dto.AuthUserResponse;
 import com.exam.api.dto.TeacherImportPaperRequest;
 import com.exam.api.dto.TeacherUpdatePaperRequest;
+import com.exam.api.dto.TeacherWorkspaceDtos;
 import com.exam.exception.BusinessException;
 import com.exam.model.ExamRecord;
 import com.exam.model.Paper;
 import com.exam.model.Question;
 import com.exam.model.User;
-import com.exam.model.enums.ExamStatus;
 import com.exam.model.enums.UserRole;
 import com.exam.service.ExamService;
 import com.exam.service.PaperService;
@@ -22,17 +22,14 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.PutMapping;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -60,80 +57,74 @@ public class TeacherWorkspaceController {
     }
 
     @GetMapping("/{userId}/papers")
-    public ApiResponse<Map<String, Object>> getTeacherPapers(@PathVariable("userId") Integer userId) {
+    public ApiResponse<TeacherWorkspaceDtos.TeacherPapersPayload> getTeacherPapers(@PathVariable("userId") Integer userId) {
         User teacher = requireTeacher(userId);
         List<Paper> papers = paperService.getAllPapersOptimized();
         long publishedCount = papers.stream()
                 .filter(paper -> Boolean.TRUE.equals(paper.getIsPublished()))
                 .count();
 
-        Map<String, Object> summary = new LinkedHashMap<>();
-        summary.put("paperCount", papers.size());
-        summary.put("publishedCount", publishedCount);
-        summary.put("unpublishedCount", papers.size() - publishedCount);
-
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("user", AuthUserResponse.from(teacher));
-        payload.put("summary", summary);
-        payload.put("papers", papers.stream().map(assembler::toTeacherPaperItem).collect(Collectors.toList()));
+        TeacherWorkspaceDtos.TeacherPapersPayload payload = new TeacherWorkspaceDtos.TeacherPapersPayload(
+                AuthUserResponse.from(teacher),
+                new TeacherWorkspaceDtos.PaperSummary(papers.size(), publishedCount, papers.size() - publishedCount),
+                papers.stream().map(assembler::toTeacherPaperItem).collect(Collectors.toList())
+        );
         return ApiResponse.success("教师试卷中心加载成功", payload);
     }
 
     @PostMapping("/{userId}/papers/{paperId}/publish")
-    public ApiResponse<Map<String, Object>> publishPaper(
+    public ApiResponse<TeacherWorkspaceDtos.PaperMutationPayload> publishPaper(
             @PathVariable("userId") Integer userId,
             @PathVariable("paperId") Integer paperId
     ) {
         requireTeacher(userId);
         paperService.publishPaper(paperId);
-
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("paper", assembler.toTeacherPaperItem(paperService.getPaperById(paperId)));
-        return ApiResponse.success("试卷发布成功", payload);
+        return ApiResponse.success(
+                "试卷发布成功",
+                new TeacherWorkspaceDtos.PaperMutationPayload(assembler.toTeacherPaperItem(paperService.getPaperById(paperId)))
+        );
     }
 
     @PostMapping("/{userId}/papers/{paperId}/unpublish")
-    public ApiResponse<Map<String, Object>> unpublishPaper(
+    public ApiResponse<TeacherWorkspaceDtos.PaperMutationPayload> unpublishPaper(
             @PathVariable("userId") Integer userId,
             @PathVariable("paperId") Integer paperId
     ) {
         requireTeacher(userId);
         paperService.unpublishPaper(paperId);
-
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("paper", assembler.toTeacherPaperItem(paperService.getPaperById(paperId)));
-        return ApiResponse.success("试卷已取消发布", payload);
+        return ApiResponse.success(
+                "试卷已取消发布",
+                new TeacherWorkspaceDtos.PaperMutationPayload(assembler.toTeacherPaperItem(paperService.getPaperById(paperId)))
+        );
     }
 
     @DeleteMapping("/{userId}/papers/{paperId}")
-    public ApiResponse<Map<String, Object>> deletePaper(
+    public ApiResponse<TeacherWorkspaceDtos.DeletePaperPayload> deletePaper(
             @PathVariable("userId") Integer userId,
             @PathVariable("paperId") Integer paperId
     ) {
         requireTeacher(userId);
         paperService.deletePaper(paperId);
-
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("paperId", paperId);
-        return ApiResponse.success("试卷删除成功", payload);
+        return ApiResponse.success("试卷删除成功", new TeacherWorkspaceDtos.DeletePaperPayload(paperId));
     }
 
     @GetMapping("/{userId}/papers/{paperId}")
-    public ApiResponse<Map<String, Object>> getTeacherPaperDetail(
+    public ApiResponse<TeacherWorkspaceDtos.TeacherPaperDetailPayload> getTeacherPaperDetail(
             @PathVariable("userId") Integer userId,
             @PathVariable("paperId") Integer paperId
     ) {
         requireTeacher(userId);
         Paper paper = paperService.getPaperById(paperId);
 
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("paper", assembler.toTeacherPaperItem(paper));
-        payload.put("questions", paper.getQuestions().stream().map(assembler::toQuestionDetailItem).collect(Collectors.toList()));
+        TeacherWorkspaceDtos.TeacherPaperDetailPayload payload = new TeacherWorkspaceDtos.TeacherPaperDetailPayload(
+                assembler.toTeacherPaperItem(paper),
+                paper.getQuestions().stream().map(assembler::toQuestionDetailItem).collect(Collectors.toList())
+        );
         return ApiResponse.success("试卷详情加载成功", payload);
     }
 
     @PutMapping("/{userId}/papers/{paperId}")
-    public ApiResponse<Map<String, Object>> updateTeacherPaper(
+    public ApiResponse<TeacherWorkspaceDtos.TeacherPaperDetailPayload> updateTeacherPaper(
             @PathVariable("userId") Integer userId,
             @PathVariable("paperId") Integer paperId,
             @Valid @RequestBody TeacherUpdatePaperRequest request
@@ -148,39 +139,38 @@ public class TeacherWorkspaceController {
         paperService.updatePaper(paper);
 
         Paper updatedPaper = paperService.getPaperById(paperId);
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("paper", assembler.toTeacherPaperItem(updatedPaper));
-        payload.put("questions", updatedPaper.getQuestions().stream().map(assembler::toQuestionDetailItem).collect(Collectors.toList()));
+        TeacherWorkspaceDtos.TeacherPaperDetailPayload payload = new TeacherWorkspaceDtos.TeacherPaperDetailPayload(
+                assembler.toTeacherPaperItem(updatedPaper),
+                updatedPaper.getQuestions().stream().map(assembler::toQuestionDetailItem).collect(Collectors.toList())
+        );
         return ApiResponse.success("试卷更新成功", payload);
     }
 
     @GetMapping("/{userId}/students")
-    public ApiResponse<Map<String, Object>> getTeacherStudents(@PathVariable("userId") Integer userId) {
+    public ApiResponse<TeacherWorkspaceDtos.TeacherStudentsPayload> getTeacherStudents(@PathVariable("userId") Integer userId) {
         User teacher = requireTeacher(userId);
         List<User> students = userService.getStudents();
         List<Integer> studentIds = students.stream()
                 .map(User::getUserId)
                 .filter(id -> id != null)
                 .collect(Collectors.toList());
-        Map<Integer, List<ExamRecord>> recordsByStudentId = examService.getStudentExamRecordsByStudentIds(studentIds);
+        var recordsByStudentId = examService.getStudentExamRecordsByStudentIds(studentIds);
 
-        Map<String, Object> summary = new LinkedHashMap<>();
-        summary.put("studentCount", students.size());
-
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("user", AuthUserResponse.from(teacher));
-        payload.put("summary", summary);
-        payload.put("students", students.stream()
-                .map(student -> assembler.toTeacherStudentItem(
-                        student,
-                        recordsByStudentId.getOrDefault(student.getUserId(), List.of())
-                ))
-                .collect(Collectors.toList()));
+        TeacherWorkspaceDtos.TeacherStudentsPayload payload = new TeacherWorkspaceDtos.TeacherStudentsPayload(
+                AuthUserResponse.from(teacher),
+                new TeacherWorkspaceDtos.StudentListSummary(students.size()),
+                students.stream()
+                        .map(student -> assembler.toTeacherStudentItem(
+                                student,
+                                recordsByStudentId.getOrDefault(student.getUserId(), List.of())
+                        ))
+                        .collect(Collectors.toList())
+        );
         return ApiResponse.success("教师学生中心加载成功", payload);
     }
 
     @GetMapping("/{userId}/students/{studentId}/records")
-    public ApiResponse<Map<String, Object>> getStudentRecords(
+    public ApiResponse<TeacherWorkspaceDtos.TeacherStudentRecordsPayload> getStudentRecords(
             @PathVariable("userId") Integer userId,
             @PathVariable("studentId") Integer studentId
     ) {
@@ -188,15 +178,16 @@ public class TeacherWorkspaceController {
         User student = requireStudent(studentId);
         List<ExamRecord> records = examService.getStudentExamRecordsOptimized(studentId);
 
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("student", AuthUserResponse.from(student));
-        payload.put("summary", assembler.buildStudentSummary(records));
-        payload.put("records", records.stream().map(assembler::toTeacherStudentRecordItem).collect(Collectors.toList()));
+        TeacherWorkspaceDtos.TeacherStudentRecordsPayload payload = new TeacherWorkspaceDtos.TeacherStudentRecordsPayload(
+                AuthUserResponse.from(student),
+                assembler.buildStudentSummary(records),
+                records.stream().map(assembler::toTeacherStudentRecordItem).collect(Collectors.toList())
+        );
         return ApiResponse.success("学生考试记录加载成功", payload);
     }
 
     @GetMapping("/{userId}/students/{studentId}")
-    public ApiResponse<Map<String, Object>> getTeacherStudentDetail(
+    public ApiResponse<TeacherWorkspaceDtos.TeacherStudentDetailPayload> getTeacherStudentDetail(
             @PathVariable("userId") Integer userId,
             @PathVariable("studentId") Integer studentId
     ) {
@@ -204,15 +195,16 @@ public class TeacherWorkspaceController {
         User student = requireStudent(studentId);
         List<ExamRecord> records = examService.getStudentExamRecordsOptimized(studentId);
 
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("student", assembler.toTeacherStudentItem(student, records));
-        payload.put("summary", assembler.buildStudentSummary(records));
-        payload.put("records", records.stream().map(assembler::toTeacherStudentRecordItem).collect(Collectors.toList()));
+        TeacherWorkspaceDtos.TeacherStudentDetailPayload payload = new TeacherWorkspaceDtos.TeacherStudentDetailPayload(
+                assembler.toTeacherStudentItem(student, records),
+                assembler.buildStudentSummary(records),
+                records.stream().map(assembler::toTeacherStudentRecordItem).collect(Collectors.toList())
+        );
         return ApiResponse.success("学生详情加载成功", payload);
     }
 
     @GetMapping("/{userId}/students/{studentId}/records/{recordId}")
-    public ApiResponse<Map<String, Object>> getTeacherStudentRecordDetail(
+    public ApiResponse<TeacherWorkspaceDtos.TeacherStudentRecordDetailPayload> getTeacherStudentRecordDetail(
             @PathVariable("userId") Integer userId,
             @PathVariable("studentId") Integer studentId,
             @PathVariable("recordId") Integer recordId
@@ -231,25 +223,25 @@ public class TeacherWorkspaceController {
         Paper paper = record.getPaper() != null ? record.getPaper() : paperService.getPaperById(record.getPaperId());
         List<com.exam.model.AnswerRecord> answerRecords = examService.getAnswerRecords(recordId);
 
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("student", assembler.toTeacherStudentItem(student, studentRecords));
-        payload.put("record", assembler.toTeacherStudentRecordDetailItem(record, paper, answerRecords));
-        payload.put("answers", answerRecords.stream().map(assembler::toAnswerRecordItem).collect(Collectors.toList()));
+        TeacherWorkspaceDtos.TeacherStudentRecordDetailPayload payload = new TeacherWorkspaceDtos.TeacherStudentRecordDetailPayload(
+                assembler.toTeacherStudentItem(student, studentRecords),
+                assembler.toTeacherStudentRecordDetailItem(record, paper, answerRecords),
+                answerRecords.stream().map(assembler::toAnswerRecordItem).collect(Collectors.toList())
+        );
         return ApiResponse.success("考试记录详情加载成功", payload);
     }
 
     @GetMapping("/{userId}/import-template")
-    public ApiResponse<Map<String, Object>> getImportTemplate(@PathVariable("userId") Integer userId) {
+    public ApiResponse<TeacherWorkspaceDtos.ImportTemplatePayload> getImportTemplate(@PathVariable("userId") Integer userId) {
         requireTeacher(userId);
-
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("fileName", "题目导入模板.txt");
-        payload.put("content", QuestionImportUtil.buildTemplateContent());
-        return ApiResponse.success("导题模板加载成功", payload);
+        return ApiResponse.success(
+                "导题模板加载成功",
+                new TeacherWorkspaceDtos.ImportTemplatePayload("题目导入模板.txt", QuestionImportUtil.buildTemplateContent())
+        );
     }
 
     @PostMapping("/{userId}/import-paper")
-    public ApiResponse<Map<String, Object>> importPaper(
+    public ApiResponse<TeacherWorkspaceDtos.ImportPaperPayload> importPaper(
             @PathVariable("userId") Integer userId,
             @Valid @RequestBody TeacherImportPaperRequest request
     ) {
@@ -306,16 +298,16 @@ public class TeacherWorkspaceController {
         int paperId = paperService.createPaper(paper, questionIds);
         Paper createdPaper = paperService.getPaperById(paperId);
 
-        Map<String, Object> summary = new LinkedHashMap<>();
-        summary.put("sourceQuestionCount", importedQuestions.size());
-        summary.put("linkedQuestionCount", questionIds.size());
-        summary.put("createdQuestionCount", createdQuestionCount);
-        summary.put("reusedQuestionCount", reusedQuestionCount);
-
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("paper", assembler.toTeacherPaperItem(createdPaper));
-        payload.put("questions", createdPaper.getQuestions().stream().map(assembler::toQuestionItem).collect(Collectors.toList()));
-        payload.put("summary", summary);
+        TeacherWorkspaceDtos.ImportPaperPayload payload = new TeacherWorkspaceDtos.ImportPaperPayload(
+                assembler.toTeacherPaperItem(createdPaper),
+                createdPaper.getQuestions().stream().map(assembler::toQuestionItem).collect(Collectors.toList()),
+                new TeacherWorkspaceDtos.ImportPaperSummary(
+                        importedQuestions.size(),
+                        questionIds.size(),
+                        createdQuestionCount,
+                        reusedQuestionCount
+                )
+        );
         return ApiResponse.success("导题建卷成功", payload);
     }
 

@@ -2,6 +2,7 @@ package com.exam.tests.api.assembler;
 
 import com.exam.api.assembler.ExamRecordStatisticsAssembler;
 import com.exam.api.assembler.TeacherWorkspaceAssembler;
+import com.exam.api.dto.TeacherWorkspaceDtos;
 import com.exam.model.ExamRecord;
 import com.exam.model.Paper;
 import com.exam.model.Question;
@@ -13,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,13 +36,13 @@ class TeacherWorkspaceAssemblerTest {
         timeout.setStatus(ExamStatus.TIMEOUT);
         timeout.setScore(new BigDecimal("60"));
 
-        Map<String, Object> item = assembler.toTeacherStudentItem(student, List.of(submitted, timeout));
+        TeacherWorkspaceDtos.TeacherStudentItem item = assembler.toTeacherStudentItem(student, List.of(submitted, timeout));
 
-        assertEquals(11, item.get("userId"));
-        assertEquals("张三", item.get("realName"));
-        assertEquals(2, item.get("recordCount"));
-        assertEquals(2L, item.get("submittedCount"));
-        assertEquals(70.0d, (Double) item.get("averageScore"));
+        assertEquals(11, item.userId());
+        assertEquals("张三", item.realName());
+        assertEquals(2, item.recordCount());
+        assertEquals(2L, item.submittedCount());
+        assertEquals(70.0d, item.averageScore());
     }
 
     @Test
@@ -55,9 +55,9 @@ class TeacherWorkspaceAssemblerTest {
         paper.setJudgeCount(1);
         paper.setBlankCount(0);
 
-        Map<String, Object> item = assembler.toTeacherPaperItem(paper);
+        TeacherWorkspaceDtos.TeacherPaperItem item = assembler.toTeacherPaperItem(paper);
 
-        assertEquals(4, item.get("questionCount"));
+        assertEquals(4, item.questionCount());
     }
 
     @Test
@@ -82,10 +82,10 @@ class TeacherWorkspaceAssemblerTest {
         com.exam.model.AnswerRecord answer = new com.exam.model.AnswerRecord(5001, 1, "A");
         answer.setQuestion(question);
 
-        Map<String, Object> item = assembler.toTeacherStudentRecordDetailItem(record, paper, List.of(answer), 1, 1, 0);
+        TeacherWorkspaceDtos.TeacherStudentRecordDetailItem item = assembler.toTeacherStudentRecordDetailItem(record, paper, List.of(answer), 1, 1, 0);
 
-        assertEquals(1, item.get("questionCount"));
-        assertEquals(1L, item.get("answeredCount"));
-        assertTrue((Boolean) item.get("passed"));
+        assertEquals(1, item.questionCount());
+        assertEquals(1L, item.answeredCount());
+        assertTrue(item.passed());
     }
 }

@@ -1,5 +1,6 @@
 package com.exam.api.assembler;
 
+import com.exam.api.dto.StudentWorkspaceDtos;
 import com.exam.model.AnswerRecord;
 import com.exam.model.ExamRecord;
 import com.exam.model.Paper;
@@ -22,110 +23,101 @@ public class StudentWorkspaceAssembler {
         this.statisticsAssembler = statisticsAssembler;
     }
 
-    public Map<String, Object> buildPaperSummary(List<Paper> papers, List<ExamRecord> records) {
+    public StudentWorkspaceDtos.PaperSummary buildPaperSummary(List<Paper> papers, List<ExamRecord> records) {
         long completedCount = records.stream()
                 .filter(record -> record.getStatus() == ExamStatus.SUBMITTED || record.getStatus() == ExamStatus.TIMEOUT)
                 .count();
         long inProgressCount = records.stream()
                 .filter(record -> record.getStatus() == ExamStatus.IN_PROGRESS)
                 .count();
-
-        Map<String, Object> summary = new LinkedHashMap<>();
-        summary.put("paperCount", papers.size());
-        summary.put("completedCount", completedCount);
-        summary.put("inProgressCount", inProgressCount);
-        return summary;
+        return new StudentWorkspaceDtos.PaperSummary(papers.size(), completedCount, inProgressCount);
     }
 
-    public Map<String, Object> buildRecordSummary(List<ExamRecord> records) {
+    public StudentWorkspaceDtos.RecordSummary buildRecordSummary(List<ExamRecord> records) {
         ExamRecordStatisticsAssembler.RecordSummary recordSummary = statisticsAssembler.summarizeRecords(records);
-
-        Map<String, Object> summary = new LinkedHashMap<>();
-        summary.put("recordCount", recordSummary.getRecordCount());
-        summary.put("submittedCount", recordSummary.getSubmittedCount());
-        summary.put("averageScore", recordSummary.getAverageScore());
-        return summary;
+        return new StudentWorkspaceDtos.RecordSummary(
+                recordSummary.getRecordCount(),
+                recordSummary.getSubmittedCount(),
+                recordSummary.getAverageScore()
+        );
     }
 
-    public Map<String, Object> toStudentPaperItem(Paper paper, ExamRecord latestRecord) {
-        Map<String, Object> item = new LinkedHashMap<>();
-        item.put("paperId", paper.getPaperId());
-        item.put("paperName", paper.getPaperName());
-        item.put("subject", paper.getSubject());
-        item.put("duration", paper.getDuration());
-        item.put("totalScore", paper.getTotalScore());
-        item.put("passScore", paper.getPassScore());
-        item.put("description", paper.getDescription());
-        item.put("questionCount", resolveQuestionCount(paper));
-        item.put("published", Boolean.TRUE.equals(paper.getIsPublished()));
-        item.put("hasInProgressRecord", latestRecord != null && latestRecord.getStatus() == ExamStatus.IN_PROGRESS);
-        if (latestRecord != null) {
-            item.put("latestRecord", toStudentRecordCard(latestRecord));
-        }
-        return item;
+    public StudentWorkspaceDtos.StudentPaperItem toStudentPaperItem(Paper paper, ExamRecord latestRecord) {
+        return new StudentWorkspaceDtos.StudentPaperItem(
+                paper.getPaperId(),
+                paper.getPaperName(),
+                paper.getSubject(),
+                paper.getDuration(),
+                paper.getTotalScore(),
+                paper.getPassScore(),
+                paper.getDescription(),
+                resolveQuestionCount(paper),
+                Boolean.TRUE.equals(paper.getIsPublished()),
+                latestRecord != null && latestRecord.getStatus() == ExamStatus.IN_PROGRESS,
+                latestRecord == null ? null : toStudentRecordCard(latestRecord)
+        );
     }
 
-    public Map<String, Object> toQuestionExamItem(Question question) {
-        Map<String, Object> item = new LinkedHashMap<>();
-        item.put("questionId", question.getQuestionId());
-        item.put("questionType", question.getQuestionType() == null ? null : question.getQuestionType().name());
-        item.put("subject", question.getSubject());
-        item.put("content", question.getContent());
-        item.put("optionA", question.getOptionA());
-        item.put("optionB", question.getOptionB());
-        item.put("optionC", question.getOptionC());
-        item.put("optionD", question.getOptionD());
-        item.put("score", question.getScore());
-        return item;
+    public StudentWorkspaceDtos.QuestionExamItem toQuestionExamItem(Question question) {
+        return new StudentWorkspaceDtos.QuestionExamItem(
+                question.getQuestionId(),
+                question.getQuestionType() == null ? null : question.getQuestionType().name(),
+                question.getSubject(),
+                question.getContent(),
+                question.getOptionA(),
+                question.getOptionB(),
+                question.getOptionC(),
+                question.getOptionD(),
+                question.getScore()
+        );
     }
 
-    public Map<String, Object> toExamLifecycleRecordItem(ExamRecord record) {
-        Map<String, Object> item = new LinkedHashMap<>();
-        item.put("recordId", record.getRecordId());
-        item.put("studentId", record.getStudentId());
-        item.put("paperId", record.getPaperId());
-        item.put("status", record.getStatus() == null ? null : record.getStatus().name());
-        item.put("startTime", record.getStartTime());
-        item.put("submitTime", record.getSubmitTime());
-        item.put("durationSeconds", calculateDurationSeconds(record));
-        item.put("resumeAvailable", record.getStatus() == ExamStatus.IN_PROGRESS);
-        return item;
+    public StudentWorkspaceDtos.ExamLifecycleRecordItem toExamLifecycleRecordItem(ExamRecord record) {
+        return new StudentWorkspaceDtos.ExamLifecycleRecordItem(
+                record.getRecordId(),
+                record.getStudentId(),
+                record.getPaperId(),
+                record.getStatus() == null ? null : record.getStatus().name(),
+                record.getStartTime(),
+                record.getSubmitTime(),
+                calculateDurationSeconds(record),
+                record.getStatus() == ExamStatus.IN_PROGRESS
+        );
     }
 
-    public Map<String, Object> toStudentRecordCard(ExamRecord record) {
-        Map<String, Object> item = new LinkedHashMap<>();
-        item.put("recordId", record.getRecordId());
-        item.put("paperId", record.getPaperId());
-        item.put("paperName", record.getPaper() != null ? record.getPaper().getPaperName() : null);
-        item.put("status", record.getStatus() != null ? record.getStatus().name() : null);
-        item.put("score", record.getScore());
-        item.put("submitTime", record.getSubmitTime());
-        item.put("startTime", record.getStartTime());
-        item.put("durationSeconds", calculateDurationSeconds(record));
-        item.put("resumeAvailable", record.getStatus() == ExamStatus.IN_PROGRESS);
-        return item;
+    public StudentWorkspaceDtos.StudentRecordCard toStudentRecordCard(ExamRecord record) {
+        return new StudentWorkspaceDtos.StudentRecordCard(
+                record.getRecordId(),
+                record.getPaperId(),
+                record.getPaper() != null ? record.getPaper().getPaperName() : null,
+                record.getStatus() != null ? record.getStatus().name() : null,
+                record.getScore(),
+                record.getSubmitTime(),
+                record.getStartTime(),
+                calculateDurationSeconds(record),
+                record.getStatus() == ExamStatus.IN_PROGRESS
+        );
     }
 
-    public Map<String, Object> toStudentScoreRecordItem(ExamRecord record, List<AnswerRecord> answerRecords) {
+    public StudentWorkspaceDtos.StudentScoreRecordItem toStudentScoreRecordItem(ExamRecord record, List<AnswerRecord> answerRecords) {
         ExamRecordStatisticsAssembler.AnswerSummary answerSummary = statisticsAssembler.summarizeAnswers(answerRecords);
-
-        Map<String, Object> item = new LinkedHashMap<>();
-        item.put("recordId", record.getRecordId());
-        item.put("paperId", record.getPaperId());
-        item.put("paperName", record.getPaper() != null ? record.getPaper().getPaperName() : null);
-        item.put("totalScore", record.getPaper() != null ? record.getPaper().getTotalScore() : null);
-        item.put("score", record.getScore());
-        item.put("status", record.getStatus() != null ? record.getStatus().name() : null);
-        item.put("submitTime", record.getSubmitTime());
-        item.put("startTime", record.getStartTime());
-        item.put("durationSeconds", calculateDurationSeconds(record));
-        item.put("correctCount", answerSummary.getCorrectCount());
-        item.put("wrongCount", answerSummary.getWrongCount());
-        item.put("resumeAvailable", record.getStatus() == ExamStatus.IN_PROGRESS);
-        return item;
+        return new StudentWorkspaceDtos.StudentScoreRecordItem(
+                record.getRecordId(),
+                record.getPaperId(),
+                record.getPaper() != null ? record.getPaper().getPaperName() : null,
+                record.getPaper() != null ? record.getPaper().getTotalScore() : null,
+                record.getScore(),
+                record.getStatus() != null ? record.getStatus().name() : null,
+                record.getSubmitTime(),
+                record.getStartTime(),
+                calculateDurationSeconds(record),
+                answerSummary.getCorrectCount(),
+                answerSummary.getWrongCount(),
+                record.getStatus() == ExamStatus.IN_PROGRESS
+        );
     }
 
-    public Map<String, Object> toStudentRecordDetailItem(
+    public StudentWorkspaceDtos.StudentRecordDetailItem toStudentRecordDetailItem(
             ExamRecord record,
             Paper paper,
             List<AnswerRecord> answerRecords
@@ -141,7 +133,7 @@ public class StudentWorkspaceAssembler {
         );
     }
 
-    public Map<String, Object> toStudentRecordDetailItem(
+    public StudentWorkspaceDtos.StudentRecordDetailItem toStudentRecordDetailItem(
             ExamRecord record,
             Paper paper,
             List<AnswerRecord> answerRecords,
@@ -150,49 +142,48 @@ public class StudentWorkspaceAssembler {
             long wrongCount
     ) {
         List<AnswerRecord> safeAnswers = answerRecords == null ? List.of() : answerRecords;
-
-        Map<String, Object> item = new LinkedHashMap<>();
-        item.put("recordId", record.getRecordId());
-        item.put("paperId", record.getPaperId());
-        item.put("paperName", paper != null ? paper.getPaperName() : null);
-        item.put("subject", paper != null ? paper.getSubject() : null);
-        item.put("totalScore", paper != null ? paper.getTotalScore() : null);
-        item.put("passScore", paper != null ? paper.getPassScore() : null);
-        item.put("score", record.getScore());
-        item.put("status", record.getStatus() == null ? null : record.getStatus().name());
-        item.put("startTime", record.getStartTime());
-        item.put("submitTime", record.getSubmitTime());
-        item.put("durationSeconds", calculateDurationSeconds(record));
-        item.put("questionCount", safeAnswers.size());
-        item.put("answeredCount", answeredCount);
-        item.put("correctCount", correctCount);
-        item.put("wrongCount", wrongCount);
-        item.put("resumeAvailable", record.getStatus() == ExamStatus.IN_PROGRESS);
-        item.put("passed", isPassed(record.getScore(), paper));
-        return item;
+        return new StudentWorkspaceDtos.StudentRecordDetailItem(
+                record.getRecordId(),
+                record.getPaperId(),
+                paper != null ? paper.getPaperName() : null,
+                paper != null ? paper.getSubject() : null,
+                paper != null ? paper.getTotalScore() : null,
+                paper != null ? paper.getPassScore() : null,
+                record.getScore(),
+                record.getStatus() == null ? null : record.getStatus().name(),
+                record.getStartTime(),
+                record.getSubmitTime(),
+                calculateDurationSeconds(record),
+                safeAnswers.size(),
+                answeredCount,
+                correctCount,
+                wrongCount,
+                record.getStatus() == ExamStatus.IN_PROGRESS,
+                isPassed(record.getScore(), paper)
+        );
     }
 
-    public Map<String, Object> toAnswerRecordItem(AnswerRecord answerRecord) {
+    public StudentWorkspaceDtos.AnswerRecordItem toAnswerRecordItem(AnswerRecord answerRecord) {
         Question question = answerRecord.getQuestion();
-        Map<String, Object> item = new LinkedHashMap<>();
-        item.put("answerId", answerRecord.getAnswerId());
-        item.put("recordId", answerRecord.getRecordId());
-        item.put("questionId", answerRecord.getQuestionId());
-        item.put("questionType", question != null && question.getQuestionType() != null ? question.getQuestionType().name() : null);
-        item.put("content", question != null ? question.getContent() : null);
-        item.put("optionA", question != null ? question.getOptionA() : null);
-        item.put("optionB", question != null ? question.getOptionB() : null);
-        item.put("optionC", question != null ? question.getOptionC() : null);
-        item.put("optionD", question != null ? question.getOptionD() : null);
-        item.put("studentAnswer", answerRecord.getStudentAnswer());
-        item.put("correctAnswer", question != null ? question.getCorrectAnswer() : null);
-        item.put("analysis", question != null ? question.getAnalysis() : null);
-        item.put("score", answerRecord.getScore());
-        item.put("isCorrect", Boolean.TRUE.equals(answerRecord.getIsCorrect()));
-        return item;
+        return new StudentWorkspaceDtos.AnswerRecordItem(
+                answerRecord.getAnswerId(),
+                answerRecord.getRecordId(),
+                answerRecord.getQuestionId(),
+                question != null && question.getQuestionType() != null ? question.getQuestionType().name() : null,
+                question != null ? question.getContent() : null,
+                question != null ? question.getOptionA() : null,
+                question != null ? question.getOptionB() : null,
+                question != null ? question.getOptionC() : null,
+                question != null ? question.getOptionD() : null,
+                answerRecord.getStudentAnswer(),
+                question != null ? question.getCorrectAnswer() : null,
+                question != null ? question.getAnalysis() : null,
+                answerRecord.getScore(),
+                Boolean.TRUE.equals(answerRecord.getIsCorrect())
+        );
     }
 
-    public Map<String, Object> toSubmitResultItem(
+    public StudentWorkspaceDtos.SubmitResultItem toSubmitResultItem(
             ExamRecord record,
             Paper paper,
             BigDecimal score,
@@ -210,7 +201,7 @@ public class StudentWorkspaceAssembler {
         );
     }
 
-    public Map<String, Object> toSubmitResultItem(
+    public StudentWorkspaceDtos.SubmitResultItem toSubmitResultItem(
             ExamRecord record,
             Paper paper,
             BigDecimal score,
@@ -219,23 +210,23 @@ public class StudentWorkspaceAssembler {
             long correctCount,
             long wrongCount
     ) {
-        Map<String, Object> item = new LinkedHashMap<>();
-        item.put("recordId", record.getRecordId());
-        item.put("paperId", record.getPaperId());
-        item.put("paperName", paper != null ? paper.getPaperName() : null);
-        item.put("subject", paper != null ? paper.getSubject() : null);
-        item.put("score", score);
-        item.put("totalScore", paper != null ? paper.getTotalScore() : null);
-        item.put("passScore", paper != null ? paper.getPassScore() : null);
-        item.put("passed", isPassed(score, paper));
-        item.put("status", record.getStatus() != null ? record.getStatus().name() : null);
-        item.put("submitTime", record.getSubmitTime());
-        item.put("durationSeconds", calculateDurationSeconds(record));
-        item.put("questionCount", questionCount);
-        item.put("answeredCount", answeredCount);
-        item.put("correctCount", correctCount);
-        item.put("wrongCount", wrongCount);
-        return item;
+        return new StudentWorkspaceDtos.SubmitResultItem(
+                record.getRecordId(),
+                record.getPaperId(),
+                paper != null ? paper.getPaperName() : null,
+                paper != null ? paper.getSubject() : null,
+                score,
+                paper != null ? paper.getTotalScore() : null,
+                paper != null ? paper.getPassScore() : null,
+                isPassed(score, paper),
+                record.getStatus() != null ? record.getStatus().name() : null,
+                record.getSubmitTime(),
+                calculateDurationSeconds(record),
+                questionCount,
+                answeredCount,
+                correctCount,
+                wrongCount
+        );
     }
 
     public Map<Integer, ExamRecord> resolveLatestRecordByPaperId(List<ExamRecord> records) {
@@ -318,5 +309,4 @@ public class StudentWorkspaceAssembler {
                 && paper.getPassScore() != null
                 && score.compareTo(BigDecimal.valueOf(paper.getPassScore())) >= 0;
     }
-
 }

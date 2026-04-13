@@ -2,6 +2,7 @@ package com.exam.tests.api.assembler;
 
 import com.exam.api.assembler.ExamRecordStatisticsAssembler;
 import com.exam.api.assembler.StudentWorkspaceAssembler;
+import com.exam.api.dto.StudentWorkspaceDtos;
 import com.exam.model.AnswerRecord;
 import com.exam.model.ExamRecord;
 import com.exam.model.Paper;
@@ -32,11 +33,11 @@ class StudentWorkspaceAssemblerTest {
         ExamRecord inProgress = new ExamRecord(1, 103);
         inProgress.setStatus(ExamStatus.IN_PROGRESS);
 
-        Map<String, Object> summary = assembler.buildPaperSummary(List.of(paper), List.of(submitted, timeout, inProgress));
+        StudentWorkspaceDtos.PaperSummary summary = assembler.buildPaperSummary(List.of(paper), List.of(submitted, timeout, inProgress));
 
-        assertEquals(1, summary.get("paperCount"));
-        assertEquals(2L, summary.get("completedCount"));
-        assertEquals(1L, summary.get("inProgressCount"));
+        assertEquals(1, summary.paperCount());
+        assertEquals(2L, summary.completedCount());
+        assertEquals(1L, summary.inProgressCount());
     }
 
     @Test
@@ -54,12 +55,12 @@ class StudentWorkspaceAssemblerTest {
         latestRecord.setStartTime(LocalDateTime.now().minusMinutes(10));
         latestRecord.setPaper(paper);
 
-        Map<String, Object> item = assembler.toStudentPaperItem(paper, latestRecord);
+        StudentWorkspaceDtos.StudentPaperItem item = assembler.toStudentPaperItem(paper, latestRecord);
 
-        assertEquals(2001, item.get("paperId"));
-        assertEquals(4, item.get("questionCount"));
-        assertEquals(true, item.get("hasInProgressRecord"));
-        assertNotNull(item.get("latestRecord"));
+        assertEquals(2001, item.paperId());
+        assertEquals(4, item.questionCount());
+        assertEquals(true, item.hasInProgressRecord());
+        assertNotNull(item.latestRecord());
     }
 
     @Test
@@ -87,11 +88,11 @@ class StudentWorkspaceAssemblerTest {
         answer.setQuestion(question);
         answer.setIsCorrect(true);
 
-        Map<String, Object> item = assembler.toStudentRecordDetailItem(record, paper, List.of(answer), 1, 1, 0);
+        StudentWorkspaceDtos.StudentRecordDetailItem item = assembler.toStudentRecordDetailItem(record, paper, List.of(answer), 1, 1, 0);
 
-        assertEquals(1, item.get("questionCount"));
-        assertEquals(1L, item.get("answeredCount"));
-        assertEquals(true, item.get("passed"));
+        assertEquals(1, item.questionCount());
+        assertEquals(1L, item.answeredCount());
+        assertEquals(true, item.passed());
     }
 
     @Test

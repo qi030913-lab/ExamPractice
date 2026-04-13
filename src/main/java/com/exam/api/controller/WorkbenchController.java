@@ -3,6 +3,8 @@ package com.exam.api.controller;
 import com.exam.api.assembler.StudentWorkspaceAssembler;
 import com.exam.api.common.ApiResponse;
 import com.exam.api.dto.AuthUserResponse;
+import com.exam.api.dto.StudentWorkspaceDtos;
+import com.exam.api.dto.WorkbenchDtos;
 import com.exam.exception.BusinessException;
 import com.exam.model.ExamRecord;
 import com.exam.model.Paper;
@@ -18,9 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/workbench")
@@ -43,7 +43,7 @@ public class WorkbenchController {
     }
 
     @GetMapping("/teacher/{userId}")
-    public ApiResponse<Map<String, Object>> teacherWorkbench(@PathVariable("userId") Integer userId) {
+    public ApiResponse<WorkbenchDtos.TeacherWorkbenchPayload> teacherWorkbench(@PathVariable("userId") Integer userId) {
         User teacher = requireRole(userId, UserRole.TEACHER);
         List<Paper> papers = paperService.getAllPapersOptimized();
         List<User> students = userService.getStudents();
@@ -51,40 +51,35 @@ public class WorkbenchController {
                 .filter(paper -> Boolean.TRUE.equals(paper.getIsPublished()))
                 .count();
 
-        Map<String, Object> stats = new LinkedHashMap<>();
-        stats.put("paperCount", papers.size());
-        stats.put("publishedCount", publishedCount);
-        stats.put("studentCount", students.size());
-
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("user", AuthUserResponse.from(teacher));
-        payload.put("stats", stats);
-
+        WorkbenchDtos.TeacherWorkbenchPayload payload = new WorkbenchDtos.TeacherWorkbenchPayload(
+                AuthUserResponse.from(teacher),
+                new WorkbenchDtos.TeacherStats(papers.size(), publishedCount, students.size())
+        );
         return ApiResponse.success("教师工作台加载成功", payload);
     }
 
     @GetMapping("/student/{userId}")
-    public ApiResponse<Map<String, Object>> studentWorkbench(@PathVariable("userId") Integer userId) {
+    public ApiResponse<WorkbenchDtos.StudentWorkbenchPayload> studentWorkbench(@PathVariable("userId") Integer userId) {
         User student = requireRole(userId, UserRole.STUDENT);
         List<Paper> publishedPapers = paperService.getAllPublishedPapersOptimized();
         List<ExamRecord> records = examService.getStudentExamRecordsOptimized(userId);
-        Map<String, Object> recordSummary = studentWorkspaceAssembler.buildRecordSummary(records);
-
-        Map<String, Object> stats = new LinkedHashMap<>();
-        stats.put("publishedPaperCount", publishedPapers.size());
-        stats.put("recordCount", recordSummary.get("recordCount"));
-        stats.put("submittedCount", recordSummary.get("submittedCount"));
-        stats.put("averageScore", recordSummary.get("averageScore"));
-
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("user", AuthUserResponse.from(student));
-        payload.put("stats", stats);
-        payload.put("ongoingRecord", records.stream()
+        StudentWorkspaceDtos.RecordSummary recordSummary = studentWorkspaceAssembler.buildRecordSummary(records);
+        StudentWorkspaceDtos.StudentRecordCard ongoingRecord = records.stream()
                 .filter(record -> record.getStatus() == ExamStatus.IN_PROGRESS)
                 .max(Comparator.comparing(ExamRecord::getRecordId, Comparator.nullsFirst(Integer::compareTo)))
                 .map(studentWorkspaceAssembler::toStudentRecordCard)
-                .orElse(null));
+                .orElse(null);
 
+        WorkbenchDtos.StudentWorkbenchPayload payload = new WorkbenchDtos.StudentWorkbenchPayload(
+                AuthUserResponse.from(student),
+                new WorkbenchDtos.StudentStats(
+                        publishedPapers.size(),
+                        recordSummary.recordCount(),
+                        recordSummary.submittedCount(),
+                        recordSummary.averageScore()
+                ),
+                ongoingRecord
+        );
         return ApiResponse.success("学生工作台加载成功", payload);
     }
 

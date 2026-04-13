@@ -4,6 +4,7 @@ import com.exam.api.assembler.StudentWorkspaceAssembler;
 import com.exam.api.common.ApiResponse;
 import com.exam.api.dto.AuthUserResponse;
 import com.exam.api.dto.StudentSubmitExamRequest;
+import com.exam.api.dto.StudentWorkspaceDtos;
 import com.exam.exception.BusinessException;
 import com.exam.model.AnswerRecord;
 import com.exam.model.ExamRecord;
@@ -49,23 +50,24 @@ public class StudentWorkspaceController {
     }
 
     @GetMapping("/{userId}/papers")
-    public ApiResponse<Map<String, Object>> getStudentPapers(@PathVariable("userId") Integer userId) {
+    public ApiResponse<StudentWorkspaceDtos.StudentPapersPayload> getStudentPapers(@PathVariable("userId") Integer userId) {
         User student = requireStudent(userId);
         List<Paper> papers = paperService.getAllPublishedPapersOptimized();
         List<ExamRecord> records = examService.getStudentExamRecordsOptimized(userId);
         Map<Integer, ExamRecord> latestRecordByPaperId = assembler.resolveLatestRecordByPaperId(records);
 
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("user", AuthUserResponse.from(student));
-        payload.put("summary", assembler.buildPaperSummary(papers, records));
-        payload.put("papers", papers.stream()
-                .map(paper -> assembler.toStudentPaperItem(paper, latestRecordByPaperId.get(paper.getPaperId())))
-                .collect(Collectors.toList()));
+        StudentWorkspaceDtos.StudentPapersPayload payload = new StudentWorkspaceDtos.StudentPapersPayload(
+                AuthUserResponse.from(student),
+                assembler.buildPaperSummary(papers, records),
+                papers.stream()
+                        .map(paper -> assembler.toStudentPaperItem(paper, latestRecordByPaperId.get(paper.getPaperId())))
+                        .collect(Collectors.toList())
+        );
         return ApiResponse.success("学生试卷中心加载成功", payload);
     }
 
     @GetMapping("/{userId}/papers/{paperId}")
-    public ApiResponse<Map<String, Object>> getStudentPaperDetail(
+    public ApiResponse<StudentWorkspaceDtos.StudentPaperDetailPayload> getStudentPaperDetail(
             @PathVariable("userId") Integer userId,
             @PathVariable("paperId") Integer paperId
     ) {
@@ -74,15 +76,16 @@ public class StudentWorkspaceController {
         List<ExamRecord> records = examService.getStudentExamRecordsOptimized(userId);
         ExamRecord latestRecord = assembler.resolveLatestRecordByPaperId(records).get(paperId);
 
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("user", AuthUserResponse.from(student));
-        payload.put("paper", assembler.toStudentPaperItem(paper, latestRecord));
-        payload.put("questions", paper.getQuestions().stream().map(assembler::toQuestionExamItem).collect(Collectors.toList()));
+        StudentWorkspaceDtos.StudentPaperDetailPayload payload = new StudentWorkspaceDtos.StudentPaperDetailPayload(
+                AuthUserResponse.from(student),
+                assembler.toStudentPaperItem(paper, latestRecord),
+                paper.getQuestions().stream().map(assembler::toQuestionExamItem).collect(Collectors.toList())
+        );
         return ApiResponse.success("考试详情加载成功", payload);
     }
 
     @PostMapping("/{userId}/papers/{paperId}/start")
-    public ApiResponse<Map<String, Object>> startExam(
+    public ApiResponse<StudentWorkspaceDtos.StartExamPayload> startExam(
             @PathVariable("userId") Integer userId,
             @PathVariable("paperId") Integer paperId
     ) {
@@ -92,19 +95,20 @@ public class StudentWorkspaceController {
         ExamRecord record = startResult.getRecord();
         boolean resumed = startResult.isResumed();
 
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("user", AuthUserResponse.from(student));
-        payload.put("record", assembler.toExamLifecycleRecordItem(record));
-        payload.put("paper", assembler.toStudentPaperItem(paper, record));
-        payload.put("questions", paper.getQuestions().stream().map(assembler::toQuestionExamItem).collect(Collectors.toList()));
-        payload.put("remainingSeconds", assembler.calculateRemainingSeconds(record, paper));
-        payload.put("deadlineTime", assembler.calculateDeadlineTime(record, paper));
-        payload.put("resumed", resumed);
+        StudentWorkspaceDtos.StartExamPayload payload = new StudentWorkspaceDtos.StartExamPayload(
+                AuthUserResponse.from(student),
+                assembler.toExamLifecycleRecordItem(record),
+                assembler.toStudentPaperItem(paper, record),
+                paper.getQuestions().stream().map(assembler::toQuestionExamItem).collect(Collectors.toList()),
+                assembler.calculateRemainingSeconds(record, paper),
+                assembler.calculateDeadlineTime(record, paper),
+                resumed
+        );
         return ApiResponse.success(resumed ? "已恢复进行中的考试" : "考试开始成功", payload);
     }
 
     @GetMapping("/{userId}/records")
-    public ApiResponse<Map<String, Object>> getStudentRecords(@PathVariable("userId") Integer userId) {
+    public ApiResponse<StudentWorkspaceDtos.StudentRecordsPayload> getStudentRecords(@PathVariable("userId") Integer userId) {
         User student = requireStudent(userId);
         List<ExamRecord> records = examService.getStudentExamRecordsOptimized(userId);
         List<Integer> recordIds = records.stream()
@@ -113,17 +117,18 @@ public class StudentWorkspaceController {
                 .collect(Collectors.toList());
         Map<Integer, List<AnswerRecord>> answerRecordsMap = examService.getAnswerRecordsBatch(recordIds);
 
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("user", AuthUserResponse.from(student));
-        payload.put("summary", assembler.buildRecordSummary(records));
-        payload.put("records", records.stream()
-                .map(record -> assembler.toStudentScoreRecordItem(record, answerRecordsMap.get(record.getRecordId())))
-                .collect(Collectors.toList()));
+        StudentWorkspaceDtos.StudentRecordsPayload payload = new StudentWorkspaceDtos.StudentRecordsPayload(
+                AuthUserResponse.from(student),
+                assembler.buildRecordSummary(records),
+                records.stream()
+                        .map(record -> assembler.toStudentScoreRecordItem(record, answerRecordsMap.get(record.getRecordId())))
+                        .collect(Collectors.toList())
+        );
         return ApiResponse.success("学生成绩中心加载成功", payload);
     }
 
     @GetMapping("/{userId}/records/{recordId}")
-    public ApiResponse<Map<String, Object>> getStudentRecordDetail(
+    public ApiResponse<StudentWorkspaceDtos.StudentRecordDetailPayload> getStudentRecordDetail(
             @PathVariable("userId") Integer userId,
             @PathVariable("recordId") Integer recordId
     ) {
@@ -132,15 +137,16 @@ public class StudentWorkspaceController {
         Paper paper = record.getPaper() != null ? record.getPaper() : paperService.getPaperById(record.getPaperId());
         List<AnswerRecord> answerRecords = examService.getAnswerRecords(recordId);
 
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("user", AuthUserResponse.from(student));
-        payload.put("record", assembler.toStudentRecordDetailItem(record, paper, answerRecords));
-        payload.put("answers", answerRecords.stream().map(assembler::toAnswerRecordItem).collect(Collectors.toList()));
+        StudentWorkspaceDtos.StudentRecordDetailPayload payload = new StudentWorkspaceDtos.StudentRecordDetailPayload(
+                AuthUserResponse.from(student),
+                assembler.toStudentRecordDetailItem(record, paper, answerRecords),
+                answerRecords.stream().map(assembler::toAnswerRecordItem).collect(Collectors.toList())
+        );
         return ApiResponse.success("考试记录详情加载成功", payload);
     }
 
     @GetMapping("/{userId}/records/{recordId}/exam")
-    public ApiResponse<Map<String, Object>> getStudentExamSession(
+    public ApiResponse<StudentWorkspaceDtos.StudentExamSessionPayload> getStudentExamSession(
             @PathVariable("userId") Integer userId,
             @PathVariable("recordId") Integer recordId
     ) {
@@ -148,18 +154,19 @@ public class StudentWorkspaceController {
         ExamRecord record = requireOwnedRecord(userId, recordId);
         Paper paper = record.getPaper() != null ? record.getPaper() : paperService.getPaperById(record.getPaperId());
 
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("user", AuthUserResponse.from(student));
-        payload.put("record", assembler.toExamLifecycleRecordItem(record));
-        payload.put("paper", assembler.toStudentPaperItem(paper, record));
-        payload.put("questions", paper.getQuestions().stream().map(assembler::toQuestionExamItem).collect(Collectors.toList()));
-        payload.put("remainingSeconds", assembler.calculateRemainingSeconds(record, paper));
-        payload.put("deadlineTime", assembler.calculateDeadlineTime(record, paper));
+        StudentWorkspaceDtos.StudentExamSessionPayload payload = new StudentWorkspaceDtos.StudentExamSessionPayload(
+                AuthUserResponse.from(student),
+                assembler.toExamLifecycleRecordItem(record),
+                assembler.toStudentPaperItem(paper, record),
+                paper.getQuestions().stream().map(assembler::toQuestionExamItem).collect(Collectors.toList()),
+                assembler.calculateRemainingSeconds(record, paper),
+                assembler.calculateDeadlineTime(record, paper)
+        );
         return ApiResponse.success("考试作答页加载成功", payload);
     }
 
     @PostMapping("/{userId}/records/{recordId}/submit")
-    public ApiResponse<Map<String, Object>> submitExam(
+    public ApiResponse<StudentWorkspaceDtos.StudentSubmitResultPayload> submitExam(
             @PathVariable("userId") Integer userId,
             @PathVariable("recordId") Integer recordId,
             @Valid @RequestBody StudentSubmitExamRequest request
@@ -188,9 +195,10 @@ public class StudentWorkspaceController {
                 : paperService.getPaperById(submittedRecord.getPaperId());
         List<AnswerRecord> answerRecords = examService.getAnswerRecords(recordId);
 
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("user", AuthUserResponse.from(student));
-        payload.put("result", assembler.toSubmitResultItem(submittedRecord, paper, score, answerRecords));
+        StudentWorkspaceDtos.StudentSubmitResultPayload payload = new StudentWorkspaceDtos.StudentSubmitResultPayload(
+                AuthUserResponse.from(student),
+                assembler.toSubmitResultItem(submittedRecord, paper, score, answerRecords)
+        );
         return ApiResponse.success("考试提交成功", payload);
     }
 

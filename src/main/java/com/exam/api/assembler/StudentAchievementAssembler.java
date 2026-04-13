@@ -1,81 +1,84 @@
 package com.exam.api.assembler;
 
+import com.exam.api.dto.AuthUserResponse;
+import com.exam.api.dto.StudentAchievementDtos;
 import com.exam.api.service.StudentAchievementService;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
 public class StudentAchievementAssembler {
 
-    public Map<String, Object> toPayload(StudentAchievementService.StudentAchievementSnapshot snapshot) {
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("summary", toSummary(snapshot.getSummary()));
-        payload.put("scoreTrend", snapshot.getScoreTrend().stream().map(this::toScoreTrendItem).collect(Collectors.toList()));
-        payload.put("questionTypeAccuracy", snapshot.getQuestionTypeAccuracy().stream().map(this::toTypeAccuracyItem).collect(Collectors.toList()));
-        payload.put("subjectPerformance", snapshot.getSubjectPerformance().stream().map(this::toSubjectPerformanceItem).collect(Collectors.toList()));
-        payload.put("latestUpdatedAt", snapshot.getLatestUpdatedAt());
-        return payload;
+    public StudentAchievementDtos.StudentAchievementPayload toPayload(
+            AuthUserResponse user,
+            StudentAchievementService.StudentAchievementSnapshot snapshot
+    ) {
+        return new StudentAchievementDtos.StudentAchievementPayload(
+                user,
+                toSummary(snapshot.getSummary()),
+                snapshot.getScoreTrend().stream().map(this::toScoreTrendItem).collect(Collectors.toList()),
+                snapshot.getQuestionTypeAccuracy().stream().map(this::toTypeAccuracyItem).collect(Collectors.toList()),
+                snapshot.getSubjectPerformance().stream().map(this::toSubjectPerformanceItem).collect(Collectors.toList()),
+                snapshot.getLatestUpdatedAt()
+        );
     }
 
-    private Map<String, Object> toSummary(StudentAchievementService.AchievementSummary summary) {
-        Map<String, Object> item = new LinkedHashMap<>();
-        item.put("totalExamCount", summary.getTotalExamCount());
-        item.put("completedExamCount", summary.getCompletedExamCount());
-        item.put("inProgressCount", summary.getInProgressCount());
-        item.put("averageScore", summary.getAverageScore());
-        item.put("bestScore", summary.getBestScore());
-        item.put("passCount", summary.getPassCount());
-        item.put("failCount", summary.getFailCount());
-        item.put("totalQuestionCount", summary.getTotalQuestionCount());
-        item.put("totalAnsweredCount", summary.getTotalAnsweredCount());
-        item.put("totalCorrectCount", summary.getTotalCorrectCount());
-        item.put("accuracyRate", summary.getAccuracyRate());
-        return item;
+    private StudentAchievementDtos.AchievementSummary toSummary(StudentAchievementService.AchievementSummary summary) {
+        return new StudentAchievementDtos.AchievementSummary(
+                summary.getTotalExamCount(),
+                summary.getCompletedExamCount(),
+                summary.getInProgressCount(),
+                summary.getAverageScore(),
+                summary.getBestScore(),
+                summary.getPassCount(),
+                summary.getFailCount(),
+                summary.getTotalQuestionCount(),
+                summary.getTotalAnsweredCount(),
+                summary.getTotalCorrectCount(),
+                summary.getAccuracyRate()
+        );
     }
 
-    private Map<String, Object> toScoreTrendItem(StudentAchievementService.ScoreTrendItem scoreTrendItem) {
-        Map<String, Object> item = new LinkedHashMap<>();
-        item.put("recordId", scoreTrendItem.getRecordId());
-        item.put("paperId", scoreTrendItem.getPaperId());
-        item.put("paperName", scoreTrendItem.getPaperName());
-        item.put("subject", scoreTrendItem.getSubject());
-        item.put("score", scoreTrendItem.getScore());
-        item.put("totalScore", scoreTrendItem.getTotalScore());
-        item.put("passScore", scoreTrendItem.getPassScore());
-        item.put("status", scoreTrendItem.getStatus());
-        item.put("submitTime", scoreTrendItem.getSubmitTime());
-        item.put("startTime", scoreTrendItem.getStartTime());
-        item.put("passed", scoreTrendItem.isPassed());
-        return item;
+    private StudentAchievementDtos.ScoreTrendItem toScoreTrendItem(StudentAchievementService.ScoreTrendItem scoreTrendItem) {
+        return new StudentAchievementDtos.ScoreTrendItem(
+                scoreTrendItem.getRecordId(),
+                scoreTrendItem.getPaperId(),
+                scoreTrendItem.getPaperName(),
+                scoreTrendItem.getSubject(),
+                scoreTrendItem.getScore(),
+                scoreTrendItem.getTotalScore(),
+                scoreTrendItem.getPassScore(),
+                scoreTrendItem.getStatus(),
+                scoreTrendItem.getSubmitTime(),
+                scoreTrendItem.getStartTime(),
+                scoreTrendItem.isPassed()
+        );
     }
 
-    private Map<String, Object> toTypeAccuracyItem(StudentAchievementService.TypeAccuracyItem typeAccuracyItem) {
-        Map<String, Object> item = new LinkedHashMap<>();
-        item.put("questionType", typeAccuracyItem.getQuestionType());
-        item.put("label", typeAccuracyItem.getLabel());
-        item.put("totalCount", typeAccuracyItem.getTotalCount());
-        item.put("answeredCount", typeAccuracyItem.getAnsweredCount());
-        item.put("correctCount", typeAccuracyItem.getCorrectCount());
-        item.put("accuracyRate", typeAccuracyItem.getAccuracyRate());
-        return item;
+    private StudentAchievementDtos.TypeAccuracyItem toTypeAccuracyItem(StudentAchievementService.TypeAccuracyItem typeAccuracyItem) {
+        return new StudentAchievementDtos.TypeAccuracyItem(
+                typeAccuracyItem.getQuestionType(),
+                typeAccuracyItem.getLabel(),
+                typeAccuracyItem.getTotalCount(),
+                typeAccuracyItem.getAnsweredCount(),
+                typeAccuracyItem.getCorrectCount(),
+                typeAccuracyItem.getAccuracyRate()
+        );
     }
 
-    private Map<String, Object> toSubjectPerformanceItem(StudentAchievementService.SubjectPerformanceItem subjectPerformanceItem) {
-        Map<String, Object> item = new LinkedHashMap<>();
-        item.put("subject", subjectPerformanceItem.getSubject());
-        item.put("recordCount", subjectPerformanceItem.getRecordCount());
-        item.put("averageScore", subjectPerformanceItem.getAverageScore());
-        item.put("passCount", subjectPerformanceItem.getPassCount());
-        item.put("failCount", subjectPerformanceItem.getFailCount());
-        item.put("totalQuestionCount", subjectPerformanceItem.getTotalQuestionCount());
-        item.put("answeredCount", subjectPerformanceItem.getAnsweredCount());
-        item.put("correctCount", subjectPerformanceItem.getCorrectCount());
-        item.put("accuracyRate", subjectPerformanceItem.getAccuracyRate());
-        item.put("latestSubmitTime", subjectPerformanceItem.getLatestSubmitTime());
-        return item;
+    private StudentAchievementDtos.SubjectPerformanceItem toSubjectPerformanceItem(StudentAchievementService.SubjectPerformanceItem subjectPerformanceItem) {
+        return new StudentAchievementDtos.SubjectPerformanceItem(
+                subjectPerformanceItem.getSubject(),
+                subjectPerformanceItem.getRecordCount(),
+                subjectPerformanceItem.getAverageScore(),
+                subjectPerformanceItem.getPassCount(),
+                subjectPerformanceItem.getFailCount(),
+                subjectPerformanceItem.getTotalQuestionCount(),
+                subjectPerformanceItem.getAnsweredCount(),
+                subjectPerformanceItem.getCorrectCount(),
+                subjectPerformanceItem.getAccuracyRate(),
+                subjectPerformanceItem.getLatestSubmitTime()
+        );
     }
 }
