@@ -17,6 +17,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -165,6 +166,18 @@ public class ExamService {
             throw new BusinessException("学生ID不能为空");
         }
         return examRecordDao.findByStudentIdWithPaper(studentId);
+    }
+
+    public Map<Integer, List<ExamRecord>> getStudentExamRecordsByStudentIds(Collection<Integer> studentIds) {
+        if (studentIds == null || studentIds.isEmpty()) {
+            return new java.util.HashMap<>();
+        }
+        for (Integer studentId : studentIds) {
+            if (studentId == null) {
+                throw new BusinessException("学生ID不能为空");
+            }
+        }
+        return examRecordDao.findByStudentIdsWithPaper(studentIds);
     }
 
     public List<ExamRecord> getStudentExamRecordsPaginated(Integer studentId, int pageNum, int pageSize) {

@@ -154,6 +154,11 @@ public class TeacherWorkspaceController {
     public ApiResponse<Map<String, Object>> getTeacherStudents(@PathVariable("userId") Integer userId) {
         User teacher = requireTeacher(userId);
         List<User> students = userService.getStudents();
+        List<Integer> studentIds = students.stream()
+                .map(User::getUserId)
+                .filter(id -> id != null)
+                .collect(Collectors.toList());
+        Map<Integer, List<ExamRecord>> recordsByStudentId = examService.getStudentExamRecordsByStudentIds(studentIds);
 
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("studentCount", students.size());
@@ -161,7 +166,12 @@ public class TeacherWorkspaceController {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("user", AuthUserResponse.from(teacher));
         payload.put("summary", summary);
-        payload.put("students", students.stream().map(this::toTeacherStudentItem).collect(Collectors.toList()));
+        payload.put("students", students.stream()
+                .map(student -> toTeacherStudentItem(
+                        student,
+                        recordsByStudentId.getOrDefault(student.getUserId(), List.of())
+                ))
+                .collect(Collectors.toList()));
         return ApiResponse.success("教师学生中心加载成功", payload);
     }
 
@@ -191,7 +201,7 @@ public class TeacherWorkspaceController {
         List<ExamRecord> records = examService.getStudentExamRecordsOptimized(studentId);
 
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("student", toTeacherStudentItem(student));
+        payload.put("student", toTeacherStudentItem(student, records));
         payload.put("summary", buildStudentSummary(records));
         payload.put("records", records.stream().map(this::toTeacherStudentRecordItem).collect(Collectors.toList()));
         return ApiResponse.success("学生详情加载成功", payload);
@@ -227,7 +237,7 @@ public class TeacherWorkspaceController {
                 .count();
 
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("student", toTeacherStudentItem(student));
+        payload.put("student", toTeacherStudentItem(student, examService.getStudentExamRecordsOptimized(student.getUserId())));
         payload.put("record", toTeacherStudentRecordDetailItem(record, paper, answerRecords, answeredCount, correctCount, wrongCount));
         payload.put("answers", answerRecords.stream().map(this::toAnswerRecordItem).collect(Collectors.toList()));
         return ApiResponse.success("考试记录详情加载成功", payload);
@@ -346,8 +356,7 @@ public class TeacherWorkspaceController {
         return item;
     }
 
-    private Map<String, Object> toTeacherStudentItem(User student) {
-        List<ExamRecord> records = examService.getStudentExamRecordsOptimized(student.getUserId());
+    private Map<String, Object> toTeacherStudentItem(User student, List<ExamRecord> records) {
         Map<String, Object> summary = buildStudentSummary(records);
 
         Map<String, Object> item = new LinkedHashMap<>();

@@ -110,6 +110,23 @@ class ExamServiceTest {
     }
 
     @Test
+    void getStudentExamRecordsByStudentIdsShouldDelegateBatchQuery() {
+        ExamRecord record = new ExamRecord(11, 101);
+        Map<Integer, List<ExamRecord>> expected = Map.of(11, List.of(record), 12, List.of());
+        when(examRecordDao.findByStudentIdsWithPaper(List.of(11, 12))).thenReturn(expected);
+
+        Map<Integer, List<ExamRecord>> actual = examService.getStudentExamRecordsByStudentIds(List.of(11, 12));
+
+        assertSame(expected, actual);
+        verify(examRecordDao).findByStudentIdsWithPaper(List.of(11, 12));
+    }
+
+    @Test
+    void getStudentExamRecordsByStudentIdsShouldRejectNullStudentId() {
+        assertThrows(BusinessException.class, () -> examService.getStudentExamRecordsByStudentIds(java.util.Arrays.asList(11, null)));
+    }
+
+    @Test
     void startOrResumeExamShouldReturnExistingInProgressRecord() {
         com.exam.model.Paper paper = new com.exam.model.Paper();
         paper.setPaperId(101);

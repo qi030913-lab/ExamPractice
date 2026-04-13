@@ -216,6 +216,74 @@ public class ExamRecordDao {
      * @param pageSize 每页大小
      * @return 考试记录列表
      */
+    public java.util.Map<Integer, List<ExamRecord>> findByStudentIdsWithPaper(java.util.Collection<Integer> studentIds) {
+        java.util.Map<Integer, List<ExamRecord>> resultMap = new java.util.HashMap<>();
+        if (studentIds == null || studentIds.isEmpty()) {
+            return resultMap;
+        }
+
+        String placeholders = String.join(",", java.util.Collections.nCopies(studentIds.size(), "?"));
+        String sql = "SELECT er.*, " +
+                "p.paper_id as p_paper_id, p.paper_name, p.subject, p.total_score, " +
+                "p.duration, p.pass_score, p.description, p.is_published, " +
+                "p.creator_id as p_creator_id, p.create_time as p_create_time, " +
+                "p.update_time as p_update_time " +
+                "FROM exam_record er " +
+                "LEFT JOIN paper p ON er.paper_id = p.paper_id " +
+                "WHERE er.student_id IN (" + placeholders + ") " +
+                "ORDER BY er.student_id, er.create_time DESC";
+
+        for (Integer studentId : studentIds) {
+            if (studentId == null) {
+                throw new DatabaseException("学生ID不能为空");
+            }
+            resultMap.put(studentId, new ArrayList<>());
+        }
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            int index = 1;
+            for (Integer studentId : studentIds) {
+                pstmt.setInt(index++, studentId);
+            }
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    ExamRecord record = extractExamRecord(rs);
+                    if (rs.getObject("p_paper_id") != null) {
+                        com.exam.model.Paper paper = new com.exam.model.Paper();
+                        paper.setPaperId(rs.getInt("p_paper_id"));
+                        paper.setPaperName(rs.getString("paper_name"));
+                        paper.setSubject(rs.getString("subject"));
+                        paper.setTotalScore(rs.getInt("total_score"));
+                        paper.setDuration(rs.getInt("duration"));
+                        paper.setPassScore(rs.getInt("pass_score"));
+                        paper.setDescription(rs.getString("description"));
+                        paper.setIsPublished(rs.getBoolean("is_published"));
+                        paper.setCreatorId(rs.getInt("p_creator_id"));
+
+                        Timestamp pCreateTime = rs.getTimestamp("p_create_time");
+                        if (pCreateTime != null) {
+                            paper.setCreateTime(pCreateTime.toLocalDateTime());
+                        }
+
+                        Timestamp pUpdateTime = rs.getTimestamp("p_update_time");
+                        if (pUpdateTime != null) {
+                            paper.setUpdateTime(pUpdateTime.toLocalDateTime());
+                        }
+
+                        record.setPaper(paper);
+                    }
+                    resultMap.computeIfAbsent(record.getStudentId(), key -> new ArrayList<>()).add(record);
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("批量查询考试记录失败", e);
+        }
+        return resultMap;
+    }
+
     public List<ExamRecord> findByStudentIdWithPaperPaginated(Integer studentId, int pageNum, int pageSize) {
         int offset = (pageNum - 1) * pageSize;
         String sql = "SELECT er.*, " +
