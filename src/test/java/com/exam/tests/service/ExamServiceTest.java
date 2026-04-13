@@ -109,6 +109,41 @@ class ExamServiceTest {
         assertThrows(BusinessException.class, () -> examService.getStudentExamRecordsPaginated(1, 1, 201));
     }
 
+    @Test
+    void startOrResumeExamShouldReturnExistingInProgressRecord() {
+        com.exam.model.Paper paper = new com.exam.model.Paper();
+        paper.setPaperId(101);
+
+        ExamRecord existingRecord = new ExamRecord(11, 101);
+        existingRecord.setRecordId(8001);
+        existingRecord.setStatus(ExamStatus.IN_PROGRESS);
+
+        when(paperDao.findById(101)).thenReturn(paper);
+        when(examRecordDao.findByStudentId(11)).thenReturn(List.of(existingRecord));
+
+        ExamService.ExamStartResult result = examService.startOrResumeExam(11, 101);
+
+        assertTrue(result.isResumed());
+        assertEquals(8001, result.getRecord().getRecordId());
+        verify(examRecordDao, never()).insert(any(ExamRecord.class));
+    }
+
+    @Test
+    void startOrResumeExamShouldCreateRecordWhenNoInProgressRecordExists() {
+        com.exam.model.Paper paper = new com.exam.model.Paper();
+        paper.setPaperId(101);
+
+        when(paperDao.findById(101)).thenReturn(paper);
+        when(examRecordDao.findByStudentId(11)).thenReturn(List.of());
+        when(examRecordDao.insert(any(ExamRecord.class))).thenReturn(8002);
+
+        ExamService.ExamStartResult result = examService.startOrResumeExam(11, 101);
+
+        assertFalse(result.isResumed());
+        assertEquals(8002, result.getRecord().getRecordId());
+        verify(examRecordDao).insert(any(ExamRecord.class));
+    }
+
     private static Question question(int id, QuestionType type, String answer, int score) {
         Question q = new Question();
         q.setQuestionId(id);

@@ -95,11 +95,9 @@ public class StudentWorkspaceController {
     ) {
         User student = requireStudent(userId);
         Paper paper = requirePublishedPaper(paperId);
-        ExamRecord record = findInProgressRecord(userId, paperId);
-        boolean resumed = record != null;
-        if (record == null) {
-            record = examService.startExam(userId, paperId);
-        }
+        ExamService.ExamStartResult startResult = examService.startOrResumeExam(userId, paperId);
+        ExamRecord record = startResult.getRecord();
+        boolean resumed = startResult.isResumed();
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("user", AuthUserResponse.from(student));
@@ -263,15 +261,6 @@ public class StudentWorkspaceController {
             throw new BusinessException("考试记录不属于当前学生");
         }
         return record;
-    }
-
-    private ExamRecord findInProgressRecord(Integer userId, Integer paperId) {
-        List<ExamRecord> records = examService.getStudentExamRecordsOptimized(userId);
-        return records.stream()
-                .filter(record -> paperId.equals(record.getPaperId()))
-                .filter(record -> record.getStatus() == ExamStatus.IN_PROGRESS)
-                .findFirst()
-                .orElse(null);
     }
 
     private Map<String, Object> toStudentPaperItem(Paper paper, ExamRecord latestRecord) {

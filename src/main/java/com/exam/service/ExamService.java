@@ -28,6 +28,7 @@ public class ExamService {
     private final ExamRecordDao examRecordDao;
     private final PaperDao paperDao;
     private final QuestionDao questionDao;
+    private final Object[] startExamLocks = createStartExamLocks();
 
     public ExamService() {
         this.examRecordDao = new ExamRecordDao();
@@ -36,6 +37,10 @@ public class ExamService {
     }
 
     public ExamRecord startExam(Integer studentId, Integer paperId) {
+        return startOrResumeExam(studentId, paperId).getRecord();
+    }
+
+    public ExamStartResult startOrResumeExam(Integer studentId, Integer paperId) {
         if (studentId == null) {
             throw new BusinessException("学生ID不能为空");
         }
@@ -48,13 +53,22 @@ public class ExamService {
             throw new BusinessException("试卷不存在");
         }
 
-        ExamRecord record = new ExamRecord(studentId, paperId);
-        record.startExam();
+        synchronized (resolveStartExamLock(studentId, paperId)) {
+            ExamRecord existingRecord = findExistingInProgressRecord(studentId, paperId);
+            if (existingRecord != null) {
+                existingRecord.setPaper(paper);
+                return new ExamStartResult(existingRecord, true);
+            }
 
-        int recordId = examRecordDao.insert(record);
-        record.setRecordId(recordId);
+            ExamRecord record = new ExamRecord(studentId, paperId);
+            record.startExam();
+            record.setPaper(paper);
 
-        return record;
+            int recordId = examRecordDao.insert(record);
+            record.setRecordId(recordId);
+
+            return new ExamStartResult(record, false);
+        }
     }
 
     public BigDecimal submitExam(Integer recordId, Map<Integer, String> answers) {
@@ -115,7 +129,7 @@ public class ExamService {
                 conn.setAutoCommit(true);
             }
         } catch (SQLException e) {
-            throw new BusinessException("提交考试失败：" + e.getMessage());
+            throw new BusinessException("提交考试失败: " + e.getMessage());
         }
     }
 
@@ -190,13 +204,13 @@ public class ExamService {
         }
 
         Set<Integer> questionIds = new HashSet<>();
-        for (AnswerRecord ar : answerRecords) {
-            questionIds.add(ar.getQuestionId());
+        for (AnswerRecord answerRecord : answerRecords) {
+            questionIds.add(answerRecord.getQuestionId());
         }
 
         Map<Integer, Question> questionMap = questionDao.findByIds(questionIds);
-        for (AnswerRecord ar : answerRecords) {
-            ar.setQuestion(questionMap.get(ar.getQuestionId()));
+        for (AnswerRecord answerRecord : answerRecords) {
+            answerRecord.setQuestion(questionMap.get(answerRecord.getQuestionId()));
         }
         return answerRecords;
     }
@@ -210,15 +224,15 @@ public class ExamService {
 
         Set<Integer> questionIds = new HashSet<>();
         for (List<AnswerRecord> records : answerRecordsMap.values()) {
-            for (AnswerRecord ar : records) {
-                questionIds.add(ar.getQuestionId());
+            for (AnswerRecord answerRecord : records) {
+                questionIds.add(answerRecord.getQuestionId());
             }
         }
 
         Map<Integer, Question> questionMap = questionDao.findByIds(questionIds);
         for (List<AnswerRecord> records : answerRecordsMap.values()) {
-            for (AnswerRecord ar : records) {
-                ar.setQuestion(questionMap.get(ar.getQuestionId()));
+            for (AnswerRecord answerRecord : records) {
+                answerRecord.setQuestion(questionMap.get(answerRecord.getQuestionId()));
             }
         }
 
@@ -236,8 +250,8 @@ public class ExamService {
         }
 
         List<AnswerRecord> answerRecords = examRecordDao.findAnswerRecords(recordId);
-        for (AnswerRecord answer : answerRecords) {
-            record.recordAnswer(answer.getQuestionId(), answer.getStudentAnswer());
+        for (AnswerRecord answerRecord : answerRecords) {
+            record.recordAnswer(answerRecord.getQuestionId(), answerRecord.getStudentAnswer());
         }
 
         return record;
@@ -267,5 +281,46 @@ public class ExamService {
         record.setStatus(ExamStatus.TIMEOUT);
         record.setEndTime(LocalDateTime.now());
         examRecordDao.update(record);
+    }
+
+    private ExamRecord findExistingInProgressRecord(Integer studentId, Integer paperId) {
+        List<ExamRecord> records = examRecordDao.findByStudentId(studentId);
+        for (ExamRecord record : records) {
+            if (paperId.equals(record.getPaperId()) && record.getStatus() == ExamStatus.IN_PROGRESS) {
+                return record;
+            }
+        }
+        return null;
+    }
+
+    private Object[] createStartExamLocks() {
+        Object[] locks = new Object[64];
+        for (int i = 0; i < locks.length; i++) {
+            locks[i] = new Object();
+        }
+        return locks;
+    }
+
+    private Object resolveStartExamLock(Integer studentId, Integer paperId) {
+        int hash = 31 * studentId.hashCode() + paperId.hashCode();
+        return startExamLocks[Math.floorMod(hash, startExamLocks.length)];
+    }
+
+    public static class ExamStartResult {
+        private final ExamRecord record;
+        private final boolean resumed;
+
+        public ExamStartResult(ExamRecord record, boolean resumed) {
+            this.record = record;
+            this.resumed = resumed;
+        }
+
+        public ExamRecord getRecord() {
+            return record;
+        }
+
+        public boolean isResumed() {
+            return resumed;
+        }
     }
 }
