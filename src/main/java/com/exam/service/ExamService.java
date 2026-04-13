@@ -31,10 +31,10 @@ public class ExamService {
     private final QuestionDao questionDao;
     private final Object[] startExamLocks = createStartExamLocks();
 
-    public ExamService() {
-        this.examRecordDao = new ExamRecordDao();
-        this.paperDao = new PaperDao();
-        this.questionDao = new QuestionDao();
+    public ExamService(ExamRecordDao examRecordDao, PaperDao paperDao, QuestionDao questionDao) {
+        this.examRecordDao = examRecordDao;
+        this.paperDao = paperDao;
+        this.questionDao = questionDao;
     }
 
     public ExamRecord startExam(Integer studentId, Integer paperId) {

@@ -10,7 +10,6 @@ import com.exam.model.Question;
 import com.exam.model.enums.ExamStatus;
 import com.exam.model.enums.QuestionType;
 import com.exam.service.ExamService;
-import com.exam.tests.support.FieldInjector;
 import com.exam.util.DBUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,14 +35,10 @@ class ExamServiceTest {
 
     @BeforeEach
     void setUp() {
-        examService = new ExamService();
         examRecordDao = mock(ExamRecordDao.class);
         paperDao = mock(PaperDao.class);
         questionDao = mock(QuestionDao.class);
-
-        FieldInjector.setField(examService, "examRecordDao", examRecordDao);
-        FieldInjector.setField(examService, "paperDao", paperDao);
-        FieldInjector.setField(examService, "questionDao", questionDao);
+        examService = new ExamService(examRecordDao, paperDao, questionDao);
     }
 
     @Test

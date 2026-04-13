@@ -3,6 +3,7 @@ package com.exam.dao;
 import com.exam.exception.DatabaseException;
 import com.exam.model.Paper;
 import com.exam.util.DBUtil;
+import org.springframework.stereotype.Repository;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;

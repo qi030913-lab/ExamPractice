@@ -6,6 +6,7 @@ import com.exam.model.Question;
 import com.exam.model.enums.Difficulty;
 import com.exam.model.enums.QuestionType;
 import com.exam.util.DBUtil;
+import org.springframework.stereotype.Repository;
 
 import java.sql.*;
 import java.util.ArrayList;

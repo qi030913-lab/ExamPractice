@@ -5,6 +5,7 @@ import com.exam.model.AnswerRecord;
 import com.exam.model.ExamRecord;
 import com.exam.model.enums.ExamStatus;
 import com.exam.util.DBUtil;
+import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;

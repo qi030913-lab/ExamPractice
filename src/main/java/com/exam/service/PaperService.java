@@ -20,9 +20,9 @@ public class PaperService {
     private final PaperDao paperDao;
     private final QuestionDao questionDao;
 
-    public PaperService() {
-        this.paperDao = new PaperDao();
-        this.questionDao = new QuestionDao();
+    public PaperService(PaperDao paperDao, QuestionDao questionDao) {
+        this.paperDao = paperDao;
+        this.questionDao = questionDao;
     }
 
     public int createPaper(Paper paper, List<Integer> questionIds) {

@@ -14,8 +14,8 @@ import java.util.List;
 public class UserService {
     private final UserDao userDao;
 
-    public UserService() {
-        this.userDao = new UserDao();
+    public UserService(UserDao userDao) {
+        this.userDao = userDao;
     }
 
     public User login(String realName, String loginId, String password, UserRole role) {

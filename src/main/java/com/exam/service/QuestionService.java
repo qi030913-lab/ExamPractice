@@ -17,8 +17,8 @@ import java.util.List;
 public class QuestionService {
     private final QuestionDao questionDao;
 
-    public QuestionService() {
-        this.questionDao = new QuestionDao();
+    public QuestionService(QuestionDao questionDao) {
+        this.questionDao = questionDao;
     }
 
     /**

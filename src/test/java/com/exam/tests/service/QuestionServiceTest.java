@@ -5,7 +5,6 @@ import com.exam.exception.BusinessException;
 import com.exam.model.Question;
 import com.exam.model.enums.QuestionType;
 import com.exam.service.QuestionService;
-import com.exam.tests.support.FieldInjector;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -20,9 +19,8 @@ class QuestionServiceTest {
 
     @BeforeEach
     void setUp() {
-        questionService = new QuestionService();
         questionDao = mock(QuestionDao.class);
-        FieldInjector.setField(questionService, "questionDao", questionDao);
+        questionService = new QuestionService(questionDao);
     }
 
     @Test

@@ -4,6 +4,7 @@ import com.exam.exception.DatabaseException;
 import com.exam.model.User;
 import com.exam.model.enums.UserRole;
 import com.exam.util.DBUtil;
+import org.springframework.stereotype.Repository;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

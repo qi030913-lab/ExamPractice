@@ -5,7 +5,6 @@ import com.exam.exception.AuthenticationException;
 import com.exam.model.User;
 import com.exam.model.enums.UserRole;
 import com.exam.service.UserService;
-import com.exam.tests.support.FieldInjector;
 import com.exam.util.PasswordUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,9 +20,8 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        userService = new UserService();
         userDao = mock(UserDao.class);
-        FieldInjector.setField(userService, "userDao", userDao);
+        userService = new UserService(userDao);
     }
 
     @Test
