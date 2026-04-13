@@ -50,6 +50,7 @@ public class PaperService {
             totalScore += question.getScore();
         }
         paper.setTotalScore(totalScore);
+        validatePassScoreWithinTotalScore(paper);
 
         try (Connection conn = DBUtil.getConnection()) {
             conn.setAutoCommit(false);
@@ -120,6 +121,8 @@ public class PaperService {
                 }
 
                 paper.setTotalScore(totalScore);
+                validatePassScoreWithinTotalScore(paper);
+
                 int paperId = paperDao.insert(conn, paper);
                 paperDao.addPaperQuestionsBatch(conn, paperId, linkedQuestionIds);
                 conn.commit();
@@ -147,6 +150,7 @@ public class PaperService {
             throw new BusinessException("试卷ID不能为空");
         }
         validatePaper(paper);
+        validatePassScoreWithinTotalScore(paper);
         return paperDao.update(paper);
     }
 
@@ -270,12 +274,12 @@ public class PaperService {
             throw new BusinessException("导入题目正确答案不能为空");
         }
         if (question.getScore() == null || question.getScore() <= 0) {
-            throw new BusinessException("导入题目分值必须大于0");
+            throw new BusinessException("导入题目分值必须大于 0");
         }
         if (question.getQuestionType() == QuestionType.SINGLE || question.getQuestionType() == QuestionType.MULTIPLE) {
             if (question.getOptionA() == null || question.getOptionA().trim().isEmpty()
                     || question.getOptionB() == null || question.getOptionB().trim().isEmpty()) {
-                throw new BusinessException("选择题至少需要A、B两个选项");
+                throw new BusinessException("选择题至少需要 A、B 两个选项");
             }
         }
         validateSupportedQuestion(question);
@@ -292,17 +296,27 @@ public class PaperService {
             throw new BusinessException("科目不能为空");
         }
         if (paper.getDuration() == null || paper.getDuration() <= 0) {
-            throw new BusinessException("考试时长必须大于0");
+            throw new BusinessException("考试时长必须大于 0");
         }
         if (paper.getPassScore() == null || paper.getPassScore() < 0) {
             throw new BusinessException("及格分数不能为负数");
         }
     }
 
+    private void validatePassScoreWithinTotalScore(Paper paper) {
+        Integer totalScore = paper.getTotalScore();
+        Integer passScore = paper.getPassScore();
+        if (totalScore != null && passScore != null && passScore > totalScore) {
+            throw new BusinessException("及格分数不能超过试卷总分");
+        }
+    }
+
     private void validateSupportedQuestion(Question question) {
         if (question.getQuestionType() == null || !question.getQuestionType().isSupportedForAutoExam()) {
             String typeName = question.getQuestionType() == null ? "UNSPECIFIED" : question.getQuestionType().name();
-            throw new BusinessException("当前考试流程仅支持 SINGLE、MULTIPLE、JUDGE 题型入卷，暂不支持题型: " + typeName);
+            throw new BusinessException(
+                    "当前考试流程仅支持 SINGLE、MULTIPLE、JUDGE 题型入卷，暂不支持题型: " + typeName
+            );
         }
     }
 
