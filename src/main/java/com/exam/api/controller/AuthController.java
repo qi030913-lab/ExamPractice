@@ -4,6 +4,7 @@ import com.exam.api.common.ApiResponse;
 import com.exam.api.dto.AuthLoginRequest;
 import com.exam.api.dto.AuthRegisterRequest;
 import com.exam.api.dto.AuthUserResponse;
+import com.exam.api.security.AuthTokenService;
 import com.exam.model.User;
 import com.exam.model.enums.UserRole;
 import com.exam.service.UserService;
@@ -17,9 +18,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/auth")
 public class AuthController {
     private final UserService userService;
+    private final AuthTokenService authTokenService;
 
-    public AuthController(UserService userService) {
+    public AuthController(UserService userService, AuthTokenService authTokenService) {
         this.userService = userService;
+        this.authTokenService = authTokenService;
     }
 
     @PostMapping("/login")
@@ -31,8 +34,9 @@ public class AuthController {
                 request.getPassword(),
                 role
         );
+        String token = authTokenService.issueToken(user);
 
-        return ApiResponse.success("登录成功", AuthUserResponse.from(user));
+        return ApiResponse.success("登录成功", AuthUserResponse.from(user, token));
     }
 
     @PostMapping("/register")

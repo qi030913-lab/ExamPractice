@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const defaultBaseURL = "http://127.0.0.1:8080/api";
+const SESSION_STORAGE_KEY = "exampractice.desktop.session";
 
 function resolveBaseURL() {
   const configuredBaseURL = typeof import.meta.env.VITE_API_BASE_URL === "string"
@@ -19,6 +20,23 @@ function createApiError(message, extras = {}) {
 export const apiClient = axios.create({
   baseURL: resolveBaseURL(),
   timeout: 10000
+});
+
+apiClient.interceptors.request.use((config) => {
+  try {
+    const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    const token = parsed?.token;
+
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch (_error) {
+    // Ignore malformed local session data and let the request proceed unauthenticated.
+  }
+
+  return config;
 });
 
 apiClient.interceptors.response.use(

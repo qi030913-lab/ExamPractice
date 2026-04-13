@@ -23,7 +23,7 @@ function loadStoredSession() {
     }
 
     const parsed = JSON.parse(raw);
-    if (!parsed?.user) {
+    if (!parsed?.user || !parsed?.token) {
       return null;
     }
 
@@ -60,9 +60,12 @@ export const useSessionStore = defineStore("session", () => {
   const isStudent = computed(() => role.value === "STUDENT");
   const user = computed(() => session.value?.user || null);
 
-  function setSessionUser(nextUser) {
-    session.value = nextUser
-      ? { user: normalizeAuthUser(nextUser) }
+  function setSessionPayload(nextPayload) {
+    session.value = nextPayload?.user && nextPayload?.token
+      ? {
+          token: nextPayload.token,
+          user: normalizeAuthUser(nextPayload.user)
+        }
       : null;
     persistSession(session.value);
   }
@@ -73,7 +76,10 @@ export const useSessionStore = defineStore("session", () => {
 
     try {
       const result = await login(payload);
-      setSessionUser(result.data);
+      setSessionPayload({
+        token: result.data?.token,
+        user: result.data
+      });
       await loadWorkbench();
       return session.value;
     } catch (error) {
