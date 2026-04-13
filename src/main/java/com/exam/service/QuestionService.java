@@ -3,9 +3,12 @@ package com.exam.service;
 import com.exam.dao.QuestionDao;
 import com.exam.exception.BusinessException;
 import com.exam.model.Question;
+import com.exam.model.enums.Difficulty;
+import com.exam.model.enums.QuestionType;
 import org.springframework.stereotype.Service;
-import java.util.List;
+
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 题目服务类
@@ -91,7 +94,7 @@ public class QuestionService {
         if (questions == null || questions.isEmpty()) {
             throw new BusinessException("题目列表不能为空");
         }
-        
+
         List<Integer> questionIds = new ArrayList<>();
         for (Question question : questions) {
             validateQuestion(question);
@@ -99,6 +102,37 @@ public class QuestionService {
             questionIds.add(questionId);
         }
         return questionIds;
+    }
+
+    public Question findExactQuestion(String subject, QuestionType type, String content, String correctAnswer) {
+        if (subject == null || subject.trim().isEmpty()) {
+            throw new BusinessException("科目不能为空");
+        }
+        if (type == null) {
+            throw new BusinessException("题目类型不能为空");
+        }
+        if (content == null || content.trim().isEmpty()) {
+            throw new BusinessException("题目内容不能为空");
+        }
+        if (correctAnswer == null || correctAnswer.trim().isEmpty()) {
+            throw new BusinessException("正确答案不能为空");
+        }
+        return questionDao.findByExactSignature(subject.trim(), type, content.trim(), correctAnswer.trim());
+    }
+
+    public boolean isSupportedForAutoExam(Question question) {
+        return question != null
+                && question.getQuestionType() != null
+                && question.getQuestionType().isSupportedForAutoExam();
+    }
+
+    public void validateSupportedForAutoExam(Question question) {
+        if (!isSupportedForAutoExam(question)) {
+            String typeName = question == null || question.getQuestionType() == null
+                    ? "未指定"
+                    : question.getQuestionType().name();
+            throw new BusinessException("当前考试流程仅支持 SINGLE、MULTIPLE、JUDGE 题型，暂不支持题型：" + typeName);
+        }
     }
 
     /**
@@ -124,44 +158,39 @@ public class QuestionService {
             throw new BusinessException("题目分值必须大于0");
         }
 
-        // 根据题目类型验证选项
         switch (question.getQuestionType()) {
             case SINGLE:
             case MULTIPLE:
-                if (question.getOptionA() == null || question.getOptionA().trim().isEmpty() ||
-                    question.getOptionB() == null || question.getOptionB().trim().isEmpty()) {
+                if (question.getOptionA() == null || question.getOptionA().trim().isEmpty()
+                        || question.getOptionB() == null || question.getOptionB().trim().isEmpty()) {
                     throw new BusinessException("选择题至少需要A、B两个选项");
                 }
                 break;
             case JUDGE:
-                // 判断题不需要选项
+                break;
+            default:
                 break;
         }
     }
-    
+
     /**
      * 搜索题目
-     * @param content 题目内容关键词
-     * @param subject 科目
-     * @param type 题目类型
-     * @param difficulty 难度
-     * @param offset 偏移量
-     * @param limit 限制数量
-     * @return 题目列表
      */
-    public List<Question> searchQuestions(String content, String subject, com.exam.model.enums.QuestionType type, com.exam.model.enums.Difficulty difficulty, int offset, int limit) {
+    public List<Question> searchQuestions(
+            String content,
+            String subject,
+            QuestionType type,
+            Difficulty difficulty,
+            int offset,
+            int limit
+    ) {
         return questionDao.search(content, subject, type, difficulty, offset, limit);
     }
-    
+
     /**
      * 统计符合条件的题目总数
-     * @param content 题目内容关键词
-     * @param subject 科目
-     * @param type 题目类型
-     * @param difficulty 难度
-     * @return 题目总数
      */
-    public int countQuestions(String content, String subject, com.exam.model.enums.QuestionType type, com.exam.model.enums.Difficulty difficulty) {
+    public int countQuestions(String content, String subject, QuestionType type, Difficulty difficulty) {
         return questionDao.countQuestions(content, subject, type, difficulty);
     }
 }

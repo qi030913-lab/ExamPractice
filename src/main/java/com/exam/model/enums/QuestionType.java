@@ -29,4 +29,8 @@ public enum QuestionType {
     public String getDescription() {
         return description;
     }
+
+    public boolean isSupportedForAutoExam() {
+        return this == SINGLE || this == MULTIPLE || this == JUDGE;
+    }
 }

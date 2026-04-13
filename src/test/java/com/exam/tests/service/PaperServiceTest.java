@@ -2,6 +2,7 @@ package com.exam.tests.service;
 
 import com.exam.dao.PaperDao;
 import com.exam.dao.QuestionDao;
+import com.exam.exception.BusinessException;
 import com.exam.model.Paper;
 import com.exam.model.Question;
 import com.exam.model.enums.QuestionType;
@@ -77,6 +78,22 @@ class PaperServiceTest {
             assertThrows(RuntimeException.class, () -> paperService.createPaper(paper, List.of(1)));
             verify(conn).rollback();
         }
+    }
+
+    @Test
+    void createPaperShouldRejectUnsupportedQuestionType() {
+        Paper paper = buildPaper();
+        Question unsupported = buildQuestion(1, 5);
+        unsupported.setQuestionType(QuestionType.BLANK);
+        when(questionDao.findByIds(any())).thenReturn(Map.of(1, unsupported));
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> paperService.createPaper(paper, List.of(1))
+        );
+
+        assertTrue(exception.getMessage().contains("BLANK"));
+        verify(paperDao, never()).insert(any(Connection.class), any(Paper.class));
     }
 
     private static Paper buildPaper() {

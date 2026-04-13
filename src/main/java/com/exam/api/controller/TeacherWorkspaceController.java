@@ -262,20 +262,14 @@ public class TeacherWorkspaceController {
         int reusedQuestionCount = 0;
 
         for (Question question : importedQuestions) {
-            List<Question> existingQuestions = questionService.searchQuestions(
-                    question.getContent(),
-                    null,
-                    null,
-                    null,
-                    0,
-                    Integer.MAX_VALUE
-            );
+            questionService.validateSupportedForAutoExam(question);
 
-            Question matched = existingQuestions.stream()
-                    .filter(existing -> safeEquals(existing.getContent(), question.getContent()))
-                    .filter(existing -> safeEquals(existing.getCorrectAnswer(), question.getCorrectAnswer()))
-                    .findFirst()
-                    .orElse(null);
+            Question matched = questionService.findExactQuestion(
+                    question.getSubject(),
+                    question.getQuestionType(),
+                    question.getContent(),
+                    question.getCorrectAnswer()
+            );
 
             Integer questionId;
             if (matched == null) {
@@ -483,16 +477,6 @@ public class TeacherWorkspaceController {
             return optimizedCount;
         }
         return paper.getQuestions() == null ? 0 : paper.getQuestions().size();
-    }
-
-    private boolean safeEquals(String left, String right) {
-        if (left == null && right == null) {
-            return true;
-        }
-        if (left == null || right == null) {
-            return false;
-        }
-        return left.trim().equals(right.trim());
     }
 
     private String normalizeBlank(String value) {

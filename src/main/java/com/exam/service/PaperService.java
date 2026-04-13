@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PaperService {
@@ -32,7 +33,7 @@ public class PaperService {
         }
 
         List<Integer> uniqueQuestionIds = new ArrayList<>(new LinkedHashSet<>(questionIds));
-        java.util.Map<Integer, Question> questionMap = questionDao.findByIds(uniqueQuestionIds);
+        Map<Integer, Question> questionMap = questionDao.findByIds(uniqueQuestionIds);
 
         int totalScore = 0;
         for (Integer questionId : uniqueQuestionIds) {
@@ -43,6 +44,7 @@ public class PaperService {
             if (question == null) {
                 throw new BusinessException("题目 ID " + questionId + " 不存在");
             }
+            validateSupportedQuestion(question);
             totalScore += question.getScore();
         }
         paper.setTotalScore(totalScore);
@@ -128,7 +130,7 @@ public class PaperService {
             paperIds.add(paper.getPaperId());
         }
 
-        java.util.Map<Integer, List<Question>> questionsMap = questionDao.findByPaperIds(paperIds);
+        Map<Integer, List<Question>> questionsMap = questionDao.findByPaperIds(paperIds);
 
         for (Paper paper : papers) {
             paper.setQuestions(questionsMap.getOrDefault(paper.getPaperId(), new ArrayList<>()));
@@ -149,7 +151,7 @@ public class PaperService {
             paperIds.add(paper.getPaperId());
         }
 
-        java.util.Map<Integer, List<Question>> questionsMap = questionDao.findByPaperIds(paperIds);
+        Map<Integer, List<Question>> questionsMap = questionDao.findByPaperIds(paperIds);
 
         for (Paper paper : papers) {
             paper.setQuestions(questionsMap.getOrDefault(paper.getPaperId(), new ArrayList<>()));
@@ -191,6 +193,13 @@ public class PaperService {
         }
         if (paper.getPassScore() == null || paper.getPassScore() < 0) {
             throw new BusinessException("及格分数不能为负数");
+        }
+    }
+
+    private void validateSupportedQuestion(Question question) {
+        if (question.getQuestionType() == null || !question.getQuestionType().isSupportedForAutoExam()) {
+            String typeName = question.getQuestionType() == null ? "未指定" : question.getQuestionType().name();
+            throw new BusinessException("当前考试流程仅支持 SINGLE、MULTIPLE、JUDGE 题型入卷，暂不支持题型：" + typeName);
         }
     }
 

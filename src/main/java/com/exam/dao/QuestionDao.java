@@ -145,6 +145,30 @@ public class QuestionDao {
         }
         return questions;
     }
+
+    public Question findByExactSignature(String subject, QuestionType type, String content, String correctAnswer) {
+        String sql = "SELECT * FROM question " +
+                "WHERE subject = ? AND question_type = ? AND TRIM(content) = ? AND TRIM(correct_answer) = ? " +
+                "ORDER BY question_id LIMIT 1";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, subject);
+            pstmt.setString(2, type.name());
+            pstmt.setString(3, content.trim());
+            pstmt.setString(4, correctAnswer.trim());
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return extractQuestion(rs);
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("按题目签名查询失败", e);
+        }
+        return null;
+    }
     
     /**
      * 批量查询多个试卷的题目列表（性能优化版本）

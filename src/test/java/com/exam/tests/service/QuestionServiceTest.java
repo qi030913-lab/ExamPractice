@@ -62,6 +62,30 @@ class QuestionServiceTest {
         verify(questionDao, times(2)).insert(any(Question.class));
     }
 
+    @Test
+    void findExactQuestionShouldTrimInputsBeforeQueryingDao() {
+        Question expected = validQuestion();
+        when(questionDao.findByExactSignature("Java", QuestionType.SINGLE, "What is Java?", "A")).thenReturn(expected);
+
+        Question actual = questionService.findExactQuestion(" Java ", QuestionType.SINGLE, " What is Java? ", " A ");
+
+        assertSame(expected, actual);
+        verify(questionDao).findByExactSignature("Java", QuestionType.SINGLE, "What is Java?", "A");
+    }
+
+    @Test
+    void validateSupportedForAutoExamShouldRejectUnsupportedType() {
+        Question question = validQuestion();
+        question.setQuestionType(QuestionType.BLANK);
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> questionService.validateSupportedForAutoExam(question)
+        );
+
+        assertTrue(exception.getMessage().contains("BLANK"));
+    }
+
     private static Question validQuestion() {
         Question question = new Question();
         question.setQuestionType(QuestionType.SINGLE);
