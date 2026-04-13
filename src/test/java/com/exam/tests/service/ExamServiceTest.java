@@ -136,7 +136,7 @@ class ExamServiceTest {
         existingRecord.setStatus(ExamStatus.IN_PROGRESS);
 
         when(paperDao.findById(101)).thenReturn(paper);
-        when(examRecordDao.findByStudentId(11)).thenReturn(List.of(existingRecord));
+        when(examRecordDao.findInProgressByStudentIdAndPaperId(11, 101)).thenReturn(existingRecord);
 
         ExamService.ExamStartResult result = examService.startOrResumeExam(11, 101);
 
@@ -151,7 +151,7 @@ class ExamServiceTest {
         paper.setPaperId(101);
 
         when(paperDao.findById(101)).thenReturn(paper);
-        when(examRecordDao.findByStudentId(11)).thenReturn(List.of());
+        when(examRecordDao.findInProgressByStudentIdAndPaperId(11, 101)).thenReturn(null);
         when(examRecordDao.insert(any(ExamRecord.class))).thenReturn(8002);
 
         ExamService.ExamStartResult result = examService.startOrResumeExam(11, 101);

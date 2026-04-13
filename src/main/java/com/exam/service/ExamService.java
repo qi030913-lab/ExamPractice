@@ -297,13 +297,7 @@ public class ExamService {
     }
 
     private ExamRecord findExistingInProgressRecord(Integer studentId, Integer paperId) {
-        List<ExamRecord> records = examRecordDao.findByStudentId(studentId);
-        for (ExamRecord record : records) {
-            if (paperId.equals(record.getPaperId()) && record.getStatus() == ExamStatus.IN_PROGRESS) {
-                return record;
-            }
-        }
-        return null;
+        return examRecordDao.findInProgressByStudentIdAndPaperId(studentId, paperId);
     }
 
     private Object[] createStartExamLocks() {

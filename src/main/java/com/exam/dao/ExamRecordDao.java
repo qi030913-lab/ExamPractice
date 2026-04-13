@@ -133,6 +133,29 @@ public class ExamRecordDao {
     /**
      * 根据学生ID查询考试记录总数
      */
+    public ExamRecord findInProgressByStudentIdAndPaperId(Integer studentId, Integer paperId) {
+        String sql = "SELECT * FROM exam_record " +
+                "WHERE student_id = ? AND paper_id = ? AND status = ? " +
+                "ORDER BY create_time DESC LIMIT 1";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, studentId);
+            pstmt.setInt(2, paperId);
+            pstmt.setString(3, ExamStatus.IN_PROGRESS.name());
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return extractExamRecord(rs);
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("查询进行中的考试记录失败", e);
+        }
+        return null;
+    }
+
     public int countByStudentId(Integer studentId) {
         String sql = "SELECT COUNT(*) FROM exam_record WHERE student_id = ?";
         
