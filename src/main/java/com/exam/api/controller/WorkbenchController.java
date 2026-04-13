@@ -1,5 +1,6 @@
 package com.exam.api.controller;
 
+import com.exam.api.assembler.StudentWorkspaceAssembler;
 import com.exam.api.common.ApiResponse;
 import com.exam.api.dto.AuthUserResponse;
 import com.exam.exception.BusinessException;
@@ -16,9 +17,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,11 +28,18 @@ public class WorkbenchController {
     private final UserService userService;
     private final PaperService paperService;
     private final ExamService examService;
+    private final StudentWorkspaceAssembler studentWorkspaceAssembler;
 
-    public WorkbenchController(UserService userService, PaperService paperService, ExamService examService) {
+    public WorkbenchController(
+            UserService userService,
+            PaperService paperService,
+            ExamService examService,
+            StudentWorkspaceAssembler studentWorkspaceAssembler
+    ) {
         this.userService = userService;
         this.paperService = paperService;
         this.examService = examService;
+        this.studentWorkspaceAssembler = studentWorkspaceAssembler;
     }
 
     @GetMapping("/teacher/{userId}")
@@ -63,21 +68,13 @@ public class WorkbenchController {
         User student = requireRole(userId, UserRole.STUDENT);
         List<Paper> publishedPapers = paperService.getAllPublishedPapersOptimized();
         List<ExamRecord> records = examService.getStudentExamRecordsOptimized(userId);
-        long submittedCount = records.stream()
-                .filter(record -> record.getStatus() == ExamStatus.SUBMITTED || record.getStatus() == ExamStatus.TIMEOUT)
-                .count();
-        double averageScore = records.stream()
-                .map(ExamRecord::getScore)
-                .filter(score -> score != null)
-                .mapToDouble(BigDecimal::doubleValue)
-                .average()
-                .orElse(0);
+        Map<String, Object> recordSummary = studentWorkspaceAssembler.buildRecordSummary(records);
 
         Map<String, Object> stats = new LinkedHashMap<>();
         stats.put("publishedPaperCount", publishedPapers.size());
-        stats.put("recordCount", records.size());
-        stats.put("submittedCount", submittedCount);
-        stats.put("averageScore", averageScore);
+        stats.put("recordCount", recordSummary.get("recordCount"));
+        stats.put("submittedCount", recordSummary.get("submittedCount"));
+        stats.put("averageScore", recordSummary.get("averageScore"));
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("user", AuthUserResponse.from(student));
@@ -85,7 +82,7 @@ public class WorkbenchController {
         payload.put("ongoingRecord", records.stream()
                 .filter(record -> record.getStatus() == ExamStatus.IN_PROGRESS)
                 .max(Comparator.comparing(ExamRecord::getRecordId, Comparator.nullsFirst(Integer::compareTo)))
-                .map(this::toStudentRecordCard)
+                .map(studentWorkspaceAssembler::toStudentRecordCard)
                 .orElse(null));
 
         return ApiResponse.success("学生工作台加载成功", payload);
@@ -97,32 +94,5 @@ public class WorkbenchController {
             throw new BusinessException("当前用户角色不匹配");
         }
         return user;
-    }
-
-    private Map<String, Object> toStudentRecordCard(ExamRecord record) {
-        Map<String, Object> item = new LinkedHashMap<>();
-        item.put("recordId", record.getRecordId());
-        item.put("paperId", record.getPaperId());
-        item.put("paperName", record.getPaper() != null ? record.getPaper().getPaperName() : null);
-        item.put("status", record.getStatus() != null ? record.getStatus().name() : null);
-        item.put("score", record.getScore());
-        item.put("startTime", record.getStartTime());
-        item.put("submitTime", record.getSubmitTime());
-        item.put("durationSeconds", calculateDurationSeconds(record));
-        item.put("resumeAvailable", record.getStatus() == ExamStatus.IN_PROGRESS);
-        return item;
-    }
-
-    private long calculateDurationSeconds(ExamRecord record) {
-        if (record.getStartTime() == null) {
-            return 0;
-        }
-
-        LocalDateTime endTime = record.getSubmitTime() != null ? record.getSubmitTime() : record.getEndTime();
-        if (endTime == null) {
-            return 0;
-        }
-
-        return Math.max(0, Duration.between(record.getStartTime(), endTime).getSeconds());
     }
 }
