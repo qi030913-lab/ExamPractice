@@ -27,10 +27,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -254,38 +251,7 @@ public class TeacherWorkspaceController {
             throw new BusinessException(ex.getMessage(), ex);
         }
 
-        Set<Integer> uniqueQuestionIds = new LinkedHashSet<>();
-        int createdQuestionCount = 0;
-        int reusedQuestionCount = 0;
-
-        for (Question question : importedQuestions) {
-            questionService.validateSupportedForAutoExam(question);
-
-            Question matched = questionService.findExactQuestion(
-                    question.getSubject(),
-                    question.getQuestionType(),
-                    question.getContent(),
-                    question.getCorrectAnswer()
-            );
-
-            Integer questionId;
-            if (matched == null) {
-                questionId = questionService.addQuestion(question);
-                createdQuestionCount++;
-            } else {
-                questionId = matched.getQuestionId();
-                reusedQuestionCount++;
-            }
-
-            if (questionId != null && questionId > 0) {
-                uniqueQuestionIds.add(questionId);
-            }
-        }
-
-        List<Integer> questionIds = new ArrayList<>(uniqueQuestionIds);
-        if (questionIds.isEmpty()) {
-            throw new BusinessException("没有可用于建卷的有效题目");
-        }
+        importedQuestions.forEach(questionService::validateSupportedForAutoExam);
 
         Paper paper = new Paper();
         paper.setPaperName(request.getPaperName().trim());
@@ -295,17 +261,17 @@ public class TeacherWorkspaceController {
         paper.setDescription(normalizeBlank(request.getDescription()));
         paper.setCreatorId(userId);
 
-        int paperId = paperService.createPaper(paper, questionIds);
-        Paper createdPaper = paperService.getPaperById(paperId);
+        PaperService.ImportPaperResult importResult = paperService.importPaper(paper, importedQuestions);
+        Paper createdPaper = paperService.getPaperById(importResult.getPaperId());
 
         TeacherWorkspaceDtos.ImportPaperPayload payload = new TeacherWorkspaceDtos.ImportPaperPayload(
                 assembler.toTeacherPaperItem(createdPaper),
                 createdPaper.getQuestions().stream().map(assembler::toQuestionItem).collect(Collectors.toList()),
                 new TeacherWorkspaceDtos.ImportPaperSummary(
-                        importedQuestions.size(),
-                        questionIds.size(),
-                        createdQuestionCount,
-                        reusedQuestionCount
+                        importResult.getSourceQuestionCount(),
+                        importResult.getLinkedQuestionCount(),
+                        importResult.getCreatedQuestionCount(),
+                        importResult.getReusedQuestionCount()
                 )
         );
         return ApiResponse.success("导题建卷成功", payload);

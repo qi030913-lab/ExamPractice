@@ -93,6 +93,63 @@ class PaperServiceTest {
         verify(paperDao, never()).insert(any(Connection.class), any(Paper.class));
     }
 
+    @Test
+    void importPaperShouldCreateAndReuseQuestionsInSingleTransaction() throws Exception {
+        Paper paper = buildPaper();
+        Question existingQuestion = buildQuestion(10, 5);
+        existingQuestion.setContent("existing");
+
+        Question importedExisting = buildQuestion(0, 5);
+        importedExisting.setContent("existing");
+        Question importedNew = buildQuestion(0, 10);
+        importedNew.setContent("new-one");
+
+        Connection conn = mock(Connection.class);
+        when(questionDao.findByExactSignature(eq(conn), eq("Java"), eq(QuestionType.SINGLE), eq("existing"), eq("A")))
+                .thenReturn(existingQuestion);
+        when(questionDao.findByExactSignature(eq(conn), eq("Java"), eq(QuestionType.SINGLE), eq("new-one"), eq("A")))
+                .thenReturn(null);
+        when(questionDao.insert(eq(conn), same(importedNew))).thenReturn(20);
+        when(paperDao.insert(eq(conn), eq(paper))).thenReturn(300);
+
+        try (MockedStatic<DBUtil> dbUtil = mockStatic(DBUtil.class)) {
+            dbUtil.when(DBUtil::getConnection).thenReturn(conn);
+
+            PaperService.ImportPaperResult result = paperService.importPaper(paper, List.of(importedExisting, importedNew));
+
+            assertEquals(300, result.getPaperId());
+            assertEquals(2, result.getSourceQuestionCount());
+            assertEquals(2, result.getLinkedQuestionCount());
+            assertEquals(1, result.getCreatedQuestionCount());
+            assertEquals(1, result.getReusedQuestionCount());
+            assertEquals(15, paper.getTotalScore());
+            verify(paperDao).addPaperQuestionsBatch(eq(conn), eq(300), eq(List.of(10, 20)));
+            verify(conn).commit();
+            verify(conn, never()).rollback();
+        }
+    }
+
+    @Test
+    void importPaperShouldRollbackWhenPaperInsertFails() throws Exception {
+        Paper paper = buildPaper();
+        Question imported = buildQuestion(0, 5);
+        imported.setContent("imported");
+
+        Connection conn = mock(Connection.class);
+        when(questionDao.findByExactSignature(eq(conn), eq("Java"), eq(QuestionType.SINGLE), eq("imported"), eq("A")))
+                .thenReturn(null);
+        when(questionDao.insert(eq(conn), same(imported))).thenReturn(21);
+        doThrow(new RuntimeException("paper insert fail"))
+                .when(paperDao).insert(eq(conn), eq(paper));
+
+        try (MockedStatic<DBUtil> dbUtil = mockStatic(DBUtil.class)) {
+            dbUtil.when(DBUtil::getConnection).thenReturn(conn);
+
+            assertThrows(RuntimeException.class, () -> paperService.importPaper(paper, List.of(imported)));
+            verify(conn).rollback();
+        }
+    }
+
     private static Paper buildPaper() {
         Paper paper = new Paper();
         paper.setPaperName("Java Test");

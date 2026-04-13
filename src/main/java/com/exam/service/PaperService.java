@@ -5,6 +5,7 @@ import com.exam.dao.QuestionDao;
 import com.exam.exception.BusinessException;
 import com.exam.model.Paper;
 import com.exam.model.Question;
+import com.exam.model.enums.QuestionType;
 import com.exam.util.DBUtil;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class PaperService {
@@ -63,7 +65,80 @@ public class PaperService {
                 conn.setAutoCommit(true);
             }
         } catch (SQLException e) {
-            throw new BusinessException("创建试卷失败：" + e.getMessage());
+            throw new BusinessException("创建试卷失败: " + e.getMessage(), e);
+        }
+    }
+
+    public ImportPaperResult importPaper(Paper paper, List<Question> importedQuestions) {
+        validatePaper(paper);
+
+        if (importedQuestions == null || importedQuestions.isEmpty()) {
+            throw new BusinessException("导入题目列表不能为空");
+        }
+
+        try (Connection conn = DBUtil.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                List<Integer> linkedQuestionIds = new ArrayList<>();
+                Set<Integer> uniqueQuestionIds = new LinkedHashSet<>();
+                int createdQuestionCount = 0;
+                int reusedQuestionCount = 0;
+                int totalScore = 0;
+
+                for (Question importedQuestion : importedQuestions) {
+                    validateImportedQuestion(importedQuestion);
+
+                    Question matched = questionDao.findByExactSignature(
+                            conn,
+                            importedQuestion.getSubject().trim(),
+                            importedQuestion.getQuestionType(),
+                            importedQuestion.getContent().trim(),
+                            importedQuestion.getCorrectAnswer().trim()
+                    );
+
+                    Integer questionId;
+                    Question resolvedQuestion;
+                    if (matched == null) {
+                        questionId = questionDao.insert(conn, importedQuestion);
+                        importedQuestion.setQuestionId(questionId);
+                        resolvedQuestion = importedQuestion;
+                        createdQuestionCount++;
+                    } else {
+                        questionId = matched.getQuestionId();
+                        resolvedQuestion = matched;
+                        reusedQuestionCount++;
+                    }
+
+                    if (questionId != null && uniqueQuestionIds.add(questionId)) {
+                        linkedQuestionIds.add(questionId);
+                        totalScore += resolvedQuestion.getScore();
+                    }
+                }
+
+                if (linkedQuestionIds.isEmpty()) {
+                    throw new BusinessException("没有可用于建卷的有效题目");
+                }
+
+                paper.setTotalScore(totalScore);
+                int paperId = paperDao.insert(conn, paper);
+                paperDao.addPaperQuestionsBatch(conn, paperId, linkedQuestionIds);
+                conn.commit();
+
+                return new ImportPaperResult(
+                        paperId,
+                        importedQuestions.size(),
+                        linkedQuestionIds.size(),
+                        createdQuestionCount,
+                        reusedQuestionCount
+                );
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            throw new BusinessException("导题建卷失败: " + e.getMessage(), e);
         }
     }
 
@@ -178,6 +253,34 @@ public class PaperService {
         paperDao.updatePublishStatus(paperId, false);
     }
 
+    private void validateImportedQuestion(Question question) {
+        if (question == null) {
+            throw new BusinessException("导入题目不能为空");
+        }
+        if (question.getQuestionType() == null) {
+            throw new BusinessException("导入题目类型不能为空");
+        }
+        if (question.getSubject() == null || question.getSubject().trim().isEmpty()) {
+            throw new BusinessException("导入题目科目不能为空");
+        }
+        if (question.getContent() == null || question.getContent().trim().isEmpty()) {
+            throw new BusinessException("导入题目内容不能为空");
+        }
+        if (question.getCorrectAnswer() == null || question.getCorrectAnswer().trim().isEmpty()) {
+            throw new BusinessException("导入题目正确答案不能为空");
+        }
+        if (question.getScore() == null || question.getScore() <= 0) {
+            throw new BusinessException("导入题目分值必须大于0");
+        }
+        if (question.getQuestionType() == QuestionType.SINGLE || question.getQuestionType() == QuestionType.MULTIPLE) {
+            if (question.getOptionA() == null || question.getOptionA().trim().isEmpty()
+                    || question.getOptionB() == null || question.getOptionB().trim().isEmpty()) {
+                throw new BusinessException("选择题至少需要A、B两个选项");
+            }
+        }
+        validateSupportedQuestion(question);
+    }
+
     private void validatePaper(Paper paper) {
         if (paper == null) {
             throw new BusinessException("试卷信息不能为空");
@@ -198,12 +301,54 @@ public class PaperService {
 
     private void validateSupportedQuestion(Question question) {
         if (question.getQuestionType() == null || !question.getQuestionType().isSupportedForAutoExam()) {
-            String typeName = question.getQuestionType() == null ? "未指定" : question.getQuestionType().name();
-            throw new BusinessException("当前考试流程仅支持 SINGLE、MULTIPLE、JUDGE 题型入卷，暂不支持题型：" + typeName);
+            String typeName = question.getQuestionType() == null ? "UNSPECIFIED" : question.getQuestionType().name();
+            throw new BusinessException("当前考试流程仅支持 SINGLE、MULTIPLE、JUDGE 题型入卷，暂不支持题型: " + typeName);
         }
     }
 
     public PaperDao getPaperDao() {
         return paperDao;
+    }
+
+    public static class ImportPaperResult {
+        private final int paperId;
+        private final int sourceQuestionCount;
+        private final int linkedQuestionCount;
+        private final int createdQuestionCount;
+        private final int reusedQuestionCount;
+
+        public ImportPaperResult(
+                int paperId,
+                int sourceQuestionCount,
+                int linkedQuestionCount,
+                int createdQuestionCount,
+                int reusedQuestionCount
+        ) {
+            this.paperId = paperId;
+            this.sourceQuestionCount = sourceQuestionCount;
+            this.linkedQuestionCount = linkedQuestionCount;
+            this.createdQuestionCount = createdQuestionCount;
+            this.reusedQuestionCount = reusedQuestionCount;
+        }
+
+        public int getPaperId() {
+            return paperId;
+        }
+
+        public int getSourceQuestionCount() {
+            return sourceQuestionCount;
+        }
+
+        public int getLinkedQuestionCount() {
+            return linkedQuestionCount;
+        }
+
+        public int getCreatedQuestionCount() {
+            return createdQuestionCount;
+        }
+
+        public int getReusedQuestionCount() {
+            return reusedQuestionCount;
+        }
     }
 }
