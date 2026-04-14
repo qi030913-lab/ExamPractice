@@ -67,12 +67,12 @@
     </insert>
 
     <insert id="addPaperQuestion">
-        INSERT IGNORE INTO paper_question (paper_id, question_id, question_order)
+        INSERT INTO paper_question (paper_id, question_id, question_order)
         VALUES (#{paperId}, #{questionId}, #{order})
     </insert>
 
     <insert id="addPaperQuestionsBatch">
-        INSERT IGNORE INTO paper_question (paper_id, question_id, question_order)
+        INSERT INTO paper_question (paper_id, question_id, question_order)
         VALUES
         <foreach collection="questionIds" item="questionId" index="index" separator=",">
             <bind name="order" value="index + 1"/>

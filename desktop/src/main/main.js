@@ -6,58 +6,12 @@ const http = require("http");
 
 const projectRoot = path.resolve(__dirname, "../../..");
 const desktopArtifacts = {
-  serverHeadless: path.join(projectRoot, "target", "exam-desktop-api.jar"),
-  dbConfig: path.join(projectRoot, "src", "main", "resources", "db.properties")
+  serverHeadless: path.join(projectRoot, "target", "exam-desktop-api.jar")
 };
 
 let mainWindow = null;
 let serverProcess = null;
 let serverReadyPromise = null;
-
-function parsePropertiesFile(filePath) {
-  if (!fs.existsSync(filePath)) {
-    return {};
-  }
-
-  const content = fs.readFileSync(filePath, "utf-8");
-  const lines = content.split(/\r?\n/);
-  const properties = {};
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) {
-      continue;
-    }
-
-    const separatorIndex = trimmed.indexOf("=");
-    const key = trimmed.slice(0, separatorIndex).trim();
-    const value = trimmed.slice(separatorIndex + 1).trim();
-    properties[key] = value;
-  }
-
-  return properties;
-}
-
-function getDatabaseConfig() {
-  const raw = parsePropertiesFile(desktopArtifacts.dbConfig);
-  return {
-    url: raw["db.url"] || "",
-    username: raw["db.username"] || "",
-    password: raw["db.password"] || "",
-    driver: raw["db.driver"] || ""
-  };
-}
-
-function buildJavaRuntimeEnv() {
-  const config = getDatabaseConfig();
-  return {
-    ...process.env,
-    DB_URL: config.url,
-    DB_USERNAME: config.username,
-    DB_PASSWORD: config.password,
-    DB_DRIVER: config.driver
-  };
-}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -156,7 +110,9 @@ async function ensureBackendServer() {
     serverProcess = spawn("java", ["-Dfile.encoding=UTF-8", "-jar", desktopArtifacts.serverHeadless], {
       cwd: projectRoot,
       windowsHide: true,
-      env: buildJavaRuntimeEnv()
+      env: {
+        ...process.env
+      }
     });
 
     serverProcess.on("close", () => {

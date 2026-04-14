@@ -9,6 +9,7 @@ This folder contains the current desktop application built with `Electron + Vue3
 - `dist/renderer`: built renderer assets
 
 The Java backend is provided by the root project through `target/exam-desktop-api.jar`, which is started by Electron at runtime.
+Database settings now come from Spring Boot configuration and environment variables such as `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, and `DB_DRIVER`.
 
 ## Development
 
