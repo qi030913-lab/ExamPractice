@@ -7,11 +7,13 @@ import com.exam.api.controller.StudentWorkspaceController;
 import com.exam.api.dto.StudentWorkspaceDtos;
 import com.exam.api.support.ExamAccessGuard;
 import com.exam.api.support.UserRoleGuard;
+import com.exam.exception.BusinessException;
 import com.exam.model.AnswerRecord;
 import com.exam.model.ExamRecord;
 import com.exam.model.Paper;
 import com.exam.model.User;
 import com.exam.model.enums.ExamStatus;
+import com.exam.model.enums.QuestionType;
 import com.exam.model.enums.UserRole;
 import com.exam.service.ExamService;
 import com.exam.service.PaperService;
@@ -25,8 +27,12 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class StudentWorkspaceControllerTest {
@@ -92,6 +98,23 @@ class StudentWorkspaceControllerTest {
         assertEquals("Math Mock", response.getData().records().get(0).paperName());
         assertEquals(1L, response.getData().records().get(0).correctCount());
         assertEquals(1L, response.getData().records().get(0).wrongCount());
+    }
+
+    @Test
+    void startExamShouldValidateUnsupportedQuestionTypesBeforeCreatingRecord() {
+        User student = new User("Alice", "2023001", "secret", UserRole.STUDENT);
+        student.setUserId(1);
+        Paper paper = buildPaper(101, "Legacy Paper");
+
+        when(userRoleGuard.requireStudent(1)).thenReturn(student);
+        when(examAccessGuard.requirePublishedPaper(101)).thenReturn(paper);
+        doThrow(new BusinessException("当前考试流程仅支持 SINGLE, MULTIPLE, JUDGE 题型，当前试卷包含不支持自动判分的题型：SHORT_ANSWER。请联系老师重新发布仅含客观题的试卷。"))
+                .when(examService).validatePaperSupportsAutoExam(101);
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> controller.startExam(1, 101));
+
+        assertTrue(exception.getMessage().contains("SHORT_ANSWER"));
+        verify(examService, never()).startOrResumeExam(1, 101);
     }
 
     private Paper buildPaper(int paperId, String paperName) {

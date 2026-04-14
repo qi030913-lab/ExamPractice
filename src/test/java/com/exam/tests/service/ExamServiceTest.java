@@ -6,6 +6,7 @@ import com.exam.dao.QuestionDao;
 import com.exam.exception.BusinessException;
 import com.exam.model.AnswerRecord;
 import com.exam.model.ExamRecord;
+import com.exam.model.Paper;
 import com.exam.model.Question;
 import com.exam.model.enums.ExamStatus;
 import com.exam.model.enums.QuestionType;
@@ -128,12 +129,14 @@ class ExamServiceTest {
     void startOrResumeExamShouldReturnExistingInProgressRecord() {
         com.exam.model.Paper paper = new com.exam.model.Paper();
         paper.setPaperId(101);
+        Question supported = question(1, QuestionType.SINGLE, "A", 5);
 
         ExamRecord existingRecord = new ExamRecord(11, 101);
         existingRecord.setRecordId(8001);
         existingRecord.setStatus(ExamStatus.IN_PROGRESS);
 
         when(paperDao.findById(101)).thenReturn(paper);
+        when(questionDao.findByPaperId(101)).thenReturn(List.of(supported));
         when(examRecordDao.findInProgressByStudentIdAndPaperId(11, 101, ExamStatus.IN_PROGRESS)).thenReturn(existingRecord);
 
         ExamService.ExamStartResult result = examService.startOrResumeExam(11, 101);
@@ -147,8 +150,10 @@ class ExamServiceTest {
     void startOrResumeExamShouldCreateRecordWhenNoInProgressRecordExists() {
         com.exam.model.Paper paper = new com.exam.model.Paper();
         paper.setPaperId(101);
+        Question supported = question(1, QuestionType.SINGLE, "A", 5);
 
         when(paperDao.findById(101)).thenReturn(paper);
+        when(questionDao.findByPaperId(101)).thenReturn(List.of(supported));
         when(examRecordDao.findInProgressByStudentIdAndPaperId(11, 101, ExamStatus.IN_PROGRESS)).thenReturn(null);
         when(examRecordDao.insert(any(ExamRecord.class))).thenReturn(8002);
 
@@ -157,6 +162,22 @@ class ExamServiceTest {
         assertFalse(result.isResumed());
         assertEquals(8002, result.getRecord().getRecordId());
         verify(examRecordDao).insert(any(ExamRecord.class));
+    }
+
+    @Test
+    void startOrResumeExamShouldRejectUnsupportedQuestionType() {
+        Paper paper = new Paper();
+        paper.setPaperId(101);
+
+        Question unsupported = question(9, QuestionType.SHORT_ANSWER, "面向对象", 10);
+
+        when(paperDao.findById(101)).thenReturn(paper);
+        when(questionDao.findByPaperId(101)).thenReturn(List.of(unsupported));
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> examService.startOrResumeExam(11, 101));
+
+        assertTrue(exception.getMessage().contains("SHORT_ANSWER"));
+        verify(examRecordDao, never()).insert(any(ExamRecord.class));
     }
 
     @Test
@@ -186,6 +207,24 @@ class ExamServiceTest {
     }
 
     @Test
+    void submitExamShouldRejectUnsupportedQuestionType() {
+        ExamRecord record = new ExamRecord(11, 101);
+        record.setRecordId(5010);
+        record.setStatus(ExamStatus.IN_PROGRESS);
+
+        Question unsupported = question(5, QuestionType.SHORT_ANSWER, "封装", 10);
+
+        when(examRecordDao.findByIdForUpdate(5010)).thenReturn(record);
+        when(questionDao.findByPaperId(101)).thenReturn(List.of(unsupported));
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> examService.submitExam(5010, Map.of(5, "封装")));
+
+        assertTrue(exception.getMessage().contains("SHORT_ANSWER"));
+        verify(examRecordDao, never()).insertAnswerRecordsBatch(any());
+        verify(examRecordDao, never()).update(any(ExamRecord.class));
+    }
+
+    @Test
     void timeoutSubmitShouldReturnWhenRecordNotInProgress() {
         ExamRecord record = new ExamRecord(11, 101);
         record.setRecordId(7002);
@@ -197,6 +236,17 @@ class ExamServiceTest {
 
         verify(examRecordDao, never()).insertAnswerRecordsBatch(any());
         verify(examRecordDao, never()).update(any(ExamRecord.class));
+    }
+
+    @Test
+    void validatePaperSupportsAutoExamShouldRejectUnsupportedQuestionType() {
+        Question unsupported = question(6, QuestionType.SHORT_ANSWER, "事务", 10);
+
+        when(questionDao.findByPaperId(101)).thenReturn(List.of(unsupported));
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> examService.validatePaperSupportsAutoExam(101));
+
+        assertTrue(exception.getMessage().contains("SHORT_ANSWER"));
     }
 
     private static Question question(int id, QuestionType type, String answer, int score) {

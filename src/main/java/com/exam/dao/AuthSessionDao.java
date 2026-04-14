@@ -8,8 +8,6 @@ import java.time.LocalDateTime;
 
 @Mapper
 public interface AuthSessionDao {
-    void createTableIfMissing();
-
     int insert(AuthSession session);
 
     AuthSession findByTokenHash(@Param("tokenHash") String tokenHash);

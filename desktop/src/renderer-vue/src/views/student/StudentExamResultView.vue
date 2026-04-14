@@ -97,6 +97,8 @@ import { getStudentRecordDetail } from "@/services/student-api";
 
 const route = useRoute();
 const sessionStore = useSessionStore();
+const storageRef = typeof window !== "undefined" ? window.sessionStorage : null;
+const legacyStorageRef = typeof window !== "undefined" ? window.localStorage : null;
 
 const loading = ref(false);
 const result = ref(null);
@@ -131,11 +133,24 @@ async function loadResult() {
 }
 
 function restoreStoredResult(recordId) {
+  if (!storageRef) {
+    return null;
+  }
+
   try {
-    const raw = window.localStorage.getItem(`exampractice.desktop.submit-result.${recordId}`);
-    return raw ? JSON.parse(raw) : null;
+    const storageKey = `exampractice.desktop.submit-result.${recordId}`;
+    const raw = storageRef.getItem(storageKey) || legacyStorageRef?.getItem(storageKey);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    legacyStorageRef?.removeItem(storageKey);
+    storageRef.setItem(storageKey, JSON.stringify(parsed));
+    return parsed;
   } catch (_error) {
-    window.localStorage.removeItem(`exampractice.desktop.submit-result.${recordId}`);
+    storageRef.removeItem(`exampractice.desktop.submit-result.${recordId}`);
+    legacyStorageRef?.removeItem(`exampractice.desktop.submit-result.${recordId}`);
     return null;
   }
 }

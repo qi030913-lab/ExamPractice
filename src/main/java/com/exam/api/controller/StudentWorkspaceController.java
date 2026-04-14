@@ -94,6 +94,7 @@ public class StudentWorkspaceController {
     ) {
         User student = userRoleGuard.requireStudent(userId);
         Paper paper = examAccessGuard.requirePublishedPaper(paperId);
+        examService.validatePaperSupportsAutoExam(paperId);
         ExamService.ExamStartResult startResult = examService.startOrResumeExam(userId, paperId);
         ExamRecord record = startResult.getRecord();
         boolean resumed = startResult.isResumed();
@@ -155,6 +156,7 @@ public class StudentWorkspaceController {
     ) {
         User student = userRoleGuard.requireStudent(userId);
         ExamRecord record = examAccessGuard.requireOwnedRecord(userId, recordId);
+        examService.validatePaperSupportsAutoExam(record.getPaperId());
         Paper paper = examAccessGuard.resolvePaper(record);
 
         StudentWorkspaceDtos.StudentExamSessionPayload payload = new StudentWorkspaceDtos.StudentExamSessionPayload(
@@ -176,6 +178,7 @@ public class StudentWorkspaceController {
     ) {
         User student = userRoleGuard.requireStudent(userId);
         ExamRecord record = examAccessGuard.requireOwnedRecord(userId, recordId);
+        examService.validatePaperSupportsAutoExam(record.getPaperId());
         if (record.getStatus() != ExamStatus.IN_PROGRESS) {
             throw new BusinessException("当前考试不处于可提交状态");
         }

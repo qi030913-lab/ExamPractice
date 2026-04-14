@@ -12,16 +12,6 @@
         <result property="expiresAt" column="expires_at"/>
     </resultMap>
 
-    <update id="createTableIfMissing">
-        CREATE TABLE IF NOT EXISTS auth_session (
-            token_hash VARCHAR(64) PRIMARY KEY,
-            user_id INT NOT NULL,
-            role VARCHAR(32) NOT NULL,
-            issued_at TIMESTAMP NOT NULL,
-            expires_at TIMESTAMP NOT NULL
-        )
-    </update>
-
     <insert id="insert" parameterType="com.exam.model.AuthSession">
         INSERT INTO auth_session (token_hash, user_id, role, issued_at, expires_at)
         VALUES (#{tokenHash}, #{userId}, #{role}, #{issuedAt}, #{expiresAt})

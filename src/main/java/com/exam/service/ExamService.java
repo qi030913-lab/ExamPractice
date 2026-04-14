@@ -9,6 +9,7 @@ import com.exam.model.ExamRecord;
 import com.exam.model.Paper;
 import com.exam.model.Question;
 import com.exam.model.enums.ExamStatus;
+import com.exam.model.enums.QuestionType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,9 +19,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class ExamService {
@@ -51,6 +54,7 @@ public class ExamService {
         if (paper == null) {
             throw new BusinessException("Paper does not exist");
         }
+        requireSupportedQuestions(paperId);
 
         synchronized (resolveStartExamLock(studentId, paperId)) {
             ExamRecord existingRecord = findExistingInProgressRecord(studentId, paperId);
@@ -81,7 +85,7 @@ public class ExamService {
         ExamRecord record = examRecordDao.findByIdForUpdate(recordId);
         requireRecordForSubmit(record);
 
-        List<Question> questions = requireQuestions(record.getPaperId());
+        List<Question> questions = requireSupportedQuestions(record.getPaperId());
         SettlementResult settlement = buildSettlementResult(recordId, questions, answerMap);
         examRecordDao.insertAnswerRecordsBatch(settlement.getAnswerRecords());
 
@@ -251,7 +255,7 @@ public class ExamService {
             return;
         }
 
-        List<Question> questions = requireQuestions(record.getPaperId());
+        List<Question> questions = requireSupportedQuestions(record.getPaperId());
         SettlementResult settlement = buildSettlementResult(recordId, questions, Collections.emptyMap());
         examRecordDao.insertAnswerRecordsBatch(settlement.getAnswerRecords());
 
@@ -287,6 +291,36 @@ public class ExamService {
             throw new BusinessException("Paper has no questions");
         }
         return questions;
+    }
+
+    public void validatePaperSupportsAutoExam(Integer paperId) {
+        requireSupportedQuestions(paperId);
+    }
+
+    private List<Question> requireSupportedQuestions(Integer paperId) {
+        List<Question> questions = requireQuestions(paperId);
+        validateSupportedForAutoExam(questions);
+        return questions;
+    }
+
+    private void validateSupportedForAutoExam(List<Question> questions) {
+        Set<QuestionType> unsupportedTypes = questions.stream()
+                .map(Question::getQuestionType)
+                .filter(type -> type == null || !type.isSupportedForAutoExam())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        if (unsupportedTypes.isEmpty()) {
+            return;
+        }
+
+        String unsupportedTypeNames = unsupportedTypes.stream()
+                .map(type -> type == null ? "UNSPECIFIED" : type.name())
+                .collect(Collectors.joining(", "));
+        throw new BusinessException(
+                "当前考试流程仅支持 SINGLE, MULTIPLE, JUDGE 题型，当前试卷包含不支持自动判分的题型："
+                        + unsupportedTypeNames
+                        + "。请联系老师重新发布仅含客观题的试卷。"
+        );
     }
 
     private SettlementResult buildSettlementResult(Integer recordId, List<Question> questions, Map<Integer, String> answerMap) {

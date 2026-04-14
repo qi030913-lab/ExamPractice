@@ -16,6 +16,7 @@ DROP TABLE IF EXISTS exam_record;
 DROP TABLE IF EXISTS paper_question;
 DROP TABLE IF EXISTS paper;
 DROP TABLE IF EXISTS question;
+DROP TABLE IF EXISTS auth_session;
 DROP TABLE IF EXISTS user;
 
 -- ========================================
@@ -155,5 +156,17 @@ TRUNCATE TABLE exam_record;
 TRUNCATE TABLE paper_question;
 TRUNCATE TABLE paper;
 TRUNCATE TABLE question;
+DROP TABLE IF EXISTS auth_session;
+CREATE TABLE auth_session (
+    token_hash VARCHAR(64) PRIMARY KEY COMMENT '浼氳瘽浠ゅ彿鍝堝笇',
+    user_id INT NOT NULL COMMENT '鐢ㄦ埛ID',
+    role VARCHAR(32) NOT NULL COMMENT '瑙掕壊',
+    issued_at TIMESTAMP NOT NULL COMMENT '绛惧彂鏃堕棿',
+    expires_at TIMESTAMP NOT NULL COMMENT '杩囨湡鏃堕棿',
+    INDEX idx_auth_session_expires_at (expires_at),
+    INDEX idx_auth_session_issued_at (issued_at),
+    INDEX idx_auth_session_user_role (user_id, role),
+    FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='璁よ瘉浼氳瘽琛?;
 TRUNCATE TABLE user;
 SET FOREIGN_KEY_CHECKS = 1;  -- 启用外键检查

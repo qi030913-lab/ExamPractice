@@ -4,10 +4,12 @@ server:
 spring:
   application:
     name: exam-api
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/exam_system?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:030913}
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
     hikari:
       maximum-pool-size: 20
@@ -27,6 +29,10 @@ spring:
         cacheServerConfiguration: true
         elideSetAutoCommits: true
         maintainTimeStats: false
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:sql/schema.sql
 
 exam:
   api:
@@ -35,8 +41,6 @@ exam:
       max-active-sessions: 2048
       cleanup-interval-ms: 300000
       cookie-name: EXAM_SESSION
-      cookie-secure: true
-      cookie-same-site: None
     cors:
       allowed-origin-patterns: "null,http://127.0.0.1:5173,http://localhost:5173"
 

@@ -3,7 +3,6 @@ package com.exam.api.security;
 import com.exam.dao.AuthSessionDao;
 import com.exam.model.AuthSession;
 import com.exam.model.User;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -41,11 +40,6 @@ public class AuthTokenService {
         this.tokenTtl = tokenTtl == null || tokenTtl.isZero() || tokenTtl.isNegative() ? Duration.ofHours(12) : tokenTtl;
         this.maxActiveSessions = Math.max(1, maxActiveSessions);
         this.clock = clock == null ? Clock.systemDefaultZone() : clock;
-    }
-
-    @PostConstruct
-    public void initializeSessionStore() {
-        authSessionDao.createTableIfMissing();
     }
 
     public String issueToken(User user) {

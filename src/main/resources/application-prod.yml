@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+exam:
+  api:
+    auth:
+      cookie-secure: ${AUTH_COOKIE_SECURE:true}
+      cookie-same-site: ${AUTH_COOKIE_SAME_SITE:None}

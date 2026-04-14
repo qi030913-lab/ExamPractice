@@ -180,6 +180,9 @@ import StatusBanner from "@/components/StatusBanner.vue";
 import { useSessionStore } from "@/stores/session";
 import { startStudentExam, submitStudentExam } from "@/services/student-api";
 
+const storageRef = typeof window !== "undefined" ? window.sessionStorage : null;
+const legacyStorageRef = typeof window !== "undefined" ? window.localStorage : null;
+
 const route = useRoute();
 const router = useRouter();
 const sessionStore = useSessionStore();
@@ -278,23 +281,23 @@ function stopCountdown() {
 }
 
 function persistDraft() {
-  if (!draftStorageKey.value) {
+  if (!draftStorageKey.value || !storageRef) {
     return;
   }
 
-  window.localStorage.setItem(draftStorageKey.value, JSON.stringify({
+  storageRef.setItem(draftStorageKey.value, JSON.stringify({
     answers: answers.value,
     currentQuestionIndex: currentQuestionIndex.value
   }));
 }
 
 function restoreDraft() {
-  if (!draftStorageKey.value) {
+  if (!draftStorageKey.value || !storageRef) {
     return false;
   }
 
   try {
-    const raw = window.localStorage.getItem(draftStorageKey.value);
+    const raw = storageRef.getItem(draftStorageKey.value) || legacyStorageRef?.getItem(draftStorageKey.value);
     if (!raw) {
       return false;
     }
@@ -304,18 +307,25 @@ function restoreDraft() {
     currentQuestionIndex.value = Number.isInteger(parsed?.currentQuestionIndex)
       ? Math.min(Math.max(parsed.currentQuestionIndex, 0), Math.max(questions.value.length - 1, 0))
       : 0;
+    legacyStorageRef?.removeItem(draftStorageKey.value);
+    storageRef.setItem(draftStorageKey.value, JSON.stringify({
+      answers: answers.value,
+      currentQuestionIndex: currentQuestionIndex.value
+    }));
     return true;
   } catch (_error) {
-    window.localStorage.removeItem(draftStorageKey.value);
+    storageRef.removeItem(draftStorageKey.value);
+    legacyStorageRef?.removeItem(draftStorageKey.value);
     return false;
   }
 }
 
 function clearDraft() {
-  if (!draftStorageKey.value) {
+  if (!draftStorageKey.value || !storageRef) {
     return;
   }
-  window.localStorage.removeItem(draftStorageKey.value);
+  storageRef.removeItem(draftStorageKey.value);
+  legacyStorageRef?.removeItem(draftStorageKey.value);
 }
 
 function bindBeforeUnload() {
@@ -438,14 +448,15 @@ async function handleSubmit(isAutoSubmit = false) {
 }
 
 function persistSubmitResult(recordId, result) {
-  if (!recordId || !result) {
+  if (!recordId || !result || !storageRef) {
     return;
   }
 
-  window.localStorage.setItem(
+  storageRef.setItem(
     `exampractice.desktop.submit-result.${recordId}`,
     JSON.stringify(result)
   );
+  legacyStorageRef?.removeItem(`exampractice.desktop.submit-result.${recordId}`);
 }
 
 function formatCountdown(value) {

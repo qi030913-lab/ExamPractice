@@ -3,6 +3,8 @@ import { defineStore } from "pinia";
 import { getCurrentSession, getStudentWorkbench, getTeacherWorkbench, login, logout, register } from "@/services/auth-api";
 
 const SESSION_STORAGE_KEY = "exampractice.desktop.session";
+const sessionStorageRef = typeof window !== "undefined" ? window.sessionStorage : null;
+const localStorageRef = typeof window !== "undefined" ? window.localStorage : null;
 
 function normalizeAuthUser(user) {
   if (!user) {
@@ -17,7 +19,7 @@ function normalizeAuthUser(user) {
 
 function loadStoredSession() {
   try {
-    const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
+    const raw = sessionStorageRef?.getItem(SESSION_STORAGE_KEY) || localStorageRef?.getItem(SESSION_STORAGE_KEY);
     if (!raw) {
       return null;
     }
@@ -32,18 +34,22 @@ function loadStoredSession() {
     };
   } catch (_error) {
     return null;
+  } finally {
+    localStorageRef?.removeItem(SESSION_STORAGE_KEY);
   }
 }
 
 function persistSession(session) {
   if (!session?.user) {
-    window.localStorage.removeItem(SESSION_STORAGE_KEY);
+    sessionStorageRef?.removeItem(SESSION_STORAGE_KEY);
+    localStorageRef?.removeItem(SESSION_STORAGE_KEY);
     return;
   }
 
-  window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+  sessionStorageRef?.setItem(SESSION_STORAGE_KEY, JSON.stringify({
     user: normalizeAuthUser(session.user)
   }));
+  localStorageRef?.removeItem(SESSION_STORAGE_KEY);
 }
 
 export const useSessionStore = defineStore("session", () => {

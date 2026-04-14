@@ -178,11 +178,6 @@ class AuthTokenServiceTest {
         }
 
         @Override
-        public void createTableIfMissing() {
-            // no-op
-        }
-
-        @Override
         public int insert(AuthSession session) {
             sessions.put(session.getTokenHash(), cloneSession(session));
             return 1;
