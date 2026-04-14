@@ -142,7 +142,7 @@ public class StudentAchievementService {
                 .map(this::toSubjectPerformanceItem)
                 .collect(Collectors.toList());
 
-        return new StudentAchievementSnapshot(summary, scoreTrend, questionTypeAccuracy, subjectPerformance, LocalDateTime.now());
+        return new StudentAchievementSnapshot(summary, scoreTrend, questionTypeAccuracy, subjectPerformance, currentTime());
     }
 
     private boolean isCompletedRecord(ExamRecord record) {
@@ -231,6 +231,10 @@ public class StudentAchievementService {
                 roundDouble(subjectAccumulator.totalQuestionCount == 0 ? 0 : subjectAccumulator.correctCount * 100.0 / subjectAccumulator.totalQuestionCount),
                 subjectAccumulator.latestSubmitTime
         );
+    }
+
+    protected LocalDateTime currentTime() {
+        return LocalDateTime.now();
     }
 
     public static class StudentAchievementSnapshot {

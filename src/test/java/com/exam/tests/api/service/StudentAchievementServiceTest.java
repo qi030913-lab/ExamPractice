@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -25,7 +24,13 @@ class StudentAchievementServiceTest {
     @Test
     void buildSnapshotShouldAggregateCompletedRecords() {
         ExamService examService = mock(ExamService.class);
-        StudentAchievementService service = new StudentAchievementService(examService);
+        LocalDateTime fixedNow = LocalDateTime.of(2026, 4, 14, 8, 30);
+        StudentAchievementService service = new StudentAchievementService(examService) {
+            @Override
+            protected LocalDateTime currentTime() {
+                return fixedNow;
+            }
+        };
 
         Paper javaPaper = new Paper();
         javaPaper.setPaperId(101);
@@ -39,16 +44,16 @@ class StudentAchievementServiceTest {
         submitted.setPaper(javaPaper);
         submitted.setStatus(ExamStatus.SUBMITTED);
         submitted.setScore(new BigDecimal("80"));
-        submitted.setStartTime(LocalDateTime.now().minusHours(2));
-        submitted.setSubmitTime(LocalDateTime.now().minusHours(1));
+        submitted.setStartTime(fixedNow.minusHours(2));
+        submitted.setSubmitTime(fixedNow.minusHours(1));
 
         ExamRecord timeout = new ExamRecord(7, 101);
         timeout.setRecordId(5002);
         timeout.setPaper(javaPaper);
         timeout.setStatus(ExamStatus.TIMEOUT);
         timeout.setScore(BigDecimal.ZERO);
-        timeout.setStartTime(LocalDateTime.now().minusMinutes(45));
-        timeout.setEndTime(LocalDateTime.now().minusMinutes(15));
+        timeout.setStartTime(fixedNow.minusMinutes(45));
+        timeout.setEndTime(fixedNow.minusMinutes(15));
 
         ExamRecord inProgress = new ExamRecord(7, 102);
         inProgress.setRecordId(5003);
@@ -88,7 +93,7 @@ class StudentAchievementServiceTest {
         assertEquals(2, snapshot.getScoreTrend().size());
         assertEquals(3, snapshot.getQuestionTypeAccuracy().size());
         assertEquals(1, snapshot.getSubjectPerformance().size());
-        assertNotNull(snapshot.getLatestUpdatedAt());
+        assertEquals(fixedNow, snapshot.getLatestUpdatedAt());
     }
 
     private static Question question(int id, QuestionType questionType) {
