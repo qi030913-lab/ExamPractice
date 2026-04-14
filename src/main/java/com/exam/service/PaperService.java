@@ -6,11 +6,9 @@ import com.exam.exception.BusinessException;
 import com.exam.model.Paper;
 import com.exam.model.Question;
 import com.exam.model.enums.QuestionType;
-import com.exam.util.DBUtil;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -27,11 +25,12 @@ public class PaperService {
         this.questionDao = questionDao;
     }
 
+    @Transactional
     public int createPaper(Paper paper, List<Integer> questionIds) {
         validatePaper(paper);
 
         if (questionIds == null || questionIds.isEmpty()) {
-            throw new BusinessException("试卷必须至少包含一道题");
+            throw new BusinessException("Paper must include at least one question");
         }
 
         List<Integer> uniqueQuestionIds = new ArrayList<>(new LinkedHashSet<>(questionIds));
@@ -40,11 +39,11 @@ public class PaperService {
         int totalScore = 0;
         for (Integer questionId : uniqueQuestionIds) {
             if (questionId == null) {
-                throw new BusinessException("题目ID不能为空");
+                throw new BusinessException("Question ID cannot be null");
             }
             Question question = questionMap.get(questionId);
             if (question == null) {
-                throw new BusinessException("题目 ID " + questionId + " 不存在");
+                throw new BusinessException("Question ID " + questionId + " does not exist");
             }
             validateSupportedQuestion(question);
             totalScore += question.getScore();
@@ -52,102 +51,76 @@ public class PaperService {
         paper.setTotalScore(totalScore);
         validatePassScoreWithinTotalScore(paper);
 
-        try (Connection conn = DBUtil.getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                int paperId = paperDao.insert(conn, paper);
-                paperDao.addPaperQuestionsBatch(conn, paperId, uniqueQuestionIds);
-                conn.commit();
-                return paperId;
-            } catch (Exception e) {
-                conn.rollback();
-                throw e;
-            } finally {
-                conn.setAutoCommit(true);
-            }
-        } catch (SQLException e) {
-            throw new BusinessException("创建试卷失败: " + e.getMessage(), e);
-        }
+        int paperId = paperDao.insert(paper);
+        paperDao.addPaperQuestionsBatch(paperId, uniqueQuestionIds);
+        return paperId;
     }
 
+    @Transactional
     public ImportPaperResult importPaper(Paper paper, List<Question> importedQuestions) {
         validatePaper(paper);
 
         if (importedQuestions == null || importedQuestions.isEmpty()) {
-            throw new BusinessException("导入题目列表不能为空");
+            throw new BusinessException("Imported question list cannot be empty");
         }
 
-        try (Connection conn = DBUtil.getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                List<Integer> linkedQuestionIds = new ArrayList<>();
-                Set<Integer> uniqueQuestionIds = new LinkedHashSet<>();
-                int createdQuestionCount = 0;
-                int reusedQuestionCount = 0;
-                int totalScore = 0;
+        List<Integer> linkedQuestionIds = new ArrayList<>();
+        Set<Integer> uniqueQuestionIds = new LinkedHashSet<>();
+        int createdQuestionCount = 0;
+        int reusedQuestionCount = 0;
+        int totalScore = 0;
 
-                for (Question importedQuestion : importedQuestions) {
-                    validateImportedQuestion(importedQuestion);
+        for (Question importedQuestion : importedQuestions) {
+            validateImportedQuestion(importedQuestion);
 
-                    Question matched = questionDao.findByExactSignature(
-                            conn,
-                            importedQuestion.getSubject().trim(),
-                            importedQuestion.getQuestionType(),
-                            importedQuestion.getContent().trim(),
-                            importedQuestion.getCorrectAnswer().trim()
-                    );
+            Question matched = questionDao.findByExactSignature(
+                    importedQuestion.getSubject().trim(),
+                    importedQuestion.getQuestionType(),
+                    importedQuestion.getContent().trim(),
+                    importedQuestion.getCorrectAnswer().trim()
+            );
 
-                    Integer questionId;
-                    Question resolvedQuestion;
-                    if (matched == null) {
-                        questionId = questionDao.insert(conn, importedQuestion);
-                        importedQuestion.setQuestionId(questionId);
-                        resolvedQuestion = importedQuestion;
-                        createdQuestionCount++;
-                    } else {
-                        questionId = matched.getQuestionId();
-                        resolvedQuestion = matched;
-                        reusedQuestionCount++;
-                    }
-
-                    if (questionId != null && uniqueQuestionIds.add(questionId)) {
-                        linkedQuestionIds.add(questionId);
-                        totalScore += resolvedQuestion.getScore();
-                    }
-                }
-
-                if (linkedQuestionIds.isEmpty()) {
-                    throw new BusinessException("没有可用于建卷的有效题目");
-                }
-
-                paper.setTotalScore(totalScore);
-                validatePassScoreWithinTotalScore(paper);
-
-                int paperId = paperDao.insert(conn, paper);
-                paperDao.addPaperQuestionsBatch(conn, paperId, linkedQuestionIds);
-                conn.commit();
-
-                return new ImportPaperResult(
-                        paperId,
-                        importedQuestions.size(),
-                        linkedQuestionIds.size(),
-                        createdQuestionCount,
-                        reusedQuestionCount
-                );
-            } catch (Exception e) {
-                conn.rollback();
-                throw e;
-            } finally {
-                conn.setAutoCommit(true);
+            Integer questionId;
+            Question resolvedQuestion;
+            if (matched == null) {
+                questionId = questionDao.insert(importedQuestion);
+                importedQuestion.setQuestionId(questionId);
+                resolvedQuestion = importedQuestion;
+                createdQuestionCount++;
+            } else {
+                questionId = matched.getQuestionId();
+                resolvedQuestion = matched;
+                reusedQuestionCount++;
             }
-        } catch (SQLException e) {
-            throw new BusinessException("导题建卷失败: " + e.getMessage(), e);
+
+            if (questionId != null && uniqueQuestionIds.add(questionId)) {
+                linkedQuestionIds.add(questionId);
+                totalScore += resolvedQuestion.getScore();
+            }
         }
+
+        if (linkedQuestionIds.isEmpty()) {
+            throw new BusinessException("No valid questions available for paper creation");
+        }
+
+        paper.setTotalScore(totalScore);
+        validatePassScoreWithinTotalScore(paper);
+
+        int paperId = paperDao.insert(paper);
+        paperDao.addPaperQuestionsBatch(paperId, linkedQuestionIds);
+
+        return new ImportPaperResult(
+                paperId,
+                importedQuestions.size(),
+                linkedQuestionIds.size(),
+                createdQuestionCount,
+                reusedQuestionCount
+        );
     }
 
     public int updatePaper(Paper paper) {
         if (paper.getPaperId() == null) {
-            throw new BusinessException("试卷ID不能为空");
+            throw new BusinessException("Paper ID cannot be null");
         }
         validatePaper(paper);
         validatePassScoreWithinTotalScore(paper);
@@ -156,19 +129,19 @@ public class PaperService {
 
     public int deletePaper(Integer paperId) {
         if (paperId == null) {
-            throw new BusinessException("试卷ID不能为空");
+            throw new BusinessException("Paper ID cannot be null");
         }
         return paperDao.delete(paperId);
     }
 
     public Paper getPaperById(Integer paperId) {
         if (paperId == null) {
-            throw new BusinessException("试卷ID不能为空");
+            throw new BusinessException("Paper ID cannot be null");
         }
 
         Paper paper = paperDao.findById(paperId);
         if (paper == null) {
-            throw new BusinessException("试卷不存在");
+            throw new BusinessException("Paper does not exist");
         }
 
         List<Question> questions = questionDao.findByPaperId(paperId);
@@ -179,12 +152,12 @@ public class PaperService {
 
     public Paper getPaperByName(String paperName) {
         if (paperName == null || paperName.trim().isEmpty()) {
-            throw new BusinessException("试卷名称不能为空");
+            throw new BusinessException("Paper name cannot be blank");
         }
 
         Paper paper = paperDao.findByName(paperName);
         if (paper == null) {
-            throw new BusinessException("试卷不存在");
+            throw new BusinessException("Paper does not exist");
         }
 
         List<Question> questions = questionDao.findByPaperId(paper.getPaperId());
@@ -245,41 +218,41 @@ public class PaperService {
 
     public void publishPaper(Integer paperId) {
         if (paperId == null) {
-            throw new BusinessException("试卷ID不能为空");
+            throw new BusinessException("Paper ID cannot be null");
         }
         paperDao.updatePublishStatus(paperId, true);
     }
 
     public void unpublishPaper(Integer paperId) {
         if (paperId == null) {
-            throw new BusinessException("试卷ID不能为空");
+            throw new BusinessException("Paper ID cannot be null");
         }
         paperDao.updatePublishStatus(paperId, false);
     }
 
     private void validateImportedQuestion(Question question) {
         if (question == null) {
-            throw new BusinessException("导入题目不能为空");
+            throw new BusinessException("Imported question cannot be null");
         }
         if (question.getQuestionType() == null) {
-            throw new BusinessException("导入题目类型不能为空");
+            throw new BusinessException("Imported question type cannot be null");
         }
         if (question.getSubject() == null || question.getSubject().trim().isEmpty()) {
-            throw new BusinessException("导入题目科目不能为空");
+            throw new BusinessException("Imported question subject cannot be blank");
         }
         if (question.getContent() == null || question.getContent().trim().isEmpty()) {
-            throw new BusinessException("导入题目内容不能为空");
+            throw new BusinessException("Imported question content cannot be blank");
         }
         if (question.getCorrectAnswer() == null || question.getCorrectAnswer().trim().isEmpty()) {
-            throw new BusinessException("导入题目正确答案不能为空");
+            throw new BusinessException("Imported question answer cannot be blank");
         }
         if (question.getScore() == null || question.getScore() <= 0) {
-            throw new BusinessException("导入题目分值必须大于 0");
+            throw new BusinessException("Imported question score must be greater than 0");
         }
         if (question.getQuestionType() == QuestionType.SINGLE || question.getQuestionType() == QuestionType.MULTIPLE) {
             if (question.getOptionA() == null || question.getOptionA().trim().isEmpty()
                     || question.getOptionB() == null || question.getOptionB().trim().isEmpty()) {
-                throw new BusinessException("选择题至少需要 A、B 两个选项");
+                throw new BusinessException("Choice questions need at least option A and B");
             }
         }
         validateSupportedQuestion(question);
@@ -287,19 +260,19 @@ public class PaperService {
 
     private void validatePaper(Paper paper) {
         if (paper == null) {
-            throw new BusinessException("试卷信息不能为空");
+            throw new BusinessException("Paper payload cannot be null");
         }
         if (paper.getPaperName() == null || paper.getPaperName().trim().isEmpty()) {
-            throw new BusinessException("试卷名称不能为空");
+            throw new BusinessException("Paper name cannot be blank");
         }
         if (paper.getSubject() == null || paper.getSubject().trim().isEmpty()) {
-            throw new BusinessException("科目不能为空");
+            throw new BusinessException("Subject cannot be blank");
         }
         if (paper.getDuration() == null || paper.getDuration() <= 0) {
-            throw new BusinessException("考试时长必须大于 0");
+            throw new BusinessException("Duration must be greater than 0");
         }
         if (paper.getPassScore() == null || paper.getPassScore() < 0) {
-            throw new BusinessException("及格分数不能为负数");
+            throw new BusinessException("Pass score cannot be negative");
         }
     }
 
@@ -307,16 +280,14 @@ public class PaperService {
         Integer totalScore = paper.getTotalScore();
         Integer passScore = paper.getPassScore();
         if (totalScore != null && passScore != null && passScore > totalScore) {
-            throw new BusinessException("及格分数不能超过试卷总分");
+            throw new BusinessException("Pass score cannot exceed total score");
         }
     }
 
     private void validateSupportedQuestion(Question question) {
         if (question.getQuestionType() == null || !question.getQuestionType().isSupportedForAutoExam()) {
             String typeName = question.getQuestionType() == null ? "UNSPECIFIED" : question.getQuestionType().name();
-            throw new BusinessException(
-                    "当前考试流程仅支持 SINGLE、MULTIPLE、JUDGE 题型入卷，暂不支持题型: " + typeName
-            );
+            throw new BusinessException("Only SINGLE, MULTIPLE and JUDGE are supported for auto exam: " + typeName);
         }
     }
 

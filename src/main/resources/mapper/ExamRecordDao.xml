@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.dao.ExamRecordDao">
+
+    <resultMap id="PaperAssociationMap" type="com.exam.model.Paper">
+        <id property="paperId" column="p_paper_id"/>
+        <result property="paperName" column="paper_name"/>
+        <result property="subject" column="subject"/>
+        <result property="totalScore" column="total_score"/>
+        <result property="duration" column="duration"/>
+        <result property="passScore" column="pass_score"/>
+        <result property="description" column="description"/>
+        <result property="isPublished" column="is_published"/>
+        <result property="creatorId" column="p_creator_id"/>
+        <result property="createTime" column="p_create_time"/>
+        <result property="updateTime" column="p_update_time"/>
+    </resultMap>
+
+    <resultMap id="ExamRecordResultMap" type="com.exam.model.ExamRecord">
+        <id property="recordId" column="record_id"/>
+        <result property="studentId" column="student_id"/>
+        <result property="paperId" column="paper_id"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="submitTime" column="submit_time"/>
+        <result property="score" column="score"/>
+        <result property="status" column="status" javaType="com.exam.model.enums.ExamStatus"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <resultMap id="ExamRecordWithPaperResultMap" type="com.exam.model.ExamRecord" extends="ExamRecordResultMap">
+        <association property="paper" resultMap="PaperAssociationMap"/>
+    </resultMap>
+
+    <resultMap id="StudentExamRecordRelationResultMap" type="com.exam.dao.ExamRecordDao$StudentExamRecordRelation">
+        <result property="studentId" column="student_id"/>
+        <association property="record" resultMap="ExamRecordWithPaperResultMap"/>
+    </resultMap>
+
+    <resultMap id="AnswerRecordResultMap" type="com.exam.model.AnswerRecord">
+        <id property="answerId" column="answer_id"/>
+        <result property="recordId" column="record_id"/>
+        <result property="questionId" column="question_id"/>
+        <result property="studentAnswer" column="student_answer"/>
+        <result property="isCorrect" column="is_correct"/>
+        <result property="score" column="score"/>
+    </resultMap>
+
+    <resultMap id="RecordAnswerRelationResultMap" type="com.exam.dao.ExamRecordDao$RecordAnswerRelation">
+        <result property="recordId" column="record_id"/>
+        <association property="answerRecord" resultMap="AnswerRecordResultMap"/>
+    </resultMap>
+
+    <sql id="ExamRecordWithPaperSelect">
+        SELECT er.*,
+               p.paper_id AS p_paper_id,
+               p.paper_name,
+               p.subject,
+               p.total_score,
+               p.duration,
+               p.pass_score,
+               p.description,
+               p.is_published,
+               p.creator_id AS p_creator_id,
+               p.create_time AS p_create_time,
+               p.update_time AS p_update_time
+        FROM exam_record er
+                 LEFT JOIN paper p ON er.paper_id = p.paper_id
+    </sql>
+
+    <select id="findById" resultMap="ExamRecordResultMap">
+        SELECT *
+        FROM exam_record
+        WHERE record_id = #{recordId}
+    </select>
+
+    <select id="findByIdForUpdate" resultMap="ExamRecordResultMap">
+        SELECT *
+        FROM exam_record
+        WHERE record_id = #{recordId}
+        FOR UPDATE
+    </select>
+
+    <select id="findByIdWithPaper" resultMap="ExamRecordWithPaperResultMap">
+        <include refid="ExamRecordWithPaperSelect"/>
+        WHERE er.record_id = #{recordId}
+    </select>
+
+    <select id="findByStudentId" resultMap="ExamRecordResultMap">
+        SELECT *
+        FROM exam_record
+        WHERE student_id = #{studentId}
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="findInProgressByStudentIdAndPaperId" resultMap="ExamRecordResultMap">
+        SELECT *
+        FROM exam_record
+        WHERE student_id = #{studentId}
+          AND paper_id = #{paperId}
+          AND status = #{status}
+        ORDER BY create_time DESC
+        LIMIT 1
+    </select>
+
+    <select id="countByStudentId" resultType="int">
+        SELECT COUNT(*)
+        FROM exam_record
+        WHERE student_id = #{studentId}
+    </select>
+
+    <select id="findByStudentIdWithPaper" resultMap="ExamRecordWithPaperResultMap">
+        <include refid="ExamRecordWithPaperSelect"/>
+        WHERE er.student_id = #{studentId}
+        ORDER BY er.create_time DESC
+    </select>
+
+    <select id="findByStudentIdsWithPaperFlat" resultMap="StudentExamRecordRelationResultMap">
+        <include refid="ExamRecordWithPaperSelect"/>
+        WHERE er.student_id IN
+        <foreach collection="studentIds" item="studentId" open="(" separator="," close=")">
+            #{studentId}
+        </foreach>
+        ORDER BY er.student_id, er.create_time DESC
+    </select>
+
+    <select id="findByStudentIdWithPaperPaginated" resultMap="ExamRecordWithPaperResultMap">
+        <include refid="ExamRecordWithPaperSelect"/>
+        WHERE er.student_id = #{studentId}
+        ORDER BY er.create_time DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <select id="findByPaperId" resultMap="ExamRecordResultMap">
+        SELECT *
+        FROM exam_record
+        WHERE paper_id = #{paperId}
+        ORDER BY create_time DESC
+    </select>
+
+    <insert id="insert" parameterType="com.exam.model.ExamRecord" useGeneratedKeys="true" keyProperty="recordId">
+        INSERT INTO exam_record (student_id, paper_id, start_time, status)
+        VALUES (#{studentId}, #{paperId}, #{startTime}, #{status})
+    </insert>
+
+    <update id="update" parameterType="com.exam.model.ExamRecord">
+        UPDATE exam_record
+        SET start_time = #{startTime},
+            end_time = #{endTime},
+            submit_time = #{submitTime},
+            score = #{score},
+            status = #{status}
+        WHERE record_id = #{recordId}
+    </update>
+
+    <insert id="insertAnswerRecord" parameterType="com.exam.model.AnswerRecord">
+        INSERT INTO answer_record (record_id, question_id, student_answer, is_correct, score)
+        VALUES (#{recordId}, #{questionId}, #{studentAnswer}, #{isCorrect}, #{score})
+    </insert>
+
+    <insert id="insertAnswerRecordsBatch">
+        INSERT INTO answer_record (record_id, question_id, student_answer, is_correct, score)
+        VALUES
+        <foreach collection="answerRecords" item="answerRecord" separator=",">
+            (#{answerRecord.recordId}, #{answerRecord.questionId}, #{answerRecord.studentAnswer},
+             #{answerRecord.isCorrect}, #{answerRecord.score})
+        </foreach>
+    </insert>
+
+    <select id="findAnswerRecords" resultMap="AnswerRecordResultMap">
+        SELECT *
+        FROM answer_record
+        WHERE record_id = #{recordId}
+    </select>
+
+    <select id="findAnswerRecordsByRecordIdsFlat" resultMap="RecordAnswerRelationResultMap">
+        SELECT *
+        FROM answer_record
+        WHERE record_id IN
+        <foreach collection="recordIds" item="recordId" open="(" separator="," close=")">
+            #{recordId}
+        </foreach>
+    </select>
+</mapper>

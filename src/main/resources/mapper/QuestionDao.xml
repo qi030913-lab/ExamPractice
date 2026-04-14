@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.dao.QuestionDao">
+
+    <resultMap id="QuestionResultMap" type="com.exam.model.Question">
+        <id property="questionId" column="question_id"/>
+        <result property="questionType" column="question_type" javaType="com.exam.model.enums.QuestionType"/>
+        <result property="subject" column="subject"/>
+        <result property="content" column="content"/>
+        <result property="optionA" column="option_a"/>
+        <result property="optionB" column="option_b"/>
+        <result property="optionC" column="option_c"/>
+        <result property="optionD" column="option_d"/>
+        <result property="correctAnswer" column="correct_answer"/>
+        <result property="score" column="score"/>
+        <result property="difficulty" column="difficulty" javaType="com.exam.model.enums.Difficulty"/>
+        <result property="analysis" column="analysis"/>
+        <result property="creatorId" column="creator_id"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <resultMap id="QuestionPaperRelationResultMap" type="com.exam.dao.QuestionDao$QuestionPaperRelation">
+        <result property="paperId" column="paper_id"/>
+        <association property="question" resultMap="QuestionResultMap"/>
+    </resultMap>
+
+    <select id="findById" resultMap="QuestionResultMap">
+        SELECT *
+        FROM question
+        WHERE question_id = #{questionId}
+    </select>
+
+    <select id="findByIdsList" resultMap="QuestionResultMap">
+        SELECT *
+        FROM question
+        WHERE question_id IN
+        <foreach collection="questionIds" item="questionId" open="(" separator="," close=")">
+            #{questionId}
+        </foreach>
+    </select>
+
+    <select id="findAll" resultMap="QuestionResultMap">
+        SELECT *
+        FROM question
+        ORDER BY question_id
+    </select>
+
+    <select id="findBySubject" resultMap="QuestionResultMap">
+        SELECT *
+        FROM question
+        WHERE subject = #{subject}
+        ORDER BY question_id
+    </select>
+
+    <select id="findByPaperId" resultMap="QuestionResultMap">
+        SELECT q.*
+        FROM question q
+                 INNER JOIN paper_question pq ON q.question_id = pq.question_id
+        WHERE pq.paper_id = #{paperId}
+        ORDER BY pq.question_order
+    </select>
+
+    <select id="findByExactSignature" resultMap="QuestionResultMap">
+        SELECT *
+        FROM question
+        WHERE subject = #{subject}
+          AND question_type = #{type}
+          AND TRIM(content) = #{content}
+          AND TRIM(correct_answer) = #{correctAnswer}
+        ORDER BY question_id
+        LIMIT 1
+    </select>
+
+    <select id="findByPaperIdsFlat" resultMap="QuestionPaperRelationResultMap">
+        SELECT q.*, pq.paper_id
+        FROM question q
+                 INNER JOIN paper_question pq ON q.question_id = pq.question_id
+        WHERE pq.paper_id IN
+        <foreach collection="paperIds" item="paperId" open="(" separator="," close=")">
+            #{paperId}
+        </foreach>
+        ORDER BY pq.paper_id, pq.question_order
+    </select>
+
+    <insert id="insert" parameterType="com.exam.model.Question" useGeneratedKeys="true" keyProperty="questionId">
+        INSERT INTO question (question_type, subject, content, option_a, option_b,
+                              option_c, option_d, correct_answer, score, difficulty, analysis, creator_id)
+        VALUES (#{questionType}, #{subject}, #{content}, #{optionA}, #{optionB},
+                #{optionC}, #{optionD}, #{correctAnswer}, #{score},
+                <choose>
+                    <when test="difficulty != null">#{difficulty, javaType=com.exam.model.enums.Difficulty, jdbcType=VARCHAR}</when>
+                    <otherwise>'MEDIUM'</otherwise>
+                </choose>,
+                #{analysis}, #{creatorId})
+    </insert>
+
+    <update id="update" parameterType="com.exam.model.Question">
+        UPDATE question
+        SET question_type = #{questionType},
+            subject = #{subject},
+            content = #{content},
+            option_a = #{optionA},
+            option_b = #{optionB},
+            option_c = #{optionC},
+            option_d = #{optionD},
+            correct_answer = #{correctAnswer},
+            score = #{score},
+            difficulty =
+            <choose>
+                <when test="difficulty != null">#{difficulty, javaType=com.exam.model.enums.Difficulty, jdbcType=VARCHAR}</when>
+                <otherwise>'MEDIUM'</otherwise>
+            </choose>,
+            analysis = #{analysis}
+        WHERE question_id = #{questionId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM question
+        WHERE question_id = #{questionId}
+    </delete>
+
+    <select id="search" resultMap="QuestionResultMap">
+        SELECT *
+        FROM question
+        WHERE 1 = 1
+        <if test="content != null and content.trim() != ''">
+            AND content LIKE CONCAT('%', #{content}, '%')
+        </if>
+        <if test="subject != null and subject.trim() != ''">
+            AND subject = #{subject}
+        </if>
+        <if test="type != null">
+            AND question_type = #{type}
+        </if>
+        <if test="difficulty != null">
+            AND difficulty = #{difficulty}
+        </if>
+        ORDER BY question_id
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countQuestions" resultType="int">
+        SELECT COUNT(*)
+        FROM question
+        WHERE 1 = 1
+        <if test="content != null and content.trim() != ''">
+            AND content LIKE CONCAT('%', #{content}, '%')
+        </if>
+        <if test="subject != null and subject.trim() != ''">
+            AND subject = #{subject}
+        </if>
+        <if test="type != null">
+            AND question_type = #{type}
+        </if>
+        <if test="difficulty != null">
+            AND difficulty = #{difficulty}
+        </if>
+    </select>
+</mapper>

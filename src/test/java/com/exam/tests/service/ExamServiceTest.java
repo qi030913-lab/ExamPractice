@@ -10,22 +10,27 @@ import com.exam.model.Question;
 import com.exam.model.enums.ExamStatus;
 import com.exam.model.enums.QuestionType;
 import com.exam.service.ExamService;
-import com.exam.util.DBUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.MockedStatic;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 
 class ExamServiceTest {
     private ExamService examService;
@@ -42,7 +47,7 @@ class ExamServiceTest {
     }
 
     @Test
-    void submitExamShouldCalculateScoreAndCommit() throws Exception {
+    void submitExamShouldCalculateScoreAndPersistAnswers() {
         ExamRecord record = new ExamRecord(11, 101);
         record.setRecordId(5001);
         record.setStatus(ExamStatus.IN_PROGRESS);
@@ -56,62 +61,42 @@ class ExamServiceTest {
         answers.put(2, "CA");
         answers.put(3, "F");
 
-        Connection conn = mock(Connection.class);
-
-        when(examRecordDao.findByIdForUpdate(conn, 5001)).thenReturn(record);
+        when(examRecordDao.findByIdForUpdate(5001)).thenReturn(record);
         when(questionDao.findByPaperId(101)).thenReturn(List.of(single, multiple, judge));
-        when(examRecordDao.update(eq(conn), any(ExamRecord.class))).thenReturn(1);
+        when(examRecordDao.update(any(ExamRecord.class))).thenReturn(1);
 
-        try (MockedStatic<DBUtil> dbUtil = mockStatic(DBUtil.class)) {
-            dbUtil.when(() -> DBUtil.getConnection()).thenReturn(conn);
+        BigDecimal score = examService.submitExam(5001, answers);
 
-            BigDecimal score = examService.submitExam(5001, answers);
+        assertEquals(new BigDecimal("15"), score);
 
-            assertEquals(new BigDecimal("15"), score);
-
-            ArgumentCaptor<List<AnswerRecord>> captor = ArgumentCaptor.forClass(List.class);
-            verify(examRecordDao).insertAnswerRecordsBatch(eq(conn), captor.capture());
-            assertEquals(3, captor.getValue().size());
-
-            verify(examRecordDao).update(eq(conn), any(ExamRecord.class));
-            verify(conn).commit();
-            verify(conn, never()).rollback();
-        }
+        ArgumentCaptor<List<AnswerRecord>> captor = ArgumentCaptor.forClass(List.class);
+        verify(examRecordDao).insertAnswerRecordsBatch(captor.capture());
+        assertEquals(3, captor.getValue().size());
+        verify(examRecordDao).update(any(ExamRecord.class));
     }
 
     @Test
-    void submitExamShouldRollbackWhenAlreadySubmitted() throws Exception {
+    void submitExamShouldFailWhenAlreadySubmitted() {
         ExamRecord record = new ExamRecord(11, 101);
         record.setRecordId(5002);
         record.setStatus(ExamStatus.SUBMITTED);
 
-        Connection conn = mock(Connection.class);
-        when(examRecordDao.findByIdForUpdate(conn, 5002)).thenReturn(record);
+        when(examRecordDao.findByIdForUpdate(5002)).thenReturn(record);
 
-        try (MockedStatic<DBUtil> dbUtil = mockStatic(DBUtil.class)) {
-            dbUtil.when(() -> DBUtil.getConnection()).thenReturn(conn);
-
-            assertThrows(BusinessException.class, () -> examService.submitExam(5002, Map.of()));
-            verify(conn).rollback();
-        }
+        assertThrows(BusinessException.class, () -> examService.submitExam(5002, Map.of()));
+        verify(examRecordDao, never()).insertAnswerRecordsBatch(any());
     }
 
     @Test
-    void submitExamShouldRollbackWhenRecordTimedOut() throws Exception {
+    void submitExamShouldFailWhenRecordTimedOut() {
         ExamRecord record = new ExamRecord(11, 101);
         record.setRecordId(5003);
         record.setStatus(ExamStatus.TIMEOUT);
 
-        Connection conn = mock(Connection.class);
-        when(examRecordDao.findByIdForUpdate(conn, 5003)).thenReturn(record);
+        when(examRecordDao.findByIdForUpdate(5003)).thenReturn(record);
 
-        try (MockedStatic<DBUtil> dbUtil = mockStatic(DBUtil.class)) {
-            dbUtil.when(() -> DBUtil.getConnection()).thenReturn(conn);
-
-            assertThrows(BusinessException.class, () -> examService.submitExam(5003, Map.of()));
-            verify(conn).rollback();
-            verify(examRecordDao, never()).insertAnswerRecordsBatch(eq(conn), any());
-        }
+        assertThrows(BusinessException.class, () -> examService.submitExam(5003, Map.of()));
+        verify(examRecordDao, never()).insertAnswerRecordsBatch(any());
     }
 
     @Test
@@ -149,7 +134,7 @@ class ExamServiceTest {
         existingRecord.setStatus(ExamStatus.IN_PROGRESS);
 
         when(paperDao.findById(101)).thenReturn(paper);
-        when(examRecordDao.findInProgressByStudentIdAndPaperId(11, 101)).thenReturn(existingRecord);
+        when(examRecordDao.findInProgressByStudentIdAndPaperId(11, 101, ExamStatus.IN_PROGRESS)).thenReturn(existingRecord);
 
         ExamService.ExamStartResult result = examService.startOrResumeExam(11, 101);
 
@@ -164,7 +149,7 @@ class ExamServiceTest {
         paper.setPaperId(101);
 
         when(paperDao.findById(101)).thenReturn(paper);
-        when(examRecordDao.findInProgressByStudentIdAndPaperId(11, 101)).thenReturn(null);
+        when(examRecordDao.findInProgressByStudentIdAndPaperId(11, 101, ExamStatus.IN_PROGRESS)).thenReturn(null);
         when(examRecordDao.insert(any(ExamRecord.class))).thenReturn(8002);
 
         ExamService.ExamStartResult result = examService.startOrResumeExam(11, 101);
@@ -175,7 +160,7 @@ class ExamServiceTest {
     }
 
     @Test
-    void timeoutSubmitShouldSettleBlankAnswersAndUpdateRecord() throws Exception {
+    void timeoutSubmitShouldSettleBlankAnswersAndUpdateRecord() {
         ExamRecord record = new ExamRecord(11, 101);
         record.setRecordId(7001);
         record.setStatus(ExamStatus.IN_PROGRESS);
@@ -183,49 +168,35 @@ class ExamServiceTest {
         Question single = question(1, QuestionType.SINGLE, "A", 5);
         Question judge = question(2, QuestionType.JUDGE, "T", 5);
 
-        Connection conn = mock(Connection.class);
-        when(examRecordDao.findByIdForUpdate(conn, 7001)).thenReturn(record);
+        when(examRecordDao.findByIdForUpdate(7001)).thenReturn(record);
         when(questionDao.findByPaperId(101)).thenReturn(List.of(single, judge));
-        when(examRecordDao.update(eq(conn), any(ExamRecord.class))).thenReturn(1);
+        when(examRecordDao.update(any(ExamRecord.class))).thenReturn(1);
 
-        try (MockedStatic<DBUtil> dbUtil = mockStatic(DBUtil.class)) {
-            dbUtil.when(() -> DBUtil.getConnection()).thenReturn(conn);
+        assertDoesNotThrow(() -> examService.timeoutSubmit(7001));
 
-            assertDoesNotThrow(() -> examService.timeoutSubmit(7001));
+        ArgumentCaptor<List<AnswerRecord>> captor = ArgumentCaptor.forClass(List.class);
+        verify(examRecordDao).insertAnswerRecordsBatch(captor.capture());
+        assertEquals(2, captor.getValue().size());
+        assertTrue(captor.getValue().stream().allMatch(answer -> answer.getStudentAnswer() == null));
 
-            ArgumentCaptor<List<AnswerRecord>> captor = ArgumentCaptor.forClass(List.class);
-            verify(examRecordDao).insertAnswerRecordsBatch(eq(conn), captor.capture());
-            assertEquals(2, captor.getValue().size());
-            assertTrue(captor.getValue().stream().allMatch(answer -> answer.getStudentAnswer() == null));
-
-            ArgumentCaptor<ExamRecord> recordCaptor = ArgumentCaptor.forClass(ExamRecord.class);
-            verify(examRecordDao).update(eq(conn), recordCaptor.capture());
-            assertEquals(ExamStatus.TIMEOUT, recordCaptor.getValue().getStatus());
-            assertEquals(BigDecimal.ZERO, recordCaptor.getValue().getScore());
-            verify(conn).commit();
-            verify(conn, never()).rollback();
-        }
+        ArgumentCaptor<ExamRecord> recordCaptor = ArgumentCaptor.forClass(ExamRecord.class);
+        verify(examRecordDao).update(recordCaptor.capture());
+        assertEquals(ExamStatus.TIMEOUT, recordCaptor.getValue().getStatus());
+        assertEquals(BigDecimal.ZERO, recordCaptor.getValue().getScore());
     }
 
     @Test
-    void timeoutSubmitShouldReturnWhenRecordNotInProgress() throws Exception {
+    void timeoutSubmitShouldReturnWhenRecordNotInProgress() {
         ExamRecord record = new ExamRecord(11, 101);
         record.setRecordId(7002);
         record.setStatus(ExamStatus.SUBMITTED);
 
-        Connection conn = mock(Connection.class);
-        when(examRecordDao.findByIdForUpdate(conn, 7002)).thenReturn(record);
+        when(examRecordDao.findByIdForUpdate(7002)).thenReturn(record);
 
-        try (MockedStatic<DBUtil> dbUtil = mockStatic(DBUtil.class)) {
-            dbUtil.when(() -> DBUtil.getConnection()).thenReturn(conn);
+        assertDoesNotThrow(() -> examService.timeoutSubmit(7002));
 
-            assertDoesNotThrow(() -> examService.timeoutSubmit(7002));
-
-            verify(examRecordDao, never()).insertAnswerRecordsBatch(eq(conn), any());
-            verify(examRecordDao, never()).update(eq(conn), any(ExamRecord.class));
-            verify(conn).commit();
-            verify(conn, never()).rollback();
-        }
+        verify(examRecordDao, never()).insertAnswerRecordsBatch(any());
+        verify(examRecordDao, never()).update(any(ExamRecord.class));
     }
 
     private static Question question(int id, QuestionType type, String answer, int score) {

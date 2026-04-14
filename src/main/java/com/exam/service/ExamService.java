@@ -9,12 +9,10 @@ import com.exam.model.ExamRecord;
 import com.exam.model.Paper;
 import com.exam.model.Question;
 import com.exam.model.enums.ExamStatus;
-import com.exam.util.DBUtil;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,15 +41,15 @@ public class ExamService {
 
     public ExamStartResult startOrResumeExam(Integer studentId, Integer paperId) {
         if (studentId == null) {
-            throw new BusinessException("学生ID不能为空");
+            throw new BusinessException("Student ID cannot be null");
         }
         if (paperId == null) {
-            throw new BusinessException("试卷ID不能为空");
+            throw new BusinessException("Paper ID cannot be null");
         }
 
         Paper paper = paperDao.findById(paperId);
         if (paper == null) {
-            throw new BusinessException("试卷不存在");
+            throw new BusinessException("Paper does not exist");
         }
 
         synchronized (resolveStartExamLock(studentId, paperId)) {
@@ -72,39 +70,27 @@ public class ExamService {
         }
     }
 
+    @Transactional
     public BigDecimal submitExam(Integer recordId, Map<Integer, String> answers) {
         if (recordId == null) {
-            throw new BusinessException("考试记录ID不能为空");
+            throw new BusinessException("Exam record ID cannot be null");
         }
 
         Map<Integer, String> answerMap = answers == null ? Collections.emptyMap() : answers;
 
-        try (Connection conn = DBUtil.getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                ExamRecord record = examRecordDao.findByIdForUpdate(conn, recordId);
-                requireRecordForSubmit(record);
+        ExamRecord record = examRecordDao.findByIdForUpdate(recordId);
+        requireRecordForSubmit(record);
 
-                List<Question> questions = requireQuestions(record.getPaperId());
-                SettlementResult settlement = buildSettlementResult(recordId, questions, answerMap);
-                examRecordDao.insertAnswerRecordsBatch(conn, settlement.getAnswerRecords());
+        List<Question> questions = requireQuestions(record.getPaperId());
+        SettlementResult settlement = buildSettlementResult(recordId, questions, answerMap);
+        examRecordDao.insertAnswerRecordsBatch(settlement.getAnswerRecords());
 
-                record.submitExam();
-                record.setScore(settlement.getTotalScore());
-                record.setEndTime(LocalDateTime.now());
-                examRecordDao.update(conn, record);
+        record.submitExam();
+        record.setScore(settlement.getTotalScore());
+        record.setEndTime(LocalDateTime.now());
+        examRecordDao.update(record);
 
-                conn.commit();
-                return settlement.getTotalScore();
-            } catch (Exception e) {
-                conn.rollback();
-                throw e;
-            } finally {
-                conn.setAutoCommit(true);
-            }
-        } catch (SQLException e) {
-            throw new BusinessException("提交考试失败: " + e.getMessage(), e);
-        }
+        return settlement.getTotalScore();
     }
 
     private boolean checkAnswer(Question question, String studentAnswer) {
@@ -136,7 +122,7 @@ public class ExamService {
 
     public List<ExamRecord> getStudentExamRecordsOptimized(Integer studentId) {
         if (studentId == null) {
-            throw new BusinessException("学生ID不能为空");
+            throw new BusinessException("Student ID cannot be null");
         }
         return examRecordDao.findByStudentIdWithPaper(studentId);
     }
@@ -147,7 +133,7 @@ public class ExamService {
         }
         for (Integer studentId : studentIds) {
             if (studentId == null) {
-                throw new BusinessException("学生ID不能为空");
+                throw new BusinessException("Student ID cannot be null");
             }
         }
         return examRecordDao.findByStudentIdsWithPaper(studentIds);
@@ -155,34 +141,35 @@ public class ExamService {
 
     public List<ExamRecord> getStudentExamRecordsPaginated(Integer studentId, int pageNum, int pageSize) {
         if (studentId == null) {
-            throw new BusinessException("学生ID不能为空");
+            throw new BusinessException("Student ID cannot be null");
         }
         if (pageNum <= 0) {
-            throw new BusinessException("页码必须从 1 开始");
+            throw new BusinessException("Page number must start from 1");
         }
         if (pageSize <= 0 || pageSize > 200) {
-            throw new BusinessException("每页大小必须在 1-200 之间");
+            throw new BusinessException("Page size must be between 1 and 200");
         }
-        return examRecordDao.findByStudentIdWithPaperPaginated(studentId, pageNum, pageSize);
+        int offset = (pageNum - 1) * pageSize;
+        return examRecordDao.findByStudentIdWithPaperPaginated(studentId, offset, pageSize);
     }
 
     public int getStudentExamRecordCount(Integer studentId) {
         if (studentId == null) {
-            throw new BusinessException("学生ID不能为空");
+            throw new BusinessException("Student ID cannot be null");
         }
         return examRecordDao.countByStudentId(studentId);
     }
 
     public ExamRecord getExamRecordById(Integer recordId) {
         if (recordId == null) {
-            throw new BusinessException("考试记录ID不能为空");
+            throw new BusinessException("Exam record ID cannot be null");
         }
         return examRecordDao.findByIdWithPaper(recordId);
     }
 
     public List<AnswerRecord> getAnswerRecords(Integer recordId) {
         if (recordId == null) {
-            throw new BusinessException("考试记录ID不能为空");
+            throw new BusinessException("Exam record ID cannot be null");
         }
         List<AnswerRecord> answerRecords = examRecordDao.findAnswerRecords(recordId);
         if (answerRecords.isEmpty()) {
@@ -227,12 +214,12 @@ public class ExamService {
 
     public ExamRecord getExamDetail(Integer recordId) {
         if (recordId == null) {
-            throw new BusinessException("考试记录ID不能为空");
+            throw new BusinessException("Exam record ID cannot be null");
         }
 
         ExamRecord record = examRecordDao.findByIdWithPaper(recordId);
         if (record == null) {
-            throw new BusinessException("考试记录不存在");
+            throw new BusinessException("Exam record does not exist");
         }
 
         List<AnswerRecord> answerRecords = examRecordDao.findAnswerRecords(recordId);
@@ -245,73 +232,59 @@ public class ExamService {
 
     public List<ExamRecord> getPaperExamRecords(Integer paperId) {
         if (paperId == null) {
-            throw new BusinessException("试卷ID不能为空");
+            throw new BusinessException("Paper ID cannot be null");
         }
         return examRecordDao.findByPaperId(paperId);
     }
 
+    @Transactional
     public void timeoutSubmit(Integer recordId) {
         if (recordId == null) {
-            throw new BusinessException("考试记录ID不能为空");
+            throw new BusinessException("Exam record ID cannot be null");
         }
 
-        try (Connection conn = DBUtil.getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                ExamRecord record = examRecordDao.findByIdForUpdate(conn, recordId);
-                if (record == null) {
-                    throw new BusinessException("考试记录不存在");
-                }
-                if (record.getStatus() != ExamStatus.IN_PROGRESS) {
-                    conn.commit();
-                    return;
-                }
-
-                List<Question> questions = requireQuestions(record.getPaperId());
-                SettlementResult settlement = buildSettlementResult(recordId, questions, Collections.emptyMap());
-                examRecordDao.insertAnswerRecordsBatch(conn, settlement.getAnswerRecords());
-
-                record.setStatus(ExamStatus.TIMEOUT);
-                record.setScore(settlement.getTotalScore());
-                record.setEndTime(LocalDateTime.now());
-                examRecordDao.update(conn, record);
-
-                conn.commit();
-            } catch (Exception e) {
-                conn.rollback();
-                throw e;
-            } finally {
-                conn.setAutoCommit(true);
-            }
-        } catch (SQLException e) {
-            throw new BusinessException("超时提交考试失败: " + e.getMessage(), e);
+        ExamRecord record = examRecordDao.findByIdForUpdate(recordId);
+        if (record == null) {
+            throw new BusinessException("Exam record does not exist");
         }
+        if (record.getStatus() != ExamStatus.IN_PROGRESS) {
+            return;
+        }
+
+        List<Question> questions = requireQuestions(record.getPaperId());
+        SettlementResult settlement = buildSettlementResult(recordId, questions, Collections.emptyMap());
+        examRecordDao.insertAnswerRecordsBatch(settlement.getAnswerRecords());
+
+        record.setStatus(ExamStatus.TIMEOUT);
+        record.setScore(settlement.getTotalScore());
+        record.setEndTime(LocalDateTime.now());
+        examRecordDao.update(record);
     }
 
     private ExamRecord findExistingInProgressRecord(Integer studentId, Integer paperId) {
-        return examRecordDao.findInProgressByStudentIdAndPaperId(studentId, paperId);
+        return examRecordDao.findInProgressByStudentIdAndPaperId(studentId, paperId, ExamStatus.IN_PROGRESS);
     }
 
     private void requireRecordForSubmit(ExamRecord record) {
         if (record == null) {
-            throw new BusinessException("考试记录不存在");
+            throw new BusinessException("Exam record does not exist");
         }
         if (record.getStatus() == ExamStatus.IN_PROGRESS) {
             return;
         }
         if (record.getStatus() == ExamStatus.SUBMITTED) {
-            throw new BusinessException("考试已提交，不能重复提交");
+            throw new BusinessException("Exam already submitted");
         }
         if (record.getStatus() == ExamStatus.TIMEOUT) {
-            throw new BusinessException("考试已超时，不能再提交");
+            throw new BusinessException("Exam already timed out");
         }
-        throw new BusinessException("当前考试不处于进行中状态，不能提交");
+        throw new BusinessException("Exam is not in progress");
     }
 
     private List<Question> requireQuestions(Integer paperId) {
         List<Question> questions = questionDao.findByPaperId(paperId);
         if (questions.isEmpty()) {
-            throw new BusinessException("试卷没有题目");
+            throw new BusinessException("Paper has no questions");
         }
         return questions;
     }

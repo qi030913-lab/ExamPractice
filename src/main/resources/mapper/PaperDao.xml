@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.dao.PaperDao">
+
+    <resultMap id="PaperResultMap" type="com.exam.model.Paper">
+        <id property="paperId" column="paper_id"/>
+        <result property="paperName" column="paper_name"/>
+        <result property="subject" column="subject"/>
+        <result property="totalScore" column="total_score"/>
+        <result property="duration" column="duration"/>
+        <result property="passScore" column="pass_score"/>
+        <result property="description" column="description"/>
+        <result property="isPublished" column="is_published"/>
+        <result property="creatorId" column="creator_id"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="singleCount" column="single_count"/>
+        <result property="multipleCount" column="multiple_count"/>
+        <result property="judgeCount" column="judge_count"/>
+        <result property="blankCount" column="blank_count"/>
+    </resultMap>
+
+    <select id="findById" resultMap="PaperResultMap">
+        SELECT *
+        FROM paper
+        WHERE paper_id = #{paperId}
+    </select>
+
+    <select id="findByName" resultMap="PaperResultMap">
+        SELECT *
+        FROM paper
+        WHERE paper_name = #{paperName}
+    </select>
+
+    <select id="findAll" resultMap="PaperResultMap">
+        SELECT *
+        FROM paper
+        ORDER BY paper_id DESC
+    </select>
+
+    <select id="findAllPublished" resultMap="PaperResultMap">
+        SELECT *
+        FROM paper
+        WHERE is_published = TRUE
+        ORDER BY paper_id DESC
+    </select>
+
+    <select id="findAllPublishedWithQuestionStats" resultMap="PaperResultMap">
+        SELECT p.*,
+               COUNT(CASE WHEN q.question_type = 'SINGLE' THEN 1 END) AS single_count,
+               COUNT(CASE WHEN q.question_type = 'MULTIPLE' THEN 1 END) AS multiple_count,
+               COUNT(CASE WHEN q.question_type = 'JUDGE' THEN 1 END) AS judge_count,
+               COUNT(CASE WHEN q.question_type = 'BLANK' THEN 1 END) AS blank_count
+        FROM paper p
+                 LEFT JOIN paper_question pq ON p.paper_id = pq.paper_id
+                 LEFT JOIN question q ON pq.question_id = q.question_id
+        WHERE p.is_published = TRUE
+        GROUP BY p.paper_id
+        ORDER BY p.paper_id DESC
+    </select>
+
+    <insert id="insert" parameterType="com.exam.model.Paper" useGeneratedKeys="true" keyProperty="paperId">
+        INSERT INTO paper (paper_name, subject, total_score, duration, pass_score, description, creator_id)
+        VALUES (#{paperName}, #{subject}, #{totalScore}, #{duration}, #{passScore}, #{description}, #{creatorId})
+    </insert>
+
+    <insert id="addPaperQuestion">
+        INSERT IGNORE INTO paper_question (paper_id, question_id, question_order)
+        VALUES (#{paperId}, #{questionId}, #{order})
+    </insert>
+
+    <insert id="addPaperQuestionsBatch">
+        INSERT IGNORE INTO paper_question (paper_id, question_id, question_order)
+        VALUES
+        <foreach collection="questionIds" item="questionId" index="index" separator=",">
+            <bind name="order" value="index + 1"/>
+            (#{paperId}, #{questionId}, #{order})
+        </foreach>
+    </insert>
+
+    <delete id="deletePaperQuestions">
+        DELETE FROM paper_question
+        WHERE paper_id = #{paperId}
+    </delete>
+
+    <select id="findPapersUsingQuestion" resultMap="PaperResultMap">
+        SELECT DISTINCT p.*
+        FROM paper p
+                 INNER JOIN paper_question pq ON p.paper_id = pq.paper_id
+        WHERE pq.question_id = #{questionId}
+    </select>
+
+    <update id="update" parameterType="com.exam.model.Paper">
+        UPDATE paper
+        SET paper_name = #{paperName},
+            subject = #{subject},
+            total_score = #{totalScore},
+            duration = #{duration},
+            pass_score = #{passScore},
+            description = #{description}
+        WHERE paper_id = #{paperId}
+    </update>
+
+    <update id="updatePublishStatus">
+        UPDATE paper
+        SET is_published = #{isPublished}
+        WHERE paper_id = #{paperId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM paper
+        WHERE paper_id = #{paperId}
+    </delete>
+
+    <select id="findAllWithQuestionCount" resultMap="PaperResultMap">
+        SELECT p.*,
+               COUNT(pq.question_id) AS single_count,
+               0 AS multiple_count,
+               0 AS judge_count,
+               0 AS blank_count
+        FROM paper p
+                 LEFT JOIN paper_question pq ON p.paper_id = pq.paper_id
+        GROUP BY p.paper_id
+        ORDER BY p.paper_id DESC
+    </select>
+</mapper>

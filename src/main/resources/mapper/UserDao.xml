@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.dao.UserDao">
+
+    <resultMap id="UserResultMap" type="com.exam.model.User">
+        <id property="userId" column="user_id"/>
+        <result property="realName" column="real_name"/>
+        <result property="loginId" column="student_number"/>
+        <result property="password" column="password"/>
+        <result property="role" column="role" javaType="com.exam.model.enums.UserRole"/>
+        <result property="email" column="email"/>
+        <result property="phone" column="phone"/>
+        <result property="gender" column="gender"/>
+        <result property="avatarUrl" column="avatar_url"/>
+        <result property="status" column="status"/>
+        <result property="lastLoginTime" column="last_login_time"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <select id="findStudentByLoginId" resultMap="UserResultMap">
+        SELECT *
+        FROM user
+        WHERE real_name = #{realName}
+          AND student_number = #{loginId}
+          AND role = 'STUDENT'
+    </select>
+
+    <select id="findTeacherByLoginId" resultMap="UserResultMap">
+        SELECT *
+        FROM user
+        WHERE real_name = #{realName}
+          AND student_number = #{loginId}
+          AND role = 'TEACHER'
+    </select>
+
+    <select id="findById" resultMap="UserResultMap">
+        SELECT *
+        FROM user
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="findByLoginId" resultMap="UserResultMap">
+        SELECT *
+        FROM user
+        WHERE student_number = #{loginId}
+    </select>
+
+    <select id="findAllStudents" resultMap="UserResultMap">
+        SELECT *
+        FROM user
+        WHERE role = 'STUDENT'
+        ORDER BY user_id
+    </select>
+
+    <insert id="insert" parameterType="com.exam.model.User" useGeneratedKeys="true" keyProperty="userId">
+        INSERT INTO user (real_name, student_number, password, role, email, phone, gender, status)
+        VALUES (#{realName}, #{loginId}, #{password}, #{role}, #{email}, #{phone}, #{gender}, #{status})
+    </insert>
+
+    <update id="update" parameterType="com.exam.model.User">
+        UPDATE user
+        SET password = #{password},
+            real_name = #{realName},
+            email = #{email},
+            phone = #{phone}
+        WHERE user_id = #{userId}
+    </update>
+
+    <update id="updatePassword">
+        UPDATE user
+        SET password = #{password}
+        WHERE user_id = #{userId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM user
+        WHERE user_id = #{userId}
+    </delete>
+</mapper>
