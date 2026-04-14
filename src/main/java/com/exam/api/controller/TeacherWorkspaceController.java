@@ -252,8 +252,6 @@ public class TeacherWorkspaceController {
             throw new BusinessException(ex.getMessage(), ex);
         }
 
-        importedQuestions.forEach(questionService::validateSupportedForAutoExam);
-
         Paper paper = new Paper();
         paper.setPaperName(request.getPaperName().trim());
         paper.setSubject(request.getSubject().trim());

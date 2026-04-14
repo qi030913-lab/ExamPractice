@@ -1,6 +1,6 @@
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
-import { getStudentWorkbench, getTeacherWorkbench, login, register } from "@/services/auth-api";
+import { getCurrentSession, getStudentWorkbench, getTeacherWorkbench, login, logout, register } from "@/services/auth-api";
 
 const SESSION_STORAGE_KEY = "exampractice.desktop.session";
 
@@ -23,12 +23,11 @@ function loadStoredSession() {
     }
 
     const parsed = JSON.parse(raw);
-    if (!parsed?.user || !parsed?.token) {
+    if (!parsed?.user) {
       return null;
     }
 
     return {
-      ...parsed,
       user: normalizeAuthUser(parsed.user)
     };
   } catch (_error) {
@@ -37,13 +36,12 @@ function loadStoredSession() {
 }
 
 function persistSession(session) {
-  if (!session) {
+  if (!session?.user) {
     window.localStorage.removeItem(SESSION_STORAGE_KEY);
     return;
   }
 
   window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
-    ...session,
     user: normalizeAuthUser(session.user)
   }));
 }
@@ -52,6 +50,7 @@ export const useSessionStore = defineStore("session", () => {
   const session = ref(loadStoredSession());
   const workbench = ref(null);
   const loading = ref(false);
+  const restoring = ref(false);
   const errorMessage = ref("");
 
   const isLoggedIn = computed(() => Boolean(session.value?.user));
@@ -60,14 +59,32 @@ export const useSessionStore = defineStore("session", () => {
   const isStudent = computed(() => role.value === "STUDENT");
   const user = computed(() => session.value?.user || null);
 
-  function setSessionPayload(nextPayload) {
-    session.value = nextPayload?.user && nextPayload?.token
-      ? {
-          token: nextPayload.token,
-          user: normalizeAuthUser(nextPayload.user)
-        }
+  function setSessionUser(nextUser) {
+    session.value = nextUser?.userId
+      ? { user: normalizeAuthUser(nextUser) }
       : null;
     persistSession(session.value);
+  }
+
+  async function restoreSession() {
+    if (restoring.value) {
+      return session.value;
+    }
+
+    restoring.value = true;
+    try {
+      const result = await getCurrentSession();
+      const currentUser = result?.data || null;
+      setSessionUser(currentUser);
+      return session.value;
+    } catch (_error) {
+      session.value = null;
+      workbench.value = null;
+      persistSession(null);
+      return null;
+    } finally {
+      restoring.value = false;
+    }
   }
 
   async function loginWithPassword(payload) {
@@ -76,10 +93,7 @@ export const useSessionStore = defineStore("session", () => {
 
     try {
       const result = await login(payload);
-      setSessionPayload({
-        token: result.data?.token,
-        user: result.data
-      });
+      setSessionUser(result.data);
       await loadWorkbench();
       return session.value;
     } catch (error) {
@@ -109,8 +123,11 @@ export const useSessionStore = defineStore("session", () => {
 
   async function loadWorkbench() {
     if (!session.value?.user?.userId || !session.value?.user?.role) {
-      workbench.value = null;
-      return null;
+      const restored = await restoreSession();
+      if (!restored?.user?.userId || !restored?.user?.role) {
+        workbench.value = null;
+        return null;
+      }
     }
 
     const currentUser = session.value.user;
@@ -122,26 +139,34 @@ export const useSessionStore = defineStore("session", () => {
     return workbench.value;
   }
 
-  function logout() {
+  async function logoutSession() {
     session.value = null;
     workbench.value = null;
     errorMessage.value = "";
     persistSession(null);
+
+    try {
+      await logout();
+    } catch (_error) {
+      // Ignore backend logout failures and continue clearing local state.
+    }
   }
 
   return {
     session,
     workbench,
     loading,
+    restoring,
     errorMessage,
     isLoggedIn,
     isTeacher,
     isStudent,
     role,
     user,
+    restoreSession,
     loginWithPassword,
     registerAccount,
     loadWorkbench,
-    logout
+    logout: logoutSession
   };
 });

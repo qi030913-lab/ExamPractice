@@ -1,6 +1,8 @@
 package com.exam.tests.api.security;
 
 import com.exam.api.security.AuthTokenService;
+import com.exam.dao.AuthSessionDao;
+import com.exam.model.AuthSession;
 import com.exam.model.User;
 import com.exam.model.enums.UserRole;
 import org.junit.jupiter.api.Test;
@@ -8,8 +10,11 @@ import org.junit.jupiter.api.Test;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,7 +31,8 @@ class AuthTokenServiceTest {
     @Test
     void tokenShouldExpireAfterConfiguredTtl() {
         MutableClock clock = new MutableClock("2026-04-13T10:00:00Z");
-        AuthTokenService authTokenService = new AuthTokenService(Duration.ofMinutes(5), 10, clock);
+        InMemoryAuthSessionDao authSessionDao = new InMemoryAuthSessionDao(clock);
+        AuthTokenService authTokenService = new AuthTokenService(authSessionDao, Duration.ofMinutes(5), 10, clock);
 
         String token = authTokenService.issueToken(buildUser(7, UserRole.STUDENT));
         assertNotNull(authTokenService.getAuthenticatedUser(token));
@@ -39,7 +45,8 @@ class AuthTokenServiceTest {
     @Test
     void tokenShouldExpireExactlyAtExpiryBoundary() {
         MutableClock clock = new MutableClock("2026-04-13T10:00:00Z");
-        AuthTokenService authTokenService = new AuthTokenService(Duration.ofMinutes(5), 10, clock);
+        InMemoryAuthSessionDao authSessionDao = new InMemoryAuthSessionDao(clock);
+        AuthTokenService authTokenService = new AuthTokenService(authSessionDao, Duration.ofMinutes(5), 10, clock);
 
         String token = authTokenService.issueToken(buildUser(8, UserRole.STUDENT));
         clock.advance(Duration.ofMinutes(5));
@@ -51,7 +58,8 @@ class AuthTokenServiceTest {
     @Test
     void issueTokenShouldEvictOldestSessionWhenCapacityReached() {
         MutableClock clock = new MutableClock("2026-04-13T10:00:00Z");
-        AuthTokenService authTokenService = new AuthTokenService(Duration.ofHours(12), 2, clock);
+        InMemoryAuthSessionDao authSessionDao = new InMemoryAuthSessionDao(clock);
+        AuthTokenService authTokenService = new AuthTokenService(authSessionDao, Duration.ofHours(12), 2, clock);
 
         String firstToken = authTokenService.issueToken(buildUser(1, UserRole.STUDENT));
         clock.advance(Duration.ofSeconds(1));
@@ -67,7 +75,9 @@ class AuthTokenServiceTest {
 
     @Test
     void issueTokenShouldNotExceedCapacityUnderConcurrentRequests() throws Exception {
-        AuthTokenService authTokenService = new AuthTokenService(Duration.ofHours(12), 3, Clock.systemUTC());
+        MutableClock clock = new MutableClock("2026-04-13T10:00:00Z");
+        InMemoryAuthSessionDao authSessionDao = new InMemoryAuthSessionDao(clock);
+        AuthTokenService authTokenService = new AuthTokenService(authSessionDao, Duration.ofHours(12), 3, clock);
         ExecutorService executor = Executors.newFixedThreadPool(6);
         CountDownLatch ready = new CountDownLatch(6);
         CountDownLatch start = new CountDownLatch(1);
@@ -101,7 +111,8 @@ class AuthTokenServiceTest {
     @Test
     void cleanupExpiredSessionsShouldRemoveExpiredEntries() {
         MutableClock clock = new MutableClock("2026-04-13T10:00:00Z");
-        AuthTokenService authTokenService = new AuthTokenService(Duration.ofMinutes(1), 10, clock);
+        InMemoryAuthSessionDao authSessionDao = new InMemoryAuthSessionDao(clock);
+        AuthTokenService authTokenService = new AuthTokenService(authSessionDao, Duration.ofMinutes(1), 10, clock);
 
         authTokenService.issueToken(buildUser(11, UserRole.STUDENT));
         clock.advance(Duration.ofMinutes(2));
@@ -112,13 +123,15 @@ class AuthTokenServiceTest {
 
     @Test
     void issueTokenShouldRejectUserWithoutId() {
-        AuthTokenService authTokenService = new AuthTokenService();
+        MutableClock clock = new MutableClock("2026-04-13T10:00:00Z");
+        InMemoryAuthSessionDao authSessionDao = new InMemoryAuthSessionDao(clock);
+        AuthTokenService authTokenService = new AuthTokenService(authSessionDao, Duration.ofHours(12), 10, clock);
         User user = new User();
         user.setRole(UserRole.STUDENT);
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> authTokenService.issueToken(user));
 
-        assertEquals("用户信息不完整，无法签发令牌", exception.getMessage());
+        assertEquals("用户信息不完整，无法签发会话", exception.getMessage());
     }
 
     private User buildUser(int userId, UserRole role) {
@@ -153,6 +166,75 @@ class AuthTokenServiceTest {
         @Override
         public Instant instant() {
             return currentInstant;
+        }
+    }
+
+    private static class InMemoryAuthSessionDao implements AuthSessionDao {
+        private final Map<String, AuthSession> sessions = new ConcurrentHashMap<>();
+        private final Clock clock;
+
+        private InMemoryAuthSessionDao(Clock clock) {
+            this.clock = clock;
+        }
+
+        @Override
+        public void createTableIfMissing() {
+            // no-op
+        }
+
+        @Override
+        public int insert(AuthSession session) {
+            sessions.put(session.getTokenHash(), cloneSession(session));
+            return 1;
+        }
+
+        @Override
+        public AuthSession findByTokenHash(String tokenHash) {
+            AuthSession session = sessions.get(tokenHash);
+            return session == null ? null : cloneSession(session);
+        }
+
+        @Override
+        public int deleteByTokenHash(String tokenHash) {
+            return sessions.remove(tokenHash) == null ? 0 : 1;
+        }
+
+        @Override
+        public int deleteExpiredSessions(LocalDateTime currentTime) {
+            int before = sessions.size();
+            sessions.entrySet().removeIf(entry -> !entry.getValue().getExpiresAt().isAfter(currentTime));
+            return before - sessions.size();
+        }
+
+        @Override
+        public int countSessions() {
+            deleteExpiredSessions(LocalDateTime.now(clock));
+            return sessions.size();
+        }
+
+        @Override
+        public String findOldestTokenHash() {
+            return sessions.values().stream()
+                    .sorted((left, right) -> {
+                        int compare = left.getIssuedAt().compareTo(right.getIssuedAt());
+                        if (compare != 0) {
+                            return compare;
+                        }
+                        return left.getTokenHash().compareTo(right.getTokenHash());
+                    })
+                    .map(AuthSession::getTokenHash)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        private AuthSession cloneSession(AuthSession source) {
+            AuthSession copy = new AuthSession();
+            copy.setTokenHash(source.getTokenHash());
+            copy.setUserId(source.getUserId());
+            copy.setRole(source.getRole());
+            copy.setIssuedAt(source.getIssuedAt());
+            copy.setExpiresAt(source.getExpiresAt());
+            return copy;
         }
     }
 }

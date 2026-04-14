@@ -1,127 +1,102 @@
 package com.exam.util;
 
 import com.exam.model.Question;
-import com.exam.model.enums.QuestionType;
 import com.exam.model.enums.Difficulty;
-import java.io.*;
+import com.exam.model.enums.QuestionType;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 题目导入工具类
- * 支持从文本文件导入题目
- */
 public class QuestionImportUtil {
+    private static final String SUPPORTED_TYPES = QuestionType.getAutoExamSupportedTypeNames();
 
-    /**
-     * 从文本文件导入题目
-     * 文件格式：
-     * 题目类型|科目|题目内容|选项A|选项B|选项C|选项D|正确答案|分值|难度|解析
-     * 
-     * 示例：
-     * SINGLE|Java|Java中哪个关键字用于定义常量？|const|final|static|constant|B|5|EASY|final关键字用于定义常量
-     * MULTIPLE|Java|访问修饰符包括？|public|private|protected|final|ABC|10|MEDIUM|public、private、protected是访问修饰符
-     * JUDGE|Java|Java支持多继承|正确|错误|||B|5|EASY|Java不支持类的多继承
-     * BLANK|Java|Java中声明整数变量的关键字是____。||||int|5|EASY|使用int关键字声明整数类型
-     * APPLICATION|Java|请编写一个Java程序，实现学生成绩管理系统|||||1.定义Student类 2.使用ArrayList存储|20|MEDIUM|考查面向对象和集合框架
-     * ALGORITHM|算法|请设计一个算法，实现快速排序|||||1.选择基准元素 2.分区操作|25|HARD|快速排序是分治算法的应用
-     * SHORT_ANSWER|Java|请简述Java中面向对象的三大特征|||||1.封装 2.继承 3.多态|15|MEDIUM|面向对象的核心概念
-     * COMPREHENSIVE|Java|请设计并实现一个学生管理系统|||||1.架构设计 2.数据库设计|30|HARD|综合考查系统能力
-     * ESSAY|马克思主义|请论述马克思主义在中国的传播和发展|||||1.传入背景 2.与实际结合|25|HARD|考查理论分析能力
-     * MATERIAL_ANALYSIS|语文|阅读材料并分析修辞手法|||||1.拟人手法 2.营造意境|20|MEDIUM|考查材料分析能力
-     * CLOZE|英语|The weather was so ____ that we decided to stay indoors. 备选词：terrible, terribly|terrible|terribly|||A|10|EASY|考查词汇辨析能力
-     * READING_ANALYSIS|英语|阅读理解：AI is transforming our world. Question: What is the main idea?|AI replacing jobs|AI benefits and concerns|||B|15|MEDIUM|考查阅读理解能力
-     * ENGLISH_TO_CHINESE|英语|请将下列句子翻译成中文：Technology has changed our lives.||||技术已经改变了我们的生活。|15|EASY|考查英译汉能力
-     * CHINESE_TO_ENGLISH|英语|请将下列句子翻译成英文：保护环境是每个人的责任。||||Protecting the environment is everyone's responsibility.|15|EASY|考查汉译英能力
-     * WRITING|英语|写作题：请以"My Hobby"为题，写一篇不少于100词的英语短文。||||参考答案要点：1. Introduction 2. Reasons 3. Experience|20|MEDIUM|考查英语写作能力
-     */
     public static List<Question> importFromTextFile(File file, Integer creatorId) throws Exception {
         List<Question> questions = new ArrayList<>();
-        
+
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
-            
+
             String line;
             int lineNumber = 0;
-            
+
             while ((line = reader.readLine()) != null) {
                 lineNumber++;
                 line = line.trim();
-                
-                // 跳过空行和注释行
+
                 if (line.isEmpty() || line.startsWith("#") || line.startsWith("//")) {
                     continue;
                 }
-                
+
                 try {
-                    Question question = parseLine(line, creatorId);
-                    questions.add(question);
+                    questions.add(parseLine(line, creatorId));
                 } catch (Exception e) {
-                    throw new Exception("第" + lineNumber + "行解析错误：" + e.getMessage());
+                    throw new Exception("第 " + lineNumber + " 行解析错误：" + e.getMessage());
                 }
             }
         }
-        
+
         if (questions.isEmpty()) {
             throw new Exception("文件中没有有效的题目数据");
         }
-        
+
         return questions;
     }
-    
-    /**
-     * 解析单行题目数据
-     */
+
     private static Question parseLine(String line, Integer creatorId) throws Exception {
         String[] parts = line.split("\\|");
-        
         if (parts.length < 8) {
-            throw new Exception("数据格式不正确，至少需要8个字段（用|分隔）");
+            throw new Exception("数据格式不正确，至少需要 8 个字段（用 | 分隔）");
         }
-        
+
         Question question = new Question();
-        
-        // 题目类型
         try {
             question.setQuestionType(QuestionType.valueOf(parts[0].trim().toUpperCase()));
         } catch (IllegalArgumentException e) {
-            throw new Exception("题目类型无效：" + parts[0] + "，应为SINGLE、MULTIPLE、JUDGE、BLANK、APPLICATION、ALGORITHM、SHORT_ANSWER、COMPREHENSIVE、ESSAY、MATERIAL_ANALYSIS、CLOZE、READING_ANALYSIS、ENGLISH_TO_CHINESE、CHINESE_TO_ENGLISH或WRITING");
+            throw new Exception("题目类型无效：" + parts[0] + "，当前导题建卷仅支持 " + SUPPORTED_TYPES + " 题型");
         }
-        
-        // 科目
+
+        if (!question.getQuestionType().isSupportedForAutoExam()) {
+            throw new Exception("导题建卷当前仅支持 " + SUPPORTED_TYPES + " 题型，暂不支持：" + question.getQuestionType().name());
+        }
+
         question.setSubject(parts[1].trim());
         if (question.getSubject().isEmpty()) {
             throw new Exception("科目不能为空");
         }
-        
-        // 题目内容
+
         question.setContent(parts[2].trim());
         if (question.getContent().isEmpty()) {
             throw new Exception("题目内容不能为空");
         }
-        
-        // 选项A-D
+
         question.setOptionA(parts.length > 3 ? parts[3].trim() : null);
         question.setOptionB(parts.length > 4 ? parts[4].trim() : null);
         question.setOptionC(parts.length > 5 ? parts[5].trim() : null);
         question.setOptionD(parts.length > 6 ? parts[6].trim() : null);
-        
-        // 正确答案
+
         question.setCorrectAnswer(parts[7].trim().toUpperCase());
         if (question.getCorrectAnswer().isEmpty()) {
             throw new Exception("正确答案不能为空");
         }
-        
-        // 分值
+
         try {
-            question.setScore(parts.length > 8 && !parts[8].trim().isEmpty() 
-                ? Integer.parseInt(parts[8].trim()) : 5);
+            question.setScore(parts.length > 8 && !parts[8].trim().isEmpty()
+                    ? Integer.parseInt(parts[8].trim())
+                    : 5);
         } catch (NumberFormatException e) {
             throw new Exception("分值必须是数字");
         }
-        
-        // 难度
+
         if (parts.length > 9 && !parts[9].trim().isEmpty()) {
             try {
                 question.setDifficulty(Difficulty.valueOf(parts[9].trim().toUpperCase()));
@@ -131,96 +106,40 @@ public class QuestionImportUtil {
         } else {
             question.setDifficulty(Difficulty.MEDIUM);
         }
-        
-        // 解析
+
         question.setAnalysis(parts.length > 10 ? parts[10].trim() : "");
-        
-        // 创建者ID
         question.setCreatorId(creatorId);
-        
         return question;
     }
-    
+
     public static String buildTemplateContent() {
         return String.join("\n",
                 "# 题目导入模板文件",
                 "# 格式说明：题目类型|科目|题目内容|选项A|选项B|选项C|选项D|正确答案|分值|难度|解析",
-                "# 题目类型：SINGLE(单选)、MULTIPLE(多选)、JUDGE(判断)、BLANK(填空)、APPLICATION(应用题)、ALGORITHM(算法设计题)、SHORT_ANSWER(简答题)、COMPREHENSIVE(综合题)、ESSAY(论述题)、MATERIAL_ANALYSIS(材料分析题)、CLOZE(选词填空)、READING_ANALYSIS(阅读分析)、ENGLISH_TO_CHINESE(英译汉)、CHINESE_TO_ENGLISH(汉译英)、WRITING(写作)",
+                "# 当前导题建卷仅支持：SINGLE(单选题)、MULTIPLE(多选题)、JUDGE(判断题)",
                 "# 难度：EASY(简单)、MEDIUM(中等)、HARD(困难)",
-                "# 以#开头的行为注释，会被忽略",
+                "# 以 # 开头的行为注释，会被忽略",
                 "",
-                "# 示例题目：",
-                "# 单选题示例",
-                "SINGLE|Java|Java中哪个关键字可以用来定义常量？|const|final|static|constant|B|5|EASY|final关键字用于定义常量，被final修饰的变量不可改变。",
-                "SINGLE|Java|下列哪个不是Java的基本数据类型？|int|float|boolean|String|D|5|EASY|String是引用类型，不是基本数据类型。",
+                "# 示例题目",
+                "SINGLE|Java|Java 中用于定义常量的关键字是？|const|final|static|let|B|5|EASY|final 用于定义常量",
+                "MULTIPLE|Java|Java 中哪些是访问修饰符？|public|private|protected|final|ABC|10|EASY|public、private、protected 是访问修饰符",
+                "JUDGE|Java|Java 支持类的多继承|正确|错误|||B|5|EASY|Java 不支持类的多继承",
                 "",
-                "# 多选题示例",
-                "MULTIPLE|Java|Java中哪些是访问修饰符？|public|private|protected|final|ABC|10|EASY|public、private、protected是访问修饰符，final是最终修饰符。",
-                "",
-                "# 判断题示例",
-                "JUDGE|Java|Java支持多继承|正确|错误|||B|5|EASY|Java不支持类的多继承，但支持接口的多实现。",
-                "",
-                "# 填空题示例",
-                "BLANK|Java|Java中声明整数变量的关键字是____。||||int|5|EASY|使用int关键字声明整数类型。",
-                "",
-                "# 应用题示例（正确答案可以为关键要点描述）",
-                "APPLICATION|Java|请编写一个Java程序，实现学生成绩管理系统，要求包含添加、删除、查询、修改功能。|||||1.定义Student类 2.使用ArrayList存储 3.实现CRUD操作 4.提供菜单交互|20|MEDIUM|考查面向对象、集合框架和系统设计能力。",
-                "",
-                "# 算法设计题示例（正确答案可以为算法描述或关键代码）",
-                "ALGORITHM|算法|请设计一个算法，实现快速排序（Quick Sort），并分析其时间复杂度。|||||1.选择基准元素 2.分区操作 3.递归排序 4.时间复杂度O(nlogn)|25|HARD|快速排序是分治算法的典型应用，平均时间复杂度为O(nlogn)。",
-                "",
-                "# 简答题示例（正确答案为关键要点）",
-                "SHORT_ANSWER|Java|请简述Java中面向对象的三大特征及其含义。|||||1.封装：将数据和方法封装在类中 2.继承：子类继承父类的属性和方法 3.多态：同一接口的不同实现|15|MEDIUM|面向对象的三大特征是Java的核心概念。",
-                "",
-                "# 综合题示例（正确答案为详细解答要点）",
-                "COMPREHENSIVE|Java|请设计并实现一个学生管理系统，包括学生信息管理、成绩管理、课程管理等功能。|||||1.系统架构设计 2.数据库设计 3.类图设计 4.核心功能实现 5.异常处理|30|HARD|综合考查系统分析、设计和实现能力。",
-                "",
-                "# 论述题示例（正确答案为论述要点和论据）",
-                "ESSAY|马克思主义|请论述马克思主义在中国的传播和发展，并结合实际谈谈其对中国革命和建设的指导意义。|||||1.马克思主义传入中国的历史背景 2.与中国实际相结合 3.指导中国革命实践|25|HARD|论述题考查学生的理论分析和论证能力。",
-                "",
-                "# 材料分析题示例（题目内容包含材料，正确答案为分析要点）",
-                "MATERIAL_ANALYSIS|语文|阅读下面材料：《荷塘月色》节选，请分析这句话的修辞手法和表达效果。|||||1.拟人修辞手法 2.营造宁静优美的意境|20|MEDIUM|考查文学作品的阅读理解和分析能力。",
-                "",
-                "# 选词填空题示例（英语题型）",
-                "CLOZE|英语|The weather was so ____ that we decided to stay indoors. 备选词：terrible, terribly|terrible|terribly|||A|10|EASY|此处需要形容词修饰weather。",
-                "",
-                "# 阅读分析题示例（英语题型）",
-                "READING_ANALYSIS|英语|阅读理解：AI is transforming our world. Question: What is the main idea?|AI replacing jobs|AI benefits and concerns|||B|15|MEDIUM|文章讨论了AI的发展。",
-                "",
-                "# 英译汉题示例",
-                "ENGLISH_TO_CHINESE|英语|请将下列句子翻译成中文：Technology has changed our lives.||||技术已经改变了我们的生活。|15|EASY|考查基本翻译能力。",
-                "",
-                "# 汉译英题示例",
-                "CHINESE_TO_ENGLISH|英语|请将下列句子翻译成英文：保护环境是每个人的责任。||||Protecting the environment is everyone's responsibility.|15|EASY|考查环保相关表达的翻译。",
-                "",
-                "# 写作题示例（英语题型）",
-                "WRITING|英语|写作题：请以\"My Hobby\"为题，写一篇不少于100词的英语短文。||||参考答案要点：1. Introduction 2. Reasons 3. Experience|20|MEDIUM|考查英语写作能力。"
+                "# 提示：SHORT_ANSWER、BLANK、WRITING 等扩展题型暂不支持导题建卷，请勿使用在当前模板中"
         ) + "\n";
     }
 
-    /**
-     * 生成导入模板文件
-     */
     public static void generateTemplate(File file) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(
                 new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
             writer.write(buildTemplateContent());
         }
     }
-    
-    /**
-     * 从文本文件导入题目
-     * @param filePath 文件路径
-     * @return 题目列表
-     * @throws Exception 导入过程中的异常
-     */
+
     public static List<Question> importQuestionsFromFile(String filePath) throws Exception {
         return importFromTextFile(new File(filePath), null);
     }
 
-    /**
-     * Import questions from raw text content.
-     */
     public static List<Question> importFromText(String sourceText, Integer creatorId) throws Exception {
         if (sourceText == null || sourceText.trim().isEmpty()) {
             throw new Exception("导入内容不能为空");
@@ -240,10 +159,9 @@ public class QuestionImportUtil {
                 }
 
                 try {
-                    Question question = parseLine(line, creatorId);
-                    questions.add(question);
+                    questions.add(parseLine(line, creatorId));
                 } catch (Exception e) {
-                    throw new Exception("第 " + lineNumber + " 行解析错误: " + e.getMessage());
+                    throw new Exception("第 " + lineNumber + " 行解析错误：" + e.getMessage());
                 }
             }
         }

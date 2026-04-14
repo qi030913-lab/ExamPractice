@@ -14,9 +14,11 @@ public class AuthInterceptor implements HandlerInterceptor {
     public static final String AUTHENTICATED_USER_ATTRIBUTE = "authenticatedUser";
 
     private final AuthTokenService authTokenService;
+    private final AuthCookieService authCookieService;
 
-    public AuthInterceptor(AuthTokenService authTokenService) {
+    public AuthInterceptor(AuthTokenService authTokenService, AuthCookieService authCookieService) {
         this.authTokenService = authTokenService;
+        this.authCookieService = authCookieService;
     }
 
     @Override
@@ -25,7 +27,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        String token = extractBearerToken(request.getHeader("Authorization"));
+        String token = authCookieService.resolveToken(request);
         if (token == null) {
             throw new AuthenticationException("未登录或登录已失效");
         }
@@ -42,20 +44,6 @@ public class AuthInterceptor implements HandlerInterceptor {
 
         request.setAttribute(AUTHENTICATED_USER_ATTRIBUTE, authenticatedUser);
         return true;
-    }
-
-    private String extractBearerToken(String authorization) {
-        if (authorization == null) {
-            return null;
-        }
-
-        String prefix = "Bearer ";
-        if (!authorization.startsWith(prefix)) {
-            return null;
-        }
-
-        String token = authorization.substring(prefix.length()).trim();
-        return token.isEmpty() ? null : token;
     }
 
     @SuppressWarnings("unchecked")

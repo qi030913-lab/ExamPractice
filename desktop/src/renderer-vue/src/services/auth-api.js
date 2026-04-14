@@ -10,6 +10,16 @@ export async function register(payload) {
   return unwrapResponse(response);
 }
 
+export async function logout() {
+  const response = await apiClient.post("/auth/logout");
+  return unwrapResponse(response);
+}
+
+export async function getCurrentSession() {
+  const response = await apiClient.get("/auth/session");
+  return unwrapResponse(response);
+}
+
 export async function getTeacherWorkbench(userId) {
   const response = await apiClient.get(`/workbench/teacher/${userId}`);
   return unwrapResponse(response);

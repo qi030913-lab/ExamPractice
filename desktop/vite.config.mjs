@@ -7,9 +7,15 @@ export default defineConfig({
   root: path.resolve("src/renderer-vue"),
   publicDir: path.resolve("src/renderer-vue/public"),
   server: {
-    host: "127.0.0.1",
+    host: "localhost",
     port: 5173,
-    strictPort: true
+    strictPort: true,
+    proxy: {
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true
+      }
+    }
   },
   resolve: {
     alias: {

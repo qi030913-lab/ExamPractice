@@ -7,23 +7,17 @@ public class AuthUserResponse {
     private String realName;
     private String loginId;
     private String role;
-    private String token;
     private String email;
     private String phone;
     private String gender;
     private String status;
 
     public static AuthUserResponse from(User user) {
-        return from(user, null);
-    }
-
-    public static AuthUserResponse from(User user, String token) {
         AuthUserResponse response = new AuthUserResponse();
         response.userId = user.getUserId();
         response.realName = user.getRealName();
         response.loginId = user.getLoginId();
         response.role = user.getRole() == null ? null : user.getRole().name();
-        response.token = token;
         response.email = user.getEmail();
         response.phone = user.getPhone();
         response.gender = user.getGender();
@@ -45,10 +39,6 @@ public class AuthUserResponse {
 
     public String getRole() {
         return role;
-    }
-
-    public String getToken() {
-        return token;
     }
 
     public String getEmail() {

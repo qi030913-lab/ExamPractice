@@ -4,8 +4,8 @@
       <p class="page-tag">导题建卷</p>
       <h2>通过题目文本快速生成试卷</h2>
       <p>
-        支持选择本地 `txt` 文件或直接粘贴题目文本，系统会自动解析内容、
-        复用已有题目并生成新试卷。
+        支持选择本地 `txt` 文件或直接粘贴题目文本，系统会自动解析内容、复用已有题目并生成新试卷。
+        当前导题建卷仅支持单选、多选、判断三类客观题。
       </p>
     </div>
 
@@ -61,6 +61,7 @@
         <h3>格式说明</h3>
         <div class="detail-tips">
           <p>建议先下载模板文件，再按模板格式编辑题目内容，这样和后端解析规则能保持一致。</p>
+          <p>目前模板和导入校验已经统一为客观题：`SINGLE`、`MULTIPLE`、`JUDGE`。</p>
           <div class="action-row">
             <button class="ghost-button" type="button" :disabled="templateLoading" @click="downloadTemplate">
               {{ templateLoading ? "准备模板中..." : "下载导题模板" }}
@@ -72,8 +73,8 @@
           <code>题目类型|科目|题目内容|选项A|选项B|选项C|选项D|正确答案|分值|难度|解析</code>
           <p>示例：</p>
           <pre>SINGLE|Java|Java 中用于定义常量的关键字是？|const|final|static|let|B|5|EASY|final 用于定义常量</pre>
+          <pre>MULTIPLE|Java|Java 中哪些是访问修饰符？|public|private|protected|final|ABC|10|MEDIUM|访问修饰符包括 public、private、protected</pre>
           <pre>JUDGE|Java|Java 支持类的多继承|正确|错误|||B|5|EASY|Java 不支持类的多继承</pre>
-          <pre>SHORT_ANSWER|Java|请简述面向对象三大特征|||||封装、继承、多态|15|MEDIUM|核心面试题</pre>
         </div>
 
         <div v-if="importSummary" class="result-block">

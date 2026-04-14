@@ -1,46 +1,51 @@
 package com.exam.api.security;
 
+import com.exam.dao.AuthSessionDao;
+import com.exam.model.AuthSession;
 import com.exam.model.User;
-import com.exam.model.enums.UserRole;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class AuthTokenService {
+    private final AuthSessionDao authSessionDao;
     private final Duration tokenTtl;
     private final int maxActiveSessions;
     private final Clock clock;
     private final SecureRandom secureRandom = new SecureRandom();
-    private final Map<String, SessionRecord> sessions = new ConcurrentHashMap<>();
     private final Object sessionMutationLock = new Object();
 
     @Autowired
     public AuthTokenService(
+            AuthSessionDao authSessionDao,
             @Value("${exam.api.auth.token-ttl-hours:12}") long tokenTtlHours,
             @Value("${exam.api.auth.max-active-sessions:2048}") int maxActiveSessions
     ) {
-        this(Duration.ofHours(Math.max(1, tokenTtlHours)), maxActiveSessions, Clock.systemDefaultZone());
+        this(authSessionDao, Duration.ofHours(Math.max(1, tokenTtlHours)), maxActiveSessions, Clock.systemDefaultZone());
     }
 
-    public AuthTokenService() {
-        this(Duration.ofHours(12), 2048, Clock.systemDefaultZone());
-    }
-
-    public AuthTokenService(Duration tokenTtl, int maxActiveSessions, Clock clock) {
+    public AuthTokenService(AuthSessionDao authSessionDao, Duration tokenTtl, int maxActiveSessions, Clock clock) {
+        this.authSessionDao = authSessionDao;
         this.tokenTtl = tokenTtl == null || tokenTtl.isZero() || tokenTtl.isNegative() ? Duration.ofHours(12) : tokenTtl;
         this.maxActiveSessions = Math.max(1, maxActiveSessions);
         this.clock = clock == null ? Clock.systemDefaultZone() : clock;
+    }
+
+    @PostConstruct
+    public void initializeSessionStore() {
+        authSessionDao.createTableIfMissing();
     }
 
     public String issueToken(User user) {
@@ -50,13 +55,16 @@ public class AuthTokenService {
             cleanupExpiredSessionsInternal();
             evictOldestSessionIfNecessary();
 
-            byte[] bytes = new byte[32];
-            secureRandom.nextBytes(bytes);
-
-            String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+            String token = generateToken();
             LocalDateTime issuedAt = now();
-            LocalDateTime expiresAt = issuedAt.plus(tokenTtl);
-            sessions.put(token, new SessionRecord(user.getUserId(), user.getRole(), issuedAt, expiresAt));
+
+            AuthSession session = new AuthSession();
+            session.setTokenHash(hashToken(token));
+            session.setUserId(user.getUserId());
+            session.setRole(user.getRole());
+            session.setIssuedAt(issuedAt);
+            session.setExpiresAt(issuedAt.plus(tokenTtl));
+            authSessionDao.insert(session);
             return token;
         }
     }
@@ -66,18 +74,25 @@ public class AuthTokenService {
             return null;
         }
 
-        String normalizedToken = token.trim();
-        SessionRecord sessionRecord = sessions.get(normalizedToken);
-        if (sessionRecord == null) {
+        AuthSession session = authSessionDao.findByTokenHash(hashToken(token.trim()));
+        if (session == null) {
             return null;
         }
 
-        if (sessionRecord.isExpiredAt(now())) {
-            sessions.remove(normalizedToken, sessionRecord);
+        if (!session.getExpiresAt().isAfter(now())) {
+            authSessionDao.deleteByTokenHash(session.getTokenHash());
             return null;
         }
 
-        return sessionRecord.toAuthenticatedUser();
+        return new AuthenticatedUser(session.getUserId(), session.getRole(), session.getExpiresAt());
+    }
+
+    public void invalidateToken(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            return;
+        }
+
+        authSessionDao.deleteByTokenHash(hashToken(token.trim()));
     }
 
     @Scheduled(fixedDelayString = "${exam.api.auth.cleanup-interval-ms:300000}")
@@ -89,12 +104,16 @@ public class AuthTokenService {
 
     public int getActiveSessionCount() {
         cleanupExpiredSessions();
-        return sessions.size();
+        return authSessionDao.countSessions();
+    }
+
+    public Duration getTokenTtl() {
+        return tokenTtl;
     }
 
     private void validateUser(User user) {
         if (user == null || user.getUserId() == null) {
-            throw new IllegalArgumentException("用户信息不完整，无法签发令牌");
+            throw new IllegalArgumentException("用户信息不完整，无法签发会话");
         }
         if (user.getRole() == null) {
             throw new IllegalArgumentException("用户角色不能为空");
@@ -102,55 +121,41 @@ public class AuthTokenService {
     }
 
     private int cleanupExpiredSessionsInternal() {
-        LocalDateTime now = now();
-        int before = sessions.size();
-        sessions.entrySet().removeIf(entry -> entry.getValue().isExpiredAt(now));
-        return before - sessions.size();
+        return authSessionDao.deleteExpiredSessions(now());
     }
 
     private void evictOldestSessionIfNecessary() {
-        if (sessions.size() < maxActiveSessions) {
+        if (authSessionDao.countSessions() < maxActiveSessions) {
             return;
         }
 
-        String oldestToken = sessions.entrySet().stream()
-                .min(Comparator
-                        .comparing((Map.Entry<String, SessionRecord> entry) -> entry.getValue().getIssuedAt())
-                        .thenComparing(Map.Entry::getKey))
-                .map(Map.Entry::getKey)
-                .orElse(null);
-        if (oldestToken != null) {
-            sessions.remove(oldestToken);
+        String oldestTokenHash = authSessionDao.findOldestTokenHash();
+        if (oldestTokenHash != null && !oldestTokenHash.isEmpty()) {
+            authSessionDao.deleteByTokenHash(oldestTokenHash);
+        }
+    }
+
+    private String generateToken() {
+        byte[] bytes = new byte[32];
+        secureRandom.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    private String hashToken(String token) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] bytes = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+            StringBuilder builder = new StringBuilder(bytes.length * 2);
+            for (byte value : bytes) {
+                builder.append(String.format("%02x", value));
+            }
+            return builder.toString();
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 algorithm is not available", ex);
         }
     }
 
     private LocalDateTime now() {
         return LocalDateTime.now(clock);
-    }
-
-    private static class SessionRecord {
-        private final Integer userId;
-        private final UserRole role;
-        private final LocalDateTime issuedAt;
-        private final LocalDateTime expiresAt;
-
-        private SessionRecord(Integer userId, UserRole role, LocalDateTime issuedAt, LocalDateTime expiresAt) {
-            this.userId = userId;
-            this.role = role;
-            this.issuedAt = issuedAt;
-            this.expiresAt = expiresAt;
-        }
-
-        private LocalDateTime getIssuedAt() {
-            return issuedAt;
-        }
-
-        private boolean isExpiredAt(LocalDateTime currentTime) {
-            return !expiresAt.isAfter(currentTime);
-        }
-
-        private AuthenticatedUser toAuthenticatedUser() {
-            return new AuthenticatedUser(userId, role, expiresAt);
-        }
     }
 }

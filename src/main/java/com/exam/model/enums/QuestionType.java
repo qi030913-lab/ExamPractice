@@ -1,8 +1,9 @@
 package com.exam.model.enums;
 
-/**
- * 题目类型枚举
- */
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 public enum QuestionType {
     SINGLE("单选题"),
     MULTIPLE("多选题"),
@@ -20,6 +21,8 @@ public enum QuestionType {
     CHINESE_TO_ENGLISH("汉译英"),
     WRITING("写作");
 
+    private static final Set<QuestionType> AUTO_EXAM_SUPPORTED_TYPES = EnumSet.of(SINGLE, MULTIPLE, JUDGE);
+
     private final String description;
 
     QuestionType(String description) {
@@ -31,6 +34,12 @@ public enum QuestionType {
     }
 
     public boolean isSupportedForAutoExam() {
-        return this == SINGLE || this == MULTIPLE || this == JUDGE;
+        return AUTO_EXAM_SUPPORTED_TYPES.contains(this);
+    }
+
+    public static String getAutoExamSupportedTypeNames() {
+        return AUTO_EXAM_SUPPORTED_TYPES.stream()
+                .map(Enum::name)
+                .collect(Collectors.joining("、"));
     }
 }

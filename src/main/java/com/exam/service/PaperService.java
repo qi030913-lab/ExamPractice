@@ -287,7 +287,7 @@ public class PaperService {
     private void validateSupportedQuestion(Question question) {
         if (question.getQuestionType() == null || !question.getQuestionType().isSupportedForAutoExam()) {
             String typeName = question.getQuestionType() == null ? "UNSPECIFIED" : question.getQuestionType().name();
-            throw new BusinessException("Only SINGLE, MULTIPLE and JUDGE are supported for auto exam: " + typeName);
+            throw new BusinessException("当前考试流程仅支持 " + QuestionType.getAutoExamSupportedTypeNames() + " 题型，暂不支持题型：" + typeName);
         }
     }
 

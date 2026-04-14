@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.dao.AuthSessionDao">
+
+    <resultMap id="AuthSessionResultMap" type="com.exam.model.AuthSession">
+        <id property="tokenHash" column="token_hash"/>
+        <result property="userId" column="user_id"/>
+        <result property="role" column="role" javaType="com.exam.model.enums.UserRole"/>
+        <result property="issuedAt" column="issued_at"/>
+        <result property="expiresAt" column="expires_at"/>
+    </resultMap>
+
+    <update id="createTableIfMissing">
+        CREATE TABLE IF NOT EXISTS auth_session (
+            token_hash VARCHAR(64) PRIMARY KEY,
+            user_id INT NOT NULL,
+            role VARCHAR(32) NOT NULL,
+            issued_at TIMESTAMP NOT NULL,
+            expires_at TIMESTAMP NOT NULL
+        )
+    </update>
+
+    <insert id="insert" parameterType="com.exam.model.AuthSession">
+        INSERT INTO auth_session (token_hash, user_id, role, issued_at, expires_at)
+        VALUES (#{tokenHash}, #{userId}, #{role}, #{issuedAt}, #{expiresAt})
+    </insert>
+
+    <select id="findByTokenHash" resultMap="AuthSessionResultMap">
+        SELECT token_hash, user_id, role, issued_at, expires_at
+        FROM auth_session
+        WHERE token_hash = #{tokenHash}
+    </select>
+
+    <delete id="deleteByTokenHash">
+        DELETE FROM auth_session
+        WHERE token_hash = #{tokenHash}
+    </delete>
+
+    <delete id="deleteExpiredSessions">
+        DELETE FROM auth_session
+        WHERE expires_at &lt;= #{currentTime}
+    </delete>
+
+    <select id="countSessions" resultType="int">
+        SELECT COUNT(*)
+        FROM auth_session
+    </select>
+
+    <select id="findOldestTokenHash" resultType="string">
+        SELECT token_hash
+        FROM auth_session
+        ORDER BY issued_at ASC, token_hash ASC
+        LIMIT 1
+    </select>
+</mapper>

@@ -145,6 +145,10 @@ router.beforeEach(async (to) => {
   }
 
   if (!sessionStore.isLoggedIn) {
+    await sessionStore.restoreSession();
+  }
+
+  if (!sessionStore.isLoggedIn) {
     return "/login";
   }
 

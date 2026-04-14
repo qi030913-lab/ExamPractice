@@ -34,6 +34,9 @@ exam:
       token-ttl-hours: 12
       max-active-sessions: 2048
       cleanup-interval-ms: 300000
+      cookie-name: EXAM_SESSION
+      cookie-secure: true
+      cookie-same-site: None
     cors:
       allowed-origin-patterns: "null,http://127.0.0.1:5173,http://localhost:5173"
 
