@@ -5,6 +5,7 @@ import com.exam.api.assembler.StudentWorkspaceAssembler;
 import com.exam.api.common.ApiResponse;
 import com.exam.api.controller.WorkbenchController;
 import com.exam.api.dto.WorkbenchDtos;
+import com.exam.api.support.UserRoleGuard;
 import com.exam.model.ExamRecord;
 import com.exam.model.Paper;
 import com.exam.model.User;
@@ -30,6 +31,7 @@ class WorkbenchControllerTest {
     private UserService userService;
     private PaperService paperService;
     private ExamService examService;
+    private UserRoleGuard userRoleGuard;
     private WorkbenchController controller;
 
     @BeforeEach
@@ -37,11 +39,13 @@ class WorkbenchControllerTest {
         userService = mock(UserService.class);
         paperService = mock(PaperService.class);
         examService = mock(ExamService.class);
+        userRoleGuard = mock(UserRoleGuard.class);
         controller = new WorkbenchController(
                 userService,
                 paperService,
                 examService,
-                new StudentWorkspaceAssembler(new ExamRecordStatisticsAssembler())
+                new StudentWorkspaceAssembler(new ExamRecordStatisticsAssembler()),
+                userRoleGuard
         );
     }
 
@@ -58,7 +62,7 @@ class WorkbenchControllerTest {
         ExamRecord ongoingRecord = buildRecord(12, student.getUserId(), ongoingPaper, ExamStatus.IN_PROGRESS, null);
         ongoingRecord.setStartTime(LocalDateTime.of(2026, 4, 13, 10, 0));
 
-        when(userService.getUserById(1)).thenReturn(student);
+        when(userRoleGuard.requireStudent(1)).thenReturn(student);
         when(paperService.getAllPublishedPapersOptimized()).thenReturn(List.of(publishedPaper, ongoingPaper));
         when(examService.getStudentExamRecordsOptimized(1)).thenReturn(List.of(submittedRecord, ongoingRecord));
 

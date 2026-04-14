@@ -5,6 +5,8 @@ import com.exam.api.assembler.TeacherWorkspaceAssembler;
 import com.exam.api.common.ApiResponse;
 import com.exam.api.controller.TeacherWorkspaceController;
 import com.exam.api.dto.TeacherWorkspaceDtos;
+import com.exam.api.support.ExamAccessGuard;
+import com.exam.api.support.UserRoleGuard;
 import com.exam.model.ExamRecord;
 import com.exam.model.Paper;
 import com.exam.model.User;
@@ -32,6 +34,8 @@ class TeacherWorkspaceControllerTest {
     private PaperService paperService;
     private ExamService examService;
     private QuestionService questionService;
+    private UserRoleGuard userRoleGuard;
+    private ExamAccessGuard examAccessGuard;
     private TeacherWorkspaceController controller;
 
     @BeforeEach
@@ -40,12 +44,16 @@ class TeacherWorkspaceControllerTest {
         paperService = mock(PaperService.class);
         examService = mock(ExamService.class);
         questionService = mock(QuestionService.class);
+        userRoleGuard = mock(UserRoleGuard.class);
+        examAccessGuard = mock(ExamAccessGuard.class);
         controller = new TeacherWorkspaceController(
                 userService,
                 paperService,
                 examService,
                 questionService,
-                new TeacherWorkspaceAssembler(new ExamRecordStatisticsAssembler())
+                new TeacherWorkspaceAssembler(new ExamRecordStatisticsAssembler()),
+                userRoleGuard,
+                examAccessGuard
         );
     }
 
@@ -78,7 +86,7 @@ class TeacherWorkspaceControllerTest {
         inProgressRecord.setPaper(paper);
         inProgressRecord.setStatus(ExamStatus.IN_PROGRESS);
 
-        when(userService.getUserById(10)).thenReturn(teacher);
+        when(userRoleGuard.requireTeacher(10)).thenReturn(teacher);
         when(userService.getStudents()).thenReturn(List.of(studentA, studentB));
         when(examService.getStudentExamRecordsByStudentIds(List.of(1, 2))).thenReturn(Map.of(
                 1, List.of(submittedRecord, inProgressRecord),

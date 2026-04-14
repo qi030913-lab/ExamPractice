@@ -5,6 +5,8 @@ import com.exam.api.assembler.StudentWorkspaceAssembler;
 import com.exam.api.common.ApiResponse;
 import com.exam.api.controller.StudentWorkspaceController;
 import com.exam.api.dto.StudentWorkspaceDtos;
+import com.exam.api.support.ExamAccessGuard;
+import com.exam.api.support.UserRoleGuard;
 import com.exam.model.AnswerRecord;
 import com.exam.model.ExamRecord;
 import com.exam.model.Paper;
@@ -13,7 +15,6 @@ import com.exam.model.enums.ExamStatus;
 import com.exam.model.enums.UserRole;
 import com.exam.service.ExamService;
 import com.exam.service.PaperService;
-import com.exam.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,21 +30,24 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class StudentWorkspaceControllerTest {
-    private UserService userService;
     private PaperService paperService;
     private ExamService examService;
+    private UserRoleGuard userRoleGuard;
+    private ExamAccessGuard examAccessGuard;
     private StudentWorkspaceController controller;
 
     @BeforeEach
     void setUp() {
-        userService = mock(UserService.class);
         paperService = mock(PaperService.class);
         examService = mock(ExamService.class);
+        userRoleGuard = mock(UserRoleGuard.class);
+        examAccessGuard = mock(ExamAccessGuard.class);
         controller = new StudentWorkspaceController(
-                userService,
                 paperService,
                 examService,
-                new StudentWorkspaceAssembler(new ExamRecordStatisticsAssembler())
+                new StudentWorkspaceAssembler(new ExamRecordStatisticsAssembler()),
+                userRoleGuard,
+                examAccessGuard
         );
     }
 
@@ -63,7 +67,7 @@ class StudentWorkspaceControllerTest {
         englishRecord.setStartTime(LocalDateTime.of(2026, 4, 11, 9, 0));
         englishRecord.setEndTime(LocalDateTime.of(2026, 4, 11, 10, 0));
 
-        when(userService.getUserById(1)).thenReturn(student);
+        when(userRoleGuard.requireStudent(1)).thenReturn(student);
         when(examService.getStudentExamRecordsOptimized(1)).thenReturn(List.of(mathRecord, englishRecord));
         when(examService.getAnswerRecordsBatch(List.of(11, 12))).thenReturn(Map.of(
                 11, List.of(

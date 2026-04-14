@@ -5,12 +5,11 @@ import com.exam.api.common.ApiResponse;
 import com.exam.api.dto.AuthUserResponse;
 import com.exam.api.dto.StudentWorkspaceDtos;
 import com.exam.api.dto.WorkbenchDtos;
-import com.exam.exception.BusinessException;
+import com.exam.api.support.UserRoleGuard;
 import com.exam.model.ExamRecord;
 import com.exam.model.Paper;
 import com.exam.model.User;
 import com.exam.model.enums.ExamStatus;
-import com.exam.model.enums.UserRole;
 import com.exam.service.ExamService;
 import com.exam.service.PaperService;
 import com.exam.service.UserService;
@@ -29,22 +28,25 @@ public class WorkbenchController {
     private final PaperService paperService;
     private final ExamService examService;
     private final StudentWorkspaceAssembler studentWorkspaceAssembler;
+    private final UserRoleGuard userRoleGuard;
 
     public WorkbenchController(
             UserService userService,
             PaperService paperService,
             ExamService examService,
-            StudentWorkspaceAssembler studentWorkspaceAssembler
+            StudentWorkspaceAssembler studentWorkspaceAssembler,
+            UserRoleGuard userRoleGuard
     ) {
         this.userService = userService;
         this.paperService = paperService;
         this.examService = examService;
         this.studentWorkspaceAssembler = studentWorkspaceAssembler;
+        this.userRoleGuard = userRoleGuard;
     }
 
     @GetMapping("/teacher/{userId}")
     public ApiResponse<WorkbenchDtos.TeacherWorkbenchPayload> teacherWorkbench(@PathVariable("userId") Integer userId) {
-        User teacher = requireRole(userId, UserRole.TEACHER);
+        User teacher = userRoleGuard.requireTeacher(userId);
         List<Paper> papers = paperService.getAllPapersOptimized();
         List<User> students = userService.getStudents();
         long publishedCount = papers.stream()
@@ -60,7 +62,7 @@ public class WorkbenchController {
 
     @GetMapping("/student/{userId}")
     public ApiResponse<WorkbenchDtos.StudentWorkbenchPayload> studentWorkbench(@PathVariable("userId") Integer userId) {
-        User student = requireRole(userId, UserRole.STUDENT);
+        User student = userRoleGuard.requireStudent(userId);
         List<Paper> publishedPapers = paperService.getAllPublishedPapersOptimized();
         List<ExamRecord> records = examService.getStudentExamRecordsOptimized(userId);
         StudentWorkspaceDtos.RecordSummary recordSummary = studentWorkspaceAssembler.buildRecordSummary(records);
@@ -81,13 +83,5 @@ public class WorkbenchController {
                 ongoingRecord
         );
         return ApiResponse.success("学生工作台加载成功", payload);
-    }
-
-    private User requireRole(Integer userId, UserRole role) {
-        User user = userService.getUserById(userId);
-        if (user.getRole() != role) {
-            throw new BusinessException("当前用户角色不匹配");
-        }
-        return user;
     }
 }

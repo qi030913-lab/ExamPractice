@@ -6,12 +6,14 @@ import com.exam.api.dto.AuthUserResponse;
 import com.exam.api.dto.TeacherImportPaperRequest;
 import com.exam.api.dto.TeacherUpdatePaperRequest;
 import com.exam.api.dto.TeacherWorkspaceDtos;
+import com.exam.api.support.ExamAccessGuard;
+import com.exam.api.support.UserRoleGuard;
 import com.exam.exception.BusinessException;
+import com.exam.model.AnswerRecord;
 import com.exam.model.ExamRecord;
 import com.exam.model.Paper;
 import com.exam.model.Question;
 import com.exam.model.User;
-import com.exam.model.enums.UserRole;
 import com.exam.service.ExamService;
 import com.exam.service.PaperService;
 import com.exam.service.QuestionService;
@@ -38,24 +40,30 @@ public class TeacherWorkspaceController {
     private final ExamService examService;
     private final QuestionService questionService;
     private final TeacherWorkspaceAssembler assembler;
+    private final UserRoleGuard userRoleGuard;
+    private final ExamAccessGuard examAccessGuard;
 
     public TeacherWorkspaceController(
             UserService userService,
             PaperService paperService,
             ExamService examService,
             QuestionService questionService,
-            TeacherWorkspaceAssembler assembler
+            TeacherWorkspaceAssembler assembler,
+            UserRoleGuard userRoleGuard,
+            ExamAccessGuard examAccessGuard
     ) {
         this.userService = userService;
         this.paperService = paperService;
         this.examService = examService;
         this.questionService = questionService;
         this.assembler = assembler;
+        this.userRoleGuard = userRoleGuard;
+        this.examAccessGuard = examAccessGuard;
     }
 
     @GetMapping("/{userId}/papers")
     public ApiResponse<TeacherWorkspaceDtos.TeacherPapersPayload> getTeacherPapers(@PathVariable("userId") Integer userId) {
-        User teacher = requireTeacher(userId);
+        User teacher = userRoleGuard.requireTeacher(userId);
         List<Paper> papers = paperService.getAllPapersOptimized();
         long publishedCount = papers.stream()
                 .filter(paper -> Boolean.TRUE.equals(paper.getIsPublished()))
@@ -74,7 +82,7 @@ public class TeacherWorkspaceController {
             @PathVariable("userId") Integer userId,
             @PathVariable("paperId") Integer paperId
     ) {
-        requireTeacher(userId);
+        userRoleGuard.requireTeacher(userId);
         paperService.publishPaper(paperId);
         return ApiResponse.success(
                 "试卷发布成功",
@@ -87,7 +95,7 @@ public class TeacherWorkspaceController {
             @PathVariable("userId") Integer userId,
             @PathVariable("paperId") Integer paperId
     ) {
-        requireTeacher(userId);
+        userRoleGuard.requireTeacher(userId);
         paperService.unpublishPaper(paperId);
         return ApiResponse.success(
                 "试卷已取消发布",
@@ -100,7 +108,7 @@ public class TeacherWorkspaceController {
             @PathVariable("userId") Integer userId,
             @PathVariable("paperId") Integer paperId
     ) {
-        requireTeacher(userId);
+        userRoleGuard.requireTeacher(userId);
         paperService.deletePaper(paperId);
         return ApiResponse.success("试卷删除成功", new TeacherWorkspaceDtos.DeletePaperPayload(paperId));
     }
@@ -110,7 +118,7 @@ public class TeacherWorkspaceController {
             @PathVariable("userId") Integer userId,
             @PathVariable("paperId") Integer paperId
     ) {
-        requireTeacher(userId);
+        userRoleGuard.requireTeacher(userId);
         Paper paper = paperService.getPaperById(paperId);
 
         TeacherWorkspaceDtos.TeacherPaperDetailPayload payload = new TeacherWorkspaceDtos.TeacherPaperDetailPayload(
@@ -126,7 +134,7 @@ public class TeacherWorkspaceController {
             @PathVariable("paperId") Integer paperId,
             @Valid @RequestBody TeacherUpdatePaperRequest request
     ) {
-        requireTeacher(userId);
+        userRoleGuard.requireTeacher(userId);
         Paper paper = paperService.getPaperById(paperId);
         paper.setPaperName(request.getPaperName().trim());
         paper.setSubject(request.getSubject().trim());
@@ -145,7 +153,7 @@ public class TeacherWorkspaceController {
 
     @GetMapping("/{userId}/students")
     public ApiResponse<TeacherWorkspaceDtos.TeacherStudentsPayload> getTeacherStudents(@PathVariable("userId") Integer userId) {
-        User teacher = requireTeacher(userId);
+        User teacher = userRoleGuard.requireTeacher(userId);
         List<User> students = userService.getStudents();
         List<Integer> studentIds = students.stream()
                 .map(User::getUserId)
@@ -171,8 +179,8 @@ public class TeacherWorkspaceController {
             @PathVariable("userId") Integer userId,
             @PathVariable("studentId") Integer studentId
     ) {
-        requireTeacher(userId);
-        User student = requireStudent(studentId);
+        userRoleGuard.requireTeacher(userId);
+        User student = userRoleGuard.requireStudent(studentId);
         List<ExamRecord> records = examService.getStudentExamRecordsOptimized(studentId);
 
         TeacherWorkspaceDtos.TeacherStudentRecordsPayload payload = new TeacherWorkspaceDtos.TeacherStudentRecordsPayload(
@@ -188,8 +196,8 @@ public class TeacherWorkspaceController {
             @PathVariable("userId") Integer userId,
             @PathVariable("studentId") Integer studentId
     ) {
-        requireTeacher(userId);
-        User student = requireStudent(studentId);
+        userRoleGuard.requireTeacher(userId);
+        User student = userRoleGuard.requireStudent(studentId);
         List<ExamRecord> records = examService.getStudentExamRecordsOptimized(studentId);
 
         TeacherWorkspaceDtos.TeacherStudentDetailPayload payload = new TeacherWorkspaceDtos.TeacherStudentDetailPayload(
@@ -206,19 +214,12 @@ public class TeacherWorkspaceController {
             @PathVariable("studentId") Integer studentId,
             @PathVariable("recordId") Integer recordId
     ) {
-        requireTeacher(userId);
-        User student = requireStudent(studentId);
+        userRoleGuard.requireTeacher(userId);
+        User student = userRoleGuard.requireStudent(studentId);
         List<ExamRecord> studentRecords = examService.getStudentExamRecordsOptimized(studentId);
-        ExamRecord record = examService.getExamRecordById(recordId);
-        if (record == null) {
-            throw new BusinessException("考试记录不存在");
-        }
-        if (!studentId.equals(record.getStudentId())) {
-            throw new BusinessException("考试记录不属于当前学生");
-        }
-
-        Paper paper = record.getPaper() != null ? record.getPaper() : paperService.getPaperById(record.getPaperId());
-        List<com.exam.model.AnswerRecord> answerRecords = examService.getAnswerRecords(recordId);
+        ExamRecord record = examAccessGuard.requireOwnedRecord(studentId, recordId);
+        Paper paper = examAccessGuard.resolvePaper(record);
+        List<AnswerRecord> answerRecords = examService.getAnswerRecords(recordId);
 
         TeacherWorkspaceDtos.TeacherStudentRecordDetailPayload payload = new TeacherWorkspaceDtos.TeacherStudentRecordDetailPayload(
                 assembler.toTeacherStudentItem(student, studentRecords),
@@ -230,7 +231,7 @@ public class TeacherWorkspaceController {
 
     @GetMapping("/{userId}/import-template")
     public ApiResponse<TeacherWorkspaceDtos.ImportTemplatePayload> getImportTemplate(@PathVariable("userId") Integer userId) {
-        requireTeacher(userId);
+        userRoleGuard.requireTeacher(userId);
         return ApiResponse.success(
                 "导题模板加载成功",
                 new TeacherWorkspaceDtos.ImportTemplatePayload("题目导入模板.txt", QuestionImportUtil.buildTemplateContent())
@@ -242,7 +243,7 @@ public class TeacherWorkspaceController {
             @PathVariable("userId") Integer userId,
             @Valid @RequestBody TeacherImportPaperRequest request
     ) {
-        requireTeacher(userId);
+        userRoleGuard.requireTeacher(userId);
 
         List<Question> importedQuestions;
         try {
@@ -275,22 +276,6 @@ public class TeacherWorkspaceController {
                 )
         );
         return ApiResponse.success("导题建卷成功", payload);
-    }
-
-    private User requireTeacher(Integer userId) {
-        User user = userService.getUserById(userId);
-        if (user.getRole() != UserRole.TEACHER) {
-            throw new BusinessException("当前用户不是教师角色");
-        }
-        return user;
-    }
-
-    private User requireStudent(Integer userId) {
-        User user = userService.getUserById(userId);
-        if (user.getRole() != UserRole.STUDENT) {
-            throw new BusinessException("当前用户不是学生角色");
-        }
-        return user;
     }
 
     private String normalizeBlank(String value) {

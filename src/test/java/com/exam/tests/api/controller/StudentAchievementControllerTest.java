@@ -5,9 +5,9 @@ import com.exam.api.common.ApiResponse;
 import com.exam.api.controller.StudentAchievementController;
 import com.exam.api.dto.StudentAchievementDtos;
 import com.exam.api.service.StudentAchievementService;
+import com.exam.api.support.UserRoleGuard;
 import com.exam.model.User;
 import com.exam.model.enums.UserRole;
-import com.exam.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -22,18 +22,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class StudentAchievementControllerTest {
-    private UserService userService;
     private StudentAchievementService studentAchievementService;
+    private UserRoleGuard userRoleGuard;
     private StudentAchievementController controller;
 
     @BeforeEach
     void setUp() {
-        userService = mock(UserService.class);
         studentAchievementService = mock(StudentAchievementService.class);
+        userRoleGuard = mock(UserRoleGuard.class);
         controller = new StudentAchievementController(
-                userService,
                 studentAchievementService,
-                new StudentAchievementAssembler()
+                new StudentAchievementAssembler(),
+                userRoleGuard
         );
     }
 
@@ -93,7 +93,7 @@ class StudentAchievementControllerTest {
                 updatedAt
         );
 
-        when(userService.getUserById(1)).thenReturn(student);
+        when(userRoleGuard.requireStudent(1)).thenReturn(student);
         when(studentAchievementService.buildSnapshot(1)).thenReturn(snapshot);
 
         ApiResponse<StudentAchievementDtos.StudentAchievementPayload> response = controller.getStudentAchievement(1);

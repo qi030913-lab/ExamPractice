@@ -5,16 +5,16 @@ import com.exam.api.common.ApiResponse;
 import com.exam.api.dto.AuthUserResponse;
 import com.exam.api.dto.StudentSubmitExamRequest;
 import com.exam.api.dto.StudentWorkspaceDtos;
+import com.exam.api.support.ExamAccessGuard;
+import com.exam.api.support.UserRoleGuard;
 import com.exam.exception.BusinessException;
 import com.exam.model.AnswerRecord;
 import com.exam.model.ExamRecord;
 import com.exam.model.Paper;
 import com.exam.model.User;
 import com.exam.model.enums.ExamStatus;
-import com.exam.model.enums.UserRole;
 import com.exam.service.ExamService;
 import com.exam.service.PaperService;
-import com.exam.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,26 +32,29 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/student")
 public class StudentWorkspaceController {
-    private final UserService userService;
     private final PaperService paperService;
     private final ExamService examService;
     private final StudentWorkspaceAssembler assembler;
+    private final UserRoleGuard userRoleGuard;
+    private final ExamAccessGuard examAccessGuard;
 
     public StudentWorkspaceController(
-            UserService userService,
             PaperService paperService,
             ExamService examService,
-            StudentWorkspaceAssembler assembler
+            StudentWorkspaceAssembler assembler,
+            UserRoleGuard userRoleGuard,
+            ExamAccessGuard examAccessGuard
     ) {
-        this.userService = userService;
         this.paperService = paperService;
         this.examService = examService;
         this.assembler = assembler;
+        this.userRoleGuard = userRoleGuard;
+        this.examAccessGuard = examAccessGuard;
     }
 
     @GetMapping("/{userId}/papers")
     public ApiResponse<StudentWorkspaceDtos.StudentPapersPayload> getStudentPapers(@PathVariable("userId") Integer userId) {
-        User student = requireStudent(userId);
+        User student = userRoleGuard.requireStudent(userId);
         List<Paper> papers = paperService.getAllPublishedPapersOptimized();
         List<ExamRecord> records = examService.getStudentExamRecordsOptimized(userId);
         Map<Integer, ExamRecord> latestRecordByPaperId = assembler.resolveLatestRecordByPaperId(records);
@@ -71,8 +74,8 @@ public class StudentWorkspaceController {
             @PathVariable("userId") Integer userId,
             @PathVariable("paperId") Integer paperId
     ) {
-        User student = requireStudent(userId);
-        Paper paper = requirePublishedPaper(paperId);
+        User student = userRoleGuard.requireStudent(userId);
+        Paper paper = examAccessGuard.requirePublishedPaper(paperId);
         List<ExamRecord> records = examService.getStudentExamRecordsOptimized(userId);
         ExamRecord latestRecord = assembler.resolveLatestRecordByPaperId(records).get(paperId);
 
@@ -89,8 +92,8 @@ public class StudentWorkspaceController {
             @PathVariable("userId") Integer userId,
             @PathVariable("paperId") Integer paperId
     ) {
-        User student = requireStudent(userId);
-        Paper paper = requirePublishedPaper(paperId);
+        User student = userRoleGuard.requireStudent(userId);
+        Paper paper = examAccessGuard.requirePublishedPaper(paperId);
         ExamService.ExamStartResult startResult = examService.startOrResumeExam(userId, paperId);
         ExamRecord record = startResult.getRecord();
         boolean resumed = startResult.isResumed();
@@ -109,7 +112,7 @@ public class StudentWorkspaceController {
 
     @GetMapping("/{userId}/records")
     public ApiResponse<StudentWorkspaceDtos.StudentRecordsPayload> getStudentRecords(@PathVariable("userId") Integer userId) {
-        User student = requireStudent(userId);
+        User student = userRoleGuard.requireStudent(userId);
         List<ExamRecord> records = examService.getStudentExamRecordsOptimized(userId);
         List<Integer> recordIds = records.stream()
                 .map(ExamRecord::getRecordId)
@@ -132,9 +135,9 @@ public class StudentWorkspaceController {
             @PathVariable("userId") Integer userId,
             @PathVariable("recordId") Integer recordId
     ) {
-        User student = requireStudent(userId);
-        ExamRecord record = requireOwnedRecord(userId, recordId);
-        Paper paper = record.getPaper() != null ? record.getPaper() : paperService.getPaperById(record.getPaperId());
+        User student = userRoleGuard.requireStudent(userId);
+        ExamRecord record = examAccessGuard.requireOwnedRecord(userId, recordId);
+        Paper paper = examAccessGuard.resolvePaper(record);
         List<AnswerRecord> answerRecords = examService.getAnswerRecords(recordId);
 
         StudentWorkspaceDtos.StudentRecordDetailPayload payload = new StudentWorkspaceDtos.StudentRecordDetailPayload(
@@ -150,9 +153,9 @@ public class StudentWorkspaceController {
             @PathVariable("userId") Integer userId,
             @PathVariable("recordId") Integer recordId
     ) {
-        User student = requireStudent(userId);
-        ExamRecord record = requireOwnedRecord(userId, recordId);
-        Paper paper = record.getPaper() != null ? record.getPaper() : paperService.getPaperById(record.getPaperId());
+        User student = userRoleGuard.requireStudent(userId);
+        ExamRecord record = examAccessGuard.requireOwnedRecord(userId, recordId);
+        Paper paper = examAccessGuard.resolvePaper(record);
 
         StudentWorkspaceDtos.StudentExamSessionPayload payload = new StudentWorkspaceDtos.StudentExamSessionPayload(
                 AuthUserResponse.from(student),
@@ -171,8 +174,8 @@ public class StudentWorkspaceController {
             @PathVariable("recordId") Integer recordId,
             @Valid @RequestBody StudentSubmitExamRequest request
     ) {
-        User student = requireStudent(userId);
-        ExamRecord record = requireOwnedRecord(userId, recordId);
+        User student = userRoleGuard.requireStudent(userId);
+        ExamRecord record = examAccessGuard.requireOwnedRecord(userId, recordId);
         if (record.getStatus() != ExamStatus.IN_PROGRESS) {
             throw new BusinessException("当前考试不处于可提交状态");
         }
@@ -190,9 +193,7 @@ public class StudentWorkspaceController {
 
         BigDecimal score = examService.submitExam(recordId, answers);
         ExamRecord submittedRecord = examService.getExamRecordById(recordId);
-        Paper paper = submittedRecord.getPaper() != null
-                ? submittedRecord.getPaper()
-                : paperService.getPaperById(submittedRecord.getPaperId());
+        Paper paper = examAccessGuard.resolvePaper(submittedRecord);
         List<AnswerRecord> answerRecords = examService.getAnswerRecords(recordId);
 
         StudentWorkspaceDtos.StudentSubmitResultPayload payload = new StudentWorkspaceDtos.StudentSubmitResultPayload(
@@ -200,33 +201,6 @@ public class StudentWorkspaceController {
                 assembler.toSubmitResultItem(submittedRecord, paper, score, answerRecords)
         );
         return ApiResponse.success("考试提交成功", payload);
-    }
-
-    private User requireStudent(Integer userId) {
-        User user = userService.getUserById(userId);
-        if (user.getRole() != UserRole.STUDENT) {
-            throw new BusinessException("当前用户不是学生角色");
-        }
-        return user;
-    }
-
-    private Paper requirePublishedPaper(Integer paperId) {
-        Paper paper = paperService.getPaperById(paperId);
-        if (!Boolean.TRUE.equals(paper.getIsPublished())) {
-            throw new BusinessException("该试卷尚未发布");
-        }
-        return paper;
-    }
-
-    private ExamRecord requireOwnedRecord(Integer userId, Integer recordId) {
-        ExamRecord record = examService.getExamRecordById(recordId);
-        if (record == null) {
-            throw new BusinessException("考试记录不存在");
-        }
-        if (!userId.equals(record.getStudentId())) {
-            throw new BusinessException("考试记录不属于当前学生");
-        }
-        return record;
     }
 
     private String normalizeBlank(String value) {
